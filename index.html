@@ -5,65 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SEO — STIT Event Organizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://unpkg.com/html5-qrcode"
+      type="text/javascript"
+    ></script>
+    <!-- SDK Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <script>
-        <!-- Tambahkan SDK Firebase (Compat) di atas script utama Anda -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
-<script>
-  // 1. Tempelkan konfigurasi Firebase milik Anda di sini
-  const firebaseConfig = {
-    apiKey: "AIzaSyYourApiKeyHere...",
-    authDomain: "seo-stit-db.firebaseapp.com",
-    projectId: "seo-stit-db",
-    storageBucket: "seo-stit-db.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "1:1234567890:web:abcdef123456"
-  };
-
-  // 2. Inisialisasi Firebase & Firestore
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  // 3. Fungsi menyimpan seluruh state aplikasi ke Firestore
-  async function syncToCloud() {
-    try {
-      await db.collection("seo_app_state").doc("main_data").set({
-        eventsData: eventsData, // variabel array/objek data event Anda
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      console.log("Data tersimpan ke Firebase!");
-    } catch (err) {
-      console.error("Gagal menyimpan ke cloud:", err);
-    }
-  }
-
-  // 4. Listener Real-time: otomatis memperbarui layar saat panitia lain mengubah data
-  function listenFromCloud() {
-    db.collection("seo_app_state").doc("main_data")
-      .onSnapshot((doc) => {
-        if (doc.exists) {
-          const cloudData = doc.data();
-          if (cloudData.eventsData) {
-            eventsData = cloudData.eventsData;
-            renderAllViews(); // Panggil fungsi render utama aplikasi Anda
-          }
-        } else {
-          // Jika database masih kosong, unggah data default pertama kali
-          syncToCloud();
-        }
-      });
-  }
-
-  // Panggil listenFromCloud() saat halaman selesai dimuat
-  window.addEventListener('DOMContentLoaded', () => {
-    listenFromCloud();
-  });
-</script>
       tailwind.config = {
         theme: {
           extend: {
@@ -159,6 +112,61 @@
             Tutup
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL KAMERA QR SCANNER ASLI (UNTUK HP / WEBCAM) -->
+    <div
+      id="qrScannerModal"
+      class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center z-[115] p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-amber-400/40 text-center space-y-4"
+      >
+        <div
+          class="flex justify-between items-center border-b border-slate-200 pb-3"
+        >
+          <h3
+            id="qrScannerTitle"
+            class="font-black text-navy text-sm sm:text-base"
+          >
+            📷 Arahkan Kamera ke QR Code
+          </h3>
+          <button
+            onclick="stopRealQRScanner()"
+            class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 font-bold flex items-center justify-center"
+          >
+            ✕
+          </button>
+        </div>
+        <!-- Area Viewfinder Kamera HP -->
+        <div
+          id="qrReaderBox"
+          class="w-full rounded-2xl overflow-hidden border-2 border-dashed border-amber-400 bg-slate-900 min-h-[250px]"
+        ></div>
+        <p class="text-[11px] text-slate-500 leading-relaxed">
+          Pastikan Anda mengizinkan akses kamera (<b>Allow</b>) pada browser HP
+          Anda.
+        </p>
+        <div
+          id="qrManualFallbackBox"
+          class="hidden pt-2 border-t border-slate-200"
+        >
+          <button
+            id="qrManualFallbackBtn"
+            type="button"
+            class="w-full py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-extrabold text-xs transition"
+          >
+            ✓ Konfirmasi Hadir Tanpa Kamera
+          </button>
+        </div>
+        <button
+          type="button"
+          onclick="stopRealQRScanner()"
+          class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition"
+        >
+          Batal / Tutup Kamera
+        </button>
       </div>
     </div>
 
@@ -301,6 +309,11 @@
                 <span
                   class="text-[11px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30"
                   >STIT Event Organizer</span
+                >
+                <span
+                  id="cloudSyncBadge"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                  >☁️ Local Ready</span
                 >
               </div>
               <p class="text-xs text-slate-300">
@@ -525,8 +538,8 @@
           </section>
 
           <!-- ==========================================
-                     RUANG KERJA KHUSUS ANGGOTA (MAHASISWA / SUPPORT)
-                     ========================================== -->
+               RUANG KERJA KHUSUS ANGGOTA (MAHASISWA / SUPPORT)
+               ========================================== -->
           <div id="memberWorkspaceSection" class="hidden space-y-6">
             <!-- Banner Check-in Meeting jika ada meeting aktif -->
             <div
@@ -590,10 +603,10 @@
           </div>
 
           <!-- ==========================================
-                     DASHBOARD UTAMA (SC, KOORDINATOR, & VIP VIEW-ONLY)
-                     ========================================== -->
+               DASHBOARD UTAMA (SC, KOORDINATOR, & VIP VIEW-ONLY)
+               ========================================== -->
           <div id="dashboardWorkspaceSection" class="space-y-6">
-            <!-- CONTAINER MENU TAB (BUNGKUS CONTAINER AGAK GELAP DARI LATAR UTAMA, TOMBOL CARD BESAR & TIDAK SCROLL KANAN) -->
+            <!-- CONTAINER MENU TAB -->
             <div
               class="bg-slate-200/80 border border-slate-300/80 rounded-3xl p-3 shadow-inner"
             >
@@ -688,14 +701,10 @@
               >
             </div>
 
-            <!-- ==========================================
-                         TAB CONTENT 0: KELOLA SEKSI & JOBDESK (KHUSUS KOORDINATOR)
-                         ========================================== -->
+            <!-- TAB CONTENT 0: KELOLA SEKSI & JOBDESK (KHUSUS KOORDINATOR) -->
             <div id="dashContentCoordSection" class="hidden space-y-6"></div>
 
-            <!-- ==========================================
-                         TAB CONTENT 1: TASK & FINANCE (OVERVIEW)
-                         ========================================== -->
+            <!-- TAB CONTENT 1: TASK & FINANCE (OVERVIEW) -->
             <div id="dashContentOverview" class="space-y-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div
@@ -794,9 +803,7 @@
               </div>
             </div>
 
-            <!-- ==========================================
-                         TAB CONTENT 2: PROGRES JOBDESK (STRUKTUR PANITIA & SEMUA TUGAS)
-                         ========================================== -->
+            <!-- TAB CONTENT 2: PROGRES JOBDESK (STRUKTUR PANITIA & SEMUA TUGAS) -->
             <div id="dashContentStruktur" class="hidden space-y-6">
               <div
                 class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4"
@@ -846,34 +853,22 @@
               ></div>
             </div>
 
-            <!-- ==========================================
-                         TAB CONTENT 3: KEUANGAN (UNIT ECONOMICS & BIAYA OPERASIONAL)
-                         ========================================== -->
+            <!-- TAB CONTENT 3: KEUANGAN -->
             <div id="dashContentKeuangan" class="hidden space-y-6"></div>
 
-            <!-- ==========================================
-                         TAB CONTENT 4: BUKU KAS & BUKTI NOTA
-                         ========================================== -->
+            <!-- TAB CONTENT 4: BUKU KAS & BUKTI NOTA -->
             <div id="dashContentKas" class="hidden space-y-6"></div>
 
-            <!-- ==========================================
-                         TAB CONTENT 5: DATABASE PESERTA & QR SCANNER
-                         ========================================== -->
+            <!-- TAB CONTENT 5: DATABASE PESERTA & QR SCANNER -->
             <div id="dashContentPeserta" class="hidden space-y-6"></div>
 
-            <!-- ==========================================
-                         TAB CONTENT 6: RUNDOWN ACARA
-                         ========================================== -->
+            <!-- TAB CONTENT 6: RUNDOWN ACARA -->
             <div id="dashContentRundown" class="hidden space-y-6"></div>
 
-            <!-- ==========================================
-                         TAB CONTENT 7: MEETING & NOTULENSI (DENGAN QR CHECK-IN PANITIA)
-                         ========================================== -->
+            <!-- TAB CONTENT 7: MEETING & NOTULENSI -->
             <div id="dashContentMeeting" class="hidden space-y-6"></div>
 
-            <!-- ==========================================
-                         TAB CONTENT 8: ARSIP DOKUMEN & SK
-                         ========================================== -->
+            <!-- TAB CONTENT 8: ARSIP DOKUMEN & SK -->
             <div id="dashContentDokumen" class="hidden space-y-6"></div>
           </div>
         </main>
@@ -887,7 +882,6 @@
       id="viewPublicLanding"
       class="hidden fixed inset-0 bg-slate-100 z-[95] overflow-y-auto"
     >
-      <!-- Floating Back Button for Super Admin -->
       <button
         onclick="closePublicLanding()"
         class="fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-2xl bg-navy text-amber-400 font-extrabold text-xs shadow-2xl border border-amber-400/40 flex items-center gap-2 hover:scale-105 transition"
@@ -1012,7 +1006,7 @@
             </div>
           </div>
 
-          <!-- Kelompok 2: Kontak dan Alamat (Domisili Provinsi & Kota) -->
+          <!-- Kelompok 2: Kontak dan Alamat -->
           <div
             id="pubGroupKontak"
             class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
@@ -1076,7 +1070,7 @@
             </div>
           </div>
 
-          <!-- Kelompok 3: Afiliasi (Button Check: Mahasiswa, Dosen, Tenaga Kependidikan, Peserta Umum) -->
+          <!-- Kelompok 3: Afiliasi -->
           <div
             id="pubGroupAfiliasi"
             class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
@@ -1140,7 +1134,7 @@
             </div>
           </div>
 
-          <!-- Kelompok 4: Pilihan Paket (Button-Check Dinamis: Paket-A, Paket-B, dst.) -->
+          <!-- Kelompok 4: Pilihan Paket -->
           <div
             id="pubGroupPaket"
             class="p-5 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-3"
@@ -1229,7 +1223,6 @@
       <div
         class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-5xl w-full my-8 overflow-hidden flex flex-col max-h-[92vh]"
       >
-        <!-- Modal Header -->
         <div
           class="bg-grad-navy text-white px-6 py-4 flex items-center justify-between shrink-0"
         >
@@ -1250,9 +1243,8 @@
           </button>
         </div>
 
-        <!-- Modal Body -->
         <div class="p-6 overflow-y-auto custom-scroll space-y-8 flex-1">
-          <!-- BAGIAN 1: IDENTITAS EVENT (3 KELOMPOK) -->
+          <!-- BAGIAN 1: IDENTITAS EVENT -->
           <div class="space-y-4">
             <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
               <span
@@ -1264,7 +1256,6 @@
               </h4>
             </div>
 
-            <!-- Kelompok 1.1: Divisi Penyelenggara, Kategori Agenda, Nama Event, Tema, Deskripsi -->
             <div
               class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
             >
@@ -1356,7 +1347,6 @@
               </div>
             </div>
 
-            <!-- Kelompok 1.2: Tanggal (Date Picker), Waktu (Time Picker), Lokasi (3 Opsi + Tulis Baru) -->
             <div
               class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
             >
@@ -1428,7 +1418,6 @@
               </div>
             </div>
 
-            <!-- Kelompok 1.3: Daftar Pemateri & Topik Pembahasan (Bisa Lebih dari Satu) -->
             <div
               class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3"
             >
@@ -1555,7 +1544,6 @@
           </div>
         </div>
 
-        <!-- Modal Footer -->
         <div
           class="bg-slate-100 px-6 py-4 flex justify-end gap-3 border-t border-slate-200 shrink-0"
         >
@@ -1679,10 +1667,103 @@
     </div>
 
     <!-- ==========================================
-         JAVASCRIPT ENGINE & MASTER DATA 48 SDM STIT
+         JAVASCRIPT ENGINE, FIREBASE SYNC & REAL QR CAMERA
          ========================================== -->
     <script>
+      // ==========================================
+      // 0. KONFIGURASI FIREBASE FIRESTORE CLOUD SYNC
+      // ==========================================
+      // Ganti nilai di bawah ini dengan firebaseConfig asli dari Firebase Console Anda:
+      const firebaseConfig = {
+        apiKey: "AIzaSyANv_7KsZzB6mD2IJgw8IVdO8eT2hVm0Mc",
+        authDomain: "seo-db-fe9c4.firebaseapp.com",
+        projectId: "seo-db-fe9c4",
+        storageBucket: "seo-db-fe9c4.firebasestorage.app",
+        messagingSenderId: "530084249965",
+        appId: "1:530084249965:web:b73ebbc55289fe060ada64",
+      };
+
+      let db = null;
+      let isFirebaseActive = false;
+
+      function initFirebaseConnection() {
+        try {
+          if (
+            typeof firebase !== "undefined" &&
+            firebaseConfig.apiKey &&
+            !firebaseConfig.apiKey.includes("YourApiKeyHere")
+          ) {
+            if (!firebase.apps.length) {
+              firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            isFirebaseActive = true;
+            const badge = document.getElementById("cloudSyncBadge");
+            if (badge) badge.textContent = "☁️ Cloud Sync Aktif";
+            listenFromCloud();
+          } else {
+            // Fallback penyimpanan lokal browser jika apiKey belum diganti
+            const savedLocal = localStorage.getItem("seo_stit_events_backup");
+            if (savedLocal) {
+              eventsData = JSON.parse(savedLocal);
+            }
+          }
+        } catch (err) {
+          console.warn(
+            "Firebase belum dikonfigurasi penuh, menggunakan LocalStorage:",
+            err,
+          );
+        }
+      }
+
+      async function syncToCloud() {
+        // Simpan cadangan ke LocalStorage juga agar selalu aman
+        try {
+          localStorage.setItem(
+            "seo_stit_events_backup",
+            JSON.stringify(eventsData),
+          );
+        } catch (e) {}
+
+        if (!isFirebaseActive || !db) return;
+        try {
+          await db.collection("seo_app_state").doc("main_data").set({
+            eventsData: eventsData,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (err) {
+          console.error("Gagal menyimpan ke Firebase:", err);
+        }
+      }
+
+      function listenFromCloud() {
+        if (!isFirebaseActive || !db) return;
+        db.collection("seo_app_state")
+          .doc("main_data")
+          .onSnapshot((doc) => {
+            if (doc.exists) {
+              const cloudData = doc.data();
+              if (cloudData && cloudData.eventsData) {
+                eventsData = cloudData.eventsData;
+                if (currentUser) {
+                  const updatedRole = evaluateUserRoleForActiveEvent(
+                    currentUser.name,
+                  );
+                  currentUser.role = updatedRole.role;
+                  currentUser.roleLabel = updatedRole.roleLabel;
+                  currentUser.coordDivisionId = updatedRole.coordDivisionId;
+                  renderAll();
+                }
+              }
+            } else {
+              syncToCloud();
+            }
+          });
+      }
+
+      // ==========================================
       // 1. MASTER SDM STIT (48 ORANG)
+      // ==========================================
       const SDM_STIT = [
         "Afghani, S.Kom.",
         "Mhd Saleh, M.Pd.",
@@ -1800,7 +1881,6 @@
         ],
       };
 
-      // PALET WARNA KARTU SEKSI BERBEDA
       const SECTION_CARD_THEMES = [
         {
           bg: "bg-blue-50/70",
@@ -2274,7 +2354,7 @@
               start: "07:30",
               end: "08:30",
               durasi: "60 Menit",
-              kegiatan: "apel Pagi & Pengenalan Panitia",
+              kegiatan: "Apel Pagi & Pengenalan Panitia",
               pic: "Siti Salwa, M.Pd.",
               ruangan: "Lapangan Utama",
             },
@@ -2290,14 +2370,14 @@
             usePaket: true,
             packages: [
               { name: "Paket-A (Mahasiswa Baru)", price: 65000 },
-              { name: "Paket-B (itia/Pendamping)", price: 50000 },
+              { name: "Paket-B (Panitia/Pendamping)", price: 50000 },
             ],
           },
         },
       ];
 
       // STATE APLIKASI AKTIF
-      let currentUser = null; // { name, group, roleInEvent, coordDivisionId }
+      let currentUser = null;
       let activeEventId = "evt_1";
       let activeDashTab = "overview";
       let wizardMode = "create";
@@ -2338,6 +2418,92 @@
         const ov = document.getElementById("customModalOverlay");
         ov.classList.add("hidden");
         ov.classList.remove("flex");
+      }
+
+      // ==========================================
+      // KAMERA SCANNER QR ASLI (HTML5-QRCODE)
+      // ==========================================
+      let html5QrCodeInstance = null;
+
+      function openRealQRScanner(mode, targetMeetingId = null) {
+        const modal = document.getElementById("qrScannerModal");
+        const titleEl = document.getElementById("qrScannerTitle");
+        const fallbackBox = document.getElementById("qrManualFallbackBox");
+        const fallbackBtn = document.getElementById("qrManualFallbackBtn");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        if (mode === "meeting") {
+          titleEl.textContent = "📷 Scan QR Kehadiran Rapat";
+          fallbackBox.classList.remove("hidden");
+          fallbackBtn.onclick = () => {
+            stopRealQRScanner();
+            checkInMeetingByUser(targetMeetingId);
+          };
+        } else {
+          titleEl.textContent = "📷 Scan QR E-Tiket Peserta";
+          fallbackBox.classList.add("hidden");
+        }
+
+        if (typeof Html5Qrcode === "undefined") {
+          showToast("Library kamera belum termuat.", "error");
+          return;
+        }
+
+        html5QrCodeInstance = new Html5Qrcode("qrReaderBox");
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+        html5QrCodeInstance
+          .start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+              stopRealQRScanner();
+              if (mode === "meeting") {
+                checkInMeetingByUser(targetMeetingId);
+                showToast(`Berhasil Scan QR Rapat: ${decodedText}`);
+              } else if (mode === "peserta") {
+                // Ekstrak kode tiket jika formatnya "SEO-2026-881 | Nama | Paket"
+                const rawCode = decodedText.split("|")[0].trim();
+                const inp = document.getElementById("qrScanTicketInput");
+                if (inp) inp.value = rawCode;
+                scanParticipantQrTicket();
+              }
+            },
+            () => {
+              // Abaikan frame yang belum fokus membaca QR
+            },
+          )
+          .catch((err) => {
+            console.warn("Kamera tidak dapat diakses:", err);
+            showToast(
+              "Kamera tidak dapat dibuka. Gunakan tombol Konfirmasi Hadir di bawahnya atau pastikan buka via link HTTPS.",
+              "error",
+            );
+          });
+      }
+
+      function stopRealQRScanner() {
+        const modal = document.getElementById("qrScannerModal");
+        if (html5QrCodeInstance) {
+          html5QrCodeInstance
+            .stop()
+            .then(() => {
+              html5QrCodeInstance.clear();
+              html5QrCodeInstance = null;
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            })
+            .catch(() => {
+              html5QrCodeInstance = null;
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            });
+        } else {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+        }
       }
 
       // 4. INISIALISASI DROPDOWN LOGIN (48 SDM STIT)
@@ -2389,13 +2555,6 @@
         return html;
       }
 
-      // DETEKSI ROLE PENGGUNA PADA EVENT AKTIF
-      // Aturan:
-      // - Dosen & Staff (SDM_STIT) memiliki 3 kemungkinan di suatu event:
-      //   1) SC / Pengelola (jika masuk SC_MANAGERS) -> role: 'sc'
-      //   2) Koordinator Seksi (jika namanya menjadi PIC di salah satu seksi event aktif) -> role: 'koordinator'
-      //   3) Anggota VIP (jika Dosen/Staff tidak jadi SC & tidak jadi Koordinator di event aktif) -> role: 'vip_anggota' (bisa lihat menu Dashboard secara View-Only)
-      // - Mahasiswa & Support -> Jika ditunjuk jadi PIC Seksi di event aktif maka 'koordinator', jika tidak maka 'anggota'.
       function evaluateUserRoleForActiveEvent(userName) {
         const ev = getActiveEvent();
         const isStitStaff = SDM_STIT.includes(userName);
@@ -2500,7 +2659,6 @@
         document.getElementById("viewLogin").classList.remove("hidden");
       }
 
-      // SWITCH EVENT DARI KARTU DI SAMPING (OTOMATIS SESUAIKAN ROLE USER DI EVENT TERSEBUT)
       function selectEventFromSidebar(eventId) {
         activeEventId = eventId;
         if (currentUser) {
@@ -2534,7 +2692,6 @@
         if (!currentUser) return;
         const ev = getActiveEvent();
 
-        // 1. Header User & Super Admin Landing Page Button
         document.getElementById("headerUserName").textContent =
           currentUser.name;
         document.getElementById("headerUserRoleBadge").textContent =
@@ -2549,7 +2706,6 @@
           btnLanding.classList.remove("inline-flex");
         }
 
-        // 2. Sidebar Event Cards (Hanya 3 Item: Nama Event, Divisi Penyelenggara, Tanggal)
         const btnCreateSidebar = document.getElementById(
           "btnCreateNewEventSidebar",
         );
@@ -2583,7 +2739,6 @@
           })
           .join("");
 
-        // Sidebar Role Explanation
         document.getElementById("sidebarRoleTitle").textContent =
           currentUser.roleLabel;
         const roleDescriptions = {
@@ -2598,7 +2753,6 @@
         document.getElementById("sidebarRoleDesc").textContent =
           roleDescriptions[currentUser.role] || "";
 
-        // 3. Headline Event Aktif
         document.getElementById("headlineDivisiBadge").textContent =
           `Divisi: ${ev.divisi}`;
         document.getElementById("headlineKategoriBadge").textContent =
@@ -2634,7 +2788,6 @@
           adminAct.classList.remove("flex");
         }
 
-        // 4. Tentukan Tampilan Workspace: Anggota Reguler vs Dashboard (SC, Koordinator, VIP Anggota)
         const memberSec = document.getElementById("memberWorkspaceSection");
         const dashSec = document.getElementById("dashboardWorkspaceSection");
 
@@ -2649,11 +2802,15 @@
         }
       }
 
+      // Alias agar kompatibel jika dipanggil oleh listener Firebase
+      function renderAllViews() {
+        renderAll();
+      }
+
       // ==========================================
       // RENDER RUANG KERJA ANGGOTA (MAHASISWA / SUPPORT)
       // ==========================================
       function renderMemberWorkspace(ev) {
-        // Cek apakah ada meeting yang sedang dibuka QR-nya
         const openMtg = (ev.meetings || []).find((m) => m.isOpen);
         const banner = document.getElementById("memberMeetingCheckInBanner");
         if (openMtg) {
@@ -2670,14 +2827,16 @@
                     ${
                       alreadyIn
                         ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Check-in Hadir</span>`
-                        : `<button onclick="checkInMeetingByUser('${openMtg.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">📲 Scan QR / Check-in Kehadiran Meeting</button>`
+                        : `<div class="flex flex-wrap gap-2">
+                             <button onclick="openRealQRScanner('meeting', '${openMtg.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">📷 Buka Kamera Scan QR Rapat</button>
+                             <button onclick="checkInMeetingByUser('${openMtg.id}')" class="px-4 py-2.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-navy font-extrabold text-xs">✓ Check-in Cepat</button>
+                           </div>`
                     }
                 `;
         } else {
           banner.classList.add("hidden");
         }
 
-        // Cari seksi & tugas milik anggota ini
         let myDivName = "Belum Terplot di Seksi";
         let myTasks = [];
         ev.divisions.forEach((d) => {
@@ -2721,7 +2880,6 @@
             .join("");
         }
 
-        // Rundown Preview
         const rdEl = document.getElementById("memberRundownPreview");
         rdEl.innerHTML =
           (ev.rundown || [])
@@ -2736,7 +2894,6 @@
             .join("") ||
           `<p class="text-slate-400 italic">Belum ada rundown.</p>`;
 
-        // Meeting Preview
         const mtgEl = document.getElementById("memberMeetingPreview");
         mtgEl.innerHTML =
           (ev.meetings || [])
@@ -2761,7 +2918,6 @@
         const isCoord = currentUser.role === "koordinator";
         const isVip = currentUser.role === "vip_anggota";
 
-        // Tampilkan/Sembunyikan Tab Khusus Koordinator
         const btnCoord = document.getElementById("tabBtnCoordMySection");
         if (isCoord) {
           btnCoord.classList.remove("hidden");
@@ -2769,19 +2925,16 @@
           btnCoord.classList.add("hidden");
         }
 
-        // Banner VIP View-Only
         const vipBanner = document.getElementById("vipReadOnlyBanner");
         if (isVip) vipBanner.classList.remove("hidden");
         else vipBanner.classList.add("hidden");
 
-        // Update Count Peserta
         const activeParticipants = (ev.participants || []).filter(
           (p) => p.statusAktif !== false,
         );
         document.getElementById("tabPesertaCount").textContent =
           activeParticipants.length;
 
-        // Highlight Active Button inside Dark Container
         const tabMap = {
           coord_section: "tabBtnCoordMySection",
           overview: "tabBtnOverview",
@@ -2804,7 +2957,6 @@
           }
         });
 
-        // Hide all contents first
         const contentIds = [
           "dashContentCoordSection",
           "dashContentOverview",
@@ -2821,7 +2973,6 @@
           if (el) el.classList.add("hidden");
         });
 
-        // Render & Show Selected Tab
         if (activeDashTab === "coord_section" && isCoord) {
           document
             .getElementById("dashContentCoordSection")
@@ -2869,7 +3020,7 @@
       }
 
       // ==========================================
-      // TAB 0: KELOLA SEKSI, JOBDESK & PROGRESS (KHUSUS KOORDINATOR SEKSI)
+      // TAB 0: KELOLA SEKSI, JOBDESK & PROGRESS
       // ==========================================
       function renderCoordMySectionTab(ev) {
         const container = document.getElementById("dashContentCoordSection");
@@ -2905,7 +3056,6 @@
                         </div>
                     </div>
 
-                    <!-- Tambah Anggota ke Seksi Ini -->
                     <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
                         <div class="text-xs font-bold text-navy">👥 Tambah Anggota Pelaksana ke ${div.name}:</div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -2914,7 +3064,6 @@
                         </div>
                     </div>
 
-                    <!-- Form Tambah Jobdesk Seksi Sendiri -->
                     <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-300 flex flex-col sm:flex-row gap-2.5">
                         <input type="text" id="coordNewTaskTitle" placeholder="Tulis jobdesk baru untuk ${div.name}..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
                         <select id="coordNewTaskPic" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
@@ -2924,7 +3073,6 @@
                         <button onclick="coordAddTask('${div.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Tambah Jobdesk</button>
                     </div>
 
-                    <!-- Daftar Jobdesk Seksi Ini -->
                     <div class="space-y-2.5">
                         ${div.tasks
                           .map(
@@ -2939,11 +3087,9 @@
                                         <option value="">-- Pilih PIC --</option>
                                         ${[div.pic, ...div.members].map((m) => `<option value="${m}" ${t.pic === m ? "selected" : ""}>PIC: ${m}</option>`).join("")}
                                     </select>
-                                    <!-- Tombol Edit Ikon SVG -->
                                     <button onclick="editTaskTitlePrompt('${div.id}', '${t.id}')" title="Edit Jobdesk" class="p-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 transition">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                     </button>
-                                    <!-- Tombol Hapus Ikon SVG -->
                                     <button onclick="deleteTaskFromDivision('${div.id}', '${t.id}')" title="Hapus Jobdesk" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                     </button>
@@ -2965,6 +3111,7 @@
         const div = ev.divisions.find((d) => d.id === divId);
         if (div && !div.members.includes(val)) {
           div.members.push(val);
+          syncToCloud();
           renderAll();
           showToast(`Anggota ${val} ditambahkan ke ${div.name}`);
         }
@@ -2988,6 +3135,7 @@
             pic: pic || div.pic,
             done: false,
           });
+          syncToCloud();
           renderAll();
           showToast("Jobdesk baru berhasil ditambahkan!");
         }
@@ -3033,7 +3181,6 @@
         document.getElementById("ovBepInfo").textContent =
           `BEP HTM Minimal: ${formatRp(bepHtm)} / peserta`;
 
-        // Realisasi Kas + Pendaftaran Peserta Aktif
         const activePeserta = (ev.participants || []).filter(
           (p) => p.statusAktif !== false,
         );
@@ -3060,7 +3207,6 @@
         document.getElementById("ovSisaSaldo").textContent =
           `Saldo Kas Riil: ${formatRp(sisaSaldo)}`;
 
-        // Progress Tugas
         let allTasks = 0;
         let doneTasks = 0;
         const barsHtml = ev.divisions
@@ -3126,7 +3272,6 @@
             const pct =
               totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
-            // Hanya SC yang bisa mengedit semua seksi di tab ini (Koordinator hanya View-Only di tab ini sesuai aturan J)
             const canModifyThisCard = isSc;
 
             return `
@@ -3151,12 +3296,10 @@
                                 </div>
                             </div>
 
-                            <!-- Anggota Pills -->
                             <div class="flex flex-wrap gap-1.5">
                                 ${(d.members || []).map((m) => `<span class="px-2.5 py-1 rounded-xl bg-white/90 border border-slate-200 text-[11px] font-semibold text-slate-700">👤 ${m}</span>`).join("") || `<span class="text-xs text-slate-400 italic">Belum ada anggota</span>`}
                             </div>
 
-                            <!-- Daftar Tugas (10 Tugas Default + Tambahan) -->
                             <div class="space-y-2 max-h-80 overflow-y-auto custom-scroll pr-1 pt-2 border-t border-slate-200/80">
                                 ${d.tasks
                                   .map(
@@ -3241,6 +3384,7 @@
 
         nameInp.value = "";
         picCustom.value = "";
+        syncToCloud();
         renderAll();
         showToast(
           `Seksi "${name}" beserta 10 tugas default berhasil ditambahkan!`,
@@ -3250,6 +3394,7 @@
       function deleteDivisionFromStruktur(divId) {
         const ev = getActiveEvent();
         ev.divisions = ev.divisions.filter((d) => d.id !== divId);
+        syncToCloud();
         renderAll();
         showToast("Seksi berhasil dihapus.");
       }
@@ -3261,6 +3406,7 @@
         const task = div.tasks.find((t) => t.id === taskId);
         if (task) {
           task.done = !task.done;
+          syncToCloud();
           renderAll();
         }
       }
@@ -3272,6 +3418,7 @@
         const task = div.tasks.find((t) => t.id === taskId);
         if (task) {
           task.pic = newPic;
+          syncToCloud();
           renderAll();
           showToast(`PIC tugas diplot ke ${newPic}`);
         }
@@ -3290,6 +3437,7 @@
             done: false,
           });
           inp.value = "";
+          syncToCloud();
           renderAll();
           showToast("Tugas baru ditambahkan!");
         }
@@ -3304,6 +3452,7 @@
         const updated = prompt("Edit Deskripsi Jobdesk:", task.title);
         if (updated !== null && updated.trim() !== "") {
           task.title = updated.trim();
+          syncToCloud();
           renderAll();
           showToast("Jobdesk diperbarui.");
         }
@@ -3314,18 +3463,19 @@
         const div = ev.divisions.find((d) => d.id === divId);
         if (!div) return;
         div.tasks = div.tasks.filter((t) => t.id !== taskId);
+        syncToCloud();
         renderAll();
         showToast("Jobdesk dihapus.");
       }
 
       // ==========================================
-      // TAB 3: KEUANGAN (UNIT ECONOMICS & BIAYA OPERASIONAL + EDIT/HAPUS IKON)
+      // TAB 3: KEUANGAN
       // ==========================================
       let editUeId = null;
       let editBoId = null;
 
       function renderKeuanganTab(ev) {
-        const isReadOnly = currentUser.role !== "sc"; // Koordinator & VIP hanya melihat saja (aturan K)
+        const isReadOnly = currentUser.role !== "sc";
         const container = document.getElementById("dashContentKeuangan");
 
         const unitSum = (ev.unitEconomics || []).reduce(
@@ -3356,7 +3506,6 @@
                         ${isReadOnly ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
                     </div>
 
-                    <!-- Parameter Dasar Keuangan -->
                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div class="p-4 rounded-2xl bg-slate-50 border">
                             <label class="text-[11px] font-bold text-slate-500 block">Target Peserta</label>
@@ -3376,10 +3525,7 @@
                         </div>
                     </div>
 
-                    <!-- 2 Tabel Berdampingan: Unit Economics & Biaya Operasional -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        
-                        <!-- Tabel 1: Unit Economics (Benefit Peserta) -->
                         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -3441,7 +3587,6 @@
                             </div>
                         </div>
 
-                        <!-- Tabel 2: Biaya Operasional -->
                         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -3502,7 +3647,6 @@
                                 </table>
                             </div>
                         </div>
-
                     </div>
                 </div>
             `;
@@ -3511,6 +3655,7 @@
       function updateBasicFinanceParam(field, val) {
         const ev = getActiveEvent();
         ev[field] = Number(val) || 0;
+        syncToCloud();
         renderAll();
         showToast("Parameter dasar keuangan diperbarui.");
       }
@@ -3534,6 +3679,7 @@
             cost: Number(costEl.value) || 0,
           });
         }
+        syncToCloud();
         renderAll();
         showToast("Unit Economics disimpan.");
       }
@@ -3551,6 +3697,7 @@
       function deleteUe(id) {
         const ev = getActiveEvent();
         ev.unitEconomics = ev.unitEconomics.filter((u) => u.id !== id);
+        syncToCloud();
         renderAll();
       }
 
@@ -3573,6 +3720,7 @@
             cost: Number(costEl.value) || 0,
           });
         }
+        syncToCloud();
         renderAll();
         showToast("Biaya Operasional disimpan.");
       }
@@ -3590,13 +3738,12 @@
       function deleteBo(id) {
         const ev = getActiveEvent();
         ev.biayaOperasional = ev.biayaOperasional.filter((b) => b.id !== id);
+        syncToCloud();
         renderAll();
       }
 
       // ==========================================
       // TAB 4: BUKU KAS & BUKTI NOTA
-      // - Untuk Koordinator: Otomatis terkunci pada Seksi & nama Koordinator yang login (tidak ada field pilihan Seksi & PIC)
-      // - Untuk SC: Ada dropdown Seksi & dropdown PIC Panitia dikelompokkan berdasarkan kelompok SDM
       // ==========================================
       function renderKasTab(ev) {
         const isSc = currentUser.role === "sc";
@@ -3763,6 +3910,7 @@
           notaUrl: document.getElementById("kasNotaUrl").value.trim(),
         });
 
+        syncToCloud();
         renderAll();
         showToast("Transaksi kas berhasil dicatat!");
       }
@@ -3770,14 +3918,13 @@
       function deleteKasItem(id) {
         const ev = getActiveEvent();
         ev.kasTransactions = ev.kasTransactions.filter((k) => k.id !== id);
+        syncToCloud();
         renderAll();
         showToast("Transaksi kas dihapus.");
       }
 
       // ==========================================
       // TAB 5: DATABASE PESERTA & GATE QR CHECK-IN
-      // - SC bisa Scan QR Check-in, Edit Peserta, dan Batal Mengikuti Event
-      // - Koordinator & VIP hanya melihat saja (aturan L)
       // ==========================================
       function renderPesertaTab(ev) {
         const isSc = currentUser.role === "sc";
@@ -3800,11 +3947,14 @@
                         <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h4 class="text-xs font-extrabold uppercase text-navy">📲 Gate Scanner QR Kehadiran Peserta (Hari-H)</h4>
-                                <p class="text-[11px] text-slate-600">Masukkan atau scan kode unik tiket peserta (Contoh: <b>SEO-2026-882</b>) untuk menandai kehadiran.</p>
+                                <p class="text-[11px] text-slate-600">Gunakan kamera HP untuk scan QR E-Tiket peserta atau ketik kode tiket (Contoh: <b>SEO-2026-882</b>).</p>
                             </div>
-                            <div class="flex gap-2">
-                                <input type="text" id="qrScanTicketInput" placeholder="Masukkan Kode Tiket QR..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
-                                <button onclick="scanParticipantQrTicket()" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">Scan / Check-in QR</button>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="openRealQRScanner('peserta')" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-navy font-extrabold text-xs shadow flex items-center gap-1.5">
+                                    <span>📷 Buka Kamera Scan QR</span>
+                                </button>
+                                <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                                <button onclick="scanParticipantQrTicket()" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">Check-in Manual</button>
                             </div>
                         </div>
                     `
@@ -3897,7 +4047,8 @@
         const now = new Date();
         target.checkedIn = true;
         target.checkInTime = now.toTimeString().slice(0, 5) + " WIB";
-        inp.value = "";
+        if (inp) inp.value = "";
+        syncToCloud();
         renderAll();
         showToast(`Check-in Berhasil: ${target.nama} (${target.ticketCode})`);
       }
@@ -3911,6 +4062,7 @@
         target.checkInTime = target.checkedIn
           ? now.toTimeString().slice(0, 5) + " WIB"
           : "-";
+        syncToCloud();
         renderAll();
         showToast(`Status kehadiran ${target.nama} diperbarui.`);
       }
@@ -3924,6 +4076,7 @@
           target.nama = newName.trim();
           const newInst = prompt("Edit Asal Instansi & Kota:", target.instansi);
           if (newInst !== null) target.instansi = newInst.trim();
+          syncToCloud();
           renderAll();
           showToast("Data peserta berhasil diperbarui.");
         }
@@ -3934,6 +4087,7 @@
         const target = ev.participants.find((p) => p.id === pId);
         if (!target) return;
         target.statusAktif = target.statusAktif === false ? true : false;
+        syncToCloud();
         renderAll();
         showToast(
           target.statusAktif === false
@@ -3943,7 +4097,7 @@
       }
 
       // ==========================================
-      // TAB 6: RUNDOWN ACARA (DENGAN TIME PICKER)
+      // TAB 6: RUNDOWN ACARA
       // ==========================================
       function renderRundownTab(ev) {
         const canEdit =
@@ -4050,6 +4204,7 @@
           pic: document.getElementById("rdPic").value.trim(),
           ruangan: document.getElementById("rdRuangan").value.trim(),
         });
+        syncToCloud();
         renderAll();
         showToast("Sesi rundown berhasil ditambahkan!");
       }
@@ -4057,11 +4212,12 @@
       function deleteRundownRow(id) {
         const ev = getActiveEvent();
         ev.rundown = ev.rundown.filter((r) => r.id !== id);
+        syncToCloud();
         renderAll();
       }
 
       // ==========================================
-      // TAB 7: MEETING & NOTULENSI (DENGAN DATE PICKER, TIME PICKER, 3 TEMPAT + TULIS BARU, QR CHECK-IN PANITIA)
+      // TAB 7: MEETING & NOTULENSI (DENGAN KAMERA QR SCANNER ASLI)
       // ==========================================
       function renderMeetingTab(ev) {
         const isSc = currentUser.role === "sc";
@@ -4106,7 +4262,6 @@
                         : ""
                     }
 
-                    <!-- Daftar Sesi Meeting, QR Code Check-in, Daftar Hadir Panitia di Atas Textbox Notulensi -->
                     <div class="space-y-6">
                         ${
                           (ev.meetings || [])
@@ -4133,13 +4288,17 @@
                                                 <span>📍 Tempat: <b>${m.tempat}</b></span>
                                             </div>
 
-                                            <!-- Tombol Check-in Panitia dari Aplikasi -->
                                             <div class="pt-2 flex flex-wrap gap-2">
                                                 ${
                                                   alreadyCheckedIn
                                                     ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Tercatat Hadir</span>`
                                                     : m.isOpen
-                                                      ? `<button onclick="checkInMeetingByUser('${m.id}')" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">📲 Scan QR / Check-in Kehadiran Saya (${currentUser.name})</button>`
+                                                      ? `<button onclick="openRealQRScanner('meeting', '${m.id}')" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow flex items-center gap-1.5">
+                                                           <span>📷 Buka Kamera HP & Scan QR Rapat</span>
+                                                         </button>
+                                                         <button onclick="checkInMeetingByUser('${m.id}')" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-bold text-xs">
+                                                           ✓ Check-in Cepat (${currentUser.name})
+                                                         </button>`
                                                       : ""
                                                 }
                                                 ${
@@ -4154,7 +4313,6 @@
                                             </div>
                                         </div>
 
-                                        <!-- QR Code Meeting -->
                                         ${
                                           m.isOpen
                                             ? `
@@ -4162,7 +4320,7 @@
                                                 <img src="${qrUrl}" alt="QR Meeting" class="w-28 h-28 rounded-xl border-2 border-navy p-1 bg-white">
                                                 <div class="text-xs space-y-1 max-w-[180px]">
                                                     <p class="font-black text-navy">QR Check-in Rapat</p>
-                                                    <p class="text-[11px] text-slate-500">Peserta rapat scan QR ini atau klik tombol Check-in di aplikasi masing-masing.</p>
+                                                    <p class="text-[11px] text-slate-500">Panitia membuka menu Meeting di HP lalu klik <b>Buka Kamera HP & Scan QR</b> ke layar ini.</p>
                                                 </div>
                                             </div>
                                         `
@@ -4170,7 +4328,6 @@
                                         }
                                     </div>
 
-                                    <!-- Daftar Peserta Hadir Meeting (Di Atas Textbox Notulensi) -->
                                     <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                                         <p class="text-xs font-extrabold uppercase text-navy">👥 Daftar Peserta Hadir Meeting (${m.attendees.length} Orang):</p>
                                         <div class="flex flex-wrap gap-2">
@@ -4189,7 +4346,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Textbox Notulensi Meeting -->
                                     <div class="space-y-2">
                                         <label class="block text-xs font-extrabold uppercase text-navy">📝 Notulensi & Hasil Keputusan Meeting:</label>
                                         <textarea id="notulensiText_${m.id}" rows="4" class="w-full p-4 rounded-2xl border border-slate-300 text-xs font-semibold leading-relaxed bg-white" placeholder="Tulis hasil pembahasan dan keputusan rapat di sini...">${m.notulensi || ""}</textarea>
@@ -4240,6 +4396,7 @@
           ],
           notulensi: "",
         });
+        syncToCloud();
         renderAll();
         showToast(`Schedule Meeting & QR Code (${code}) berhasil dibuka!`);
       }
@@ -4253,6 +4410,7 @@
             name: currentUser.name,
             time: new Date().toTimeString().slice(0, 5) + " WIB",
           });
+          syncToCloud();
           renderAll();
           showToast(
             `Kehadiran rapat Anda (${currentUser.name}) berhasil tercatat!`,
@@ -4265,6 +4423,7 @@
         const mtg = ev.meetings.find((m) => m.id === mtgId);
         if (mtg) {
           mtg.isOpen = !mtg.isOpen;
+          syncToCloud();
           renderAll();
         }
       }
@@ -4275,12 +4434,13 @@
         const txt = document.getElementById(`notulensiText_${mtgId}`);
         if (mtg && txt) {
           mtg.notulensi = txt.value;
+          syncToCloud();
           showToast("Notulensi meeting berhasil disimpan!");
         }
       }
 
       // ==========================================
-      // TAB 8: ARSIP DOKUMEN & SK (KATEGORI + TULIS SENDIRI & DIUNGGAH OLEH DROPDOWN KELOMPOK)
+      // TAB 8: ARSIP DOKUMEN & SK
       // ==========================================
       function renderDokumenTab(ev) {
         const isVip = currentUser.role === "vip_anggota";
@@ -4386,6 +4546,7 @@
           uploader: document.getElementById("docUploader").value,
           url: document.getElementById("docUrl").value.trim(),
         });
+        syncToCloud();
         renderAll();
         showToast("Dokumen berhasil diarsipkan!");
       }
@@ -4393,6 +4554,7 @@
       function deleteDocItem(id) {
         const ev = getActiveEvent();
         ev.documents = ev.documents.filter((d) => d.id !== id);
+        syncToCloud();
         renderAll();
       }
 
@@ -4584,7 +4746,6 @@
         renderWizardSpeakers();
       }
 
-      // RENDER KARTU SEKSI DI WIZARD (WARNA BERBEDA TIAP SEKSI + PENOMORAN MAHASISWA 2025 & 2026 ANTI-DOBEL + TAMBAH PERSONIL BARU)
       function renderWizardDivisions() {
         const container = document.getElementById("wizDivisionsContainer");
         const picCandidates = [...SDM_STIT, ...SDM_SUPPORT];
@@ -4593,7 +4754,6 @@
           .map((d, idx) => {
             const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
 
-            // Kumpulkan mahasiswa yang sudah dipakai di seksi LAIN agar tidak dobel seksi
             const usedInOtherSections = new Set();
             wizardTempDivisions.forEach((otherDiv, oIdx) => {
               if (oIdx !== idx) {
@@ -4631,7 +4791,6 @@
                             </div>
                         </div>
 
-                        <!-- Kelompok Mahasiswa Angkatan 2025 -->
                         <div class="space-y-1.5">
                             <p class="text-[11px] font-extrabold uppercase text-slate-600">Pilih Anggota Mahasiswa Angkatan 2025 (Klik Tombol):</p>
                             <div class="flex flex-wrap gap-1.5">
@@ -4644,7 +4803,6 @@
                             </div>
                         </div>
 
-                        <!-- Kelompok Mahasiswa Angkatan 2026 -->
                         <div class="space-y-1.5">
                             <p class="text-[11px] font-extrabold uppercase text-slate-600">Pilih Anggota Mahasiswa Angkatan 2026 (Klik Tombol):</p>
                             <div class="flex flex-wrap gap-1.5">
@@ -4657,7 +4815,6 @@
                             </div>
                         </div>
 
-                        <!-- Tambah Personil Baru Manual -->
                         <div class="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
                             <div class="text-xs font-bold text-navy">Terpilih (${d.members.length}): <span class="font-normal text-slate-700">${d.members.join(", ") || "Belum ada"}</span></div>
                             <div class="flex items-center gap-2">
@@ -4814,6 +4971,7 @@
         }
 
         closeEventModal();
+        syncToCloud();
         renderAll();
         showToast("Konfigurasi Event berhasil disimpan!");
       }
@@ -4891,6 +5049,7 @@
           packages: JSON.parse(JSON.stringify(tempPackagesConfig)),
         };
         closeFormConfigModal();
+        syncToCloud();
         showToast("Format & Paket Link Pendaftaran Peserta diperbarui!");
       }
 
@@ -4909,7 +5068,6 @@
           `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
         document.getElementById("pubEventLocation").textContent = ev.lokasi;
 
-        // Terapkan visibilitas sesuai formConfig
         const cfg = ev.formConfig;
         document
           .getElementById("fieldWrapGender")
@@ -4930,14 +5088,12 @@
           .getElementById("pubGroupPaket")
           .classList.toggle("hidden", !cfg.usePaket);
 
-        // Populate Provinsi & Kota
         const provSel = document.getElementById("pubProvinsi");
         provSel.innerHTML = Object.keys(PROVINSI_KOTA)
           .map((p) => `<option value="${p}">${p}</option>`)
           .join("");
         populatePublicKota();
 
-        // Render Button-Check Pilihan Paket
         const pkgContainer = document.getElementById("pubPackagesContainer");
         const pkgs = cfg.packages || [
           { name: "Paket-A", price: ev.htmPeserta },
@@ -5042,7 +5198,6 @@
           statusAktif: true,
         });
 
-        // Tampilkan E-Tiket QR Code
         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(ticketCode + " | " + nama + " | " + paketName)}`;
         document.getElementById("pubTicketQrImg").src = qrUrl;
         document.getElementById("ticketCodeText").textContent = ticketCode;
@@ -5054,12 +5209,14 @@
           `${paketName} (${formatRp(pricePaid)})`;
 
         document.getElementById("pubTicketResult").classList.remove("hidden");
+        syncToCloud();
         showToast(`Pendaftaran berhasil! Kode Tiket: ${ticketCode}`);
       }
 
       // INIT ON LOAD
       document.addEventListener("DOMContentLoaded", () => {
         initLoginDropdown();
+        initFirebaseConnection();
       });
     </script>
   </body>
