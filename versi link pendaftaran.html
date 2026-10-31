@@ -1,0 +1,3312 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SEO — STIT Event Organizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://unpkg.com/html5-qrcode"
+      type="text/javascript"
+    ></script>
+    <!-- SDK Firebase (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"] },
+            colors: {
+              navy: {
+                DEFAULT: "#0A192F",
+                light: "#172A45",
+                dark: "#050D1A",
+                accent: "#1E3A8A",
+              },
+              gold: {
+                DEFAULT: "#D4AF37",
+                light: "#F3E5AB",
+                dark: "#AA8010",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+        color: #0f172a;
+      }
+      .bg-grad-navy {
+        background: linear-gradient(135deg, #0a192f 0%, #1e3a8a 100%);
+      }
+      .bg-grad-gold {
+        background: linear-gradient(135deg, #d4af37 0%, #f59e0b 100%);
+      }
+      .bg-grad-card-active {
+        background: linear-gradient(
+          135deg,
+          #0a192f 0%,
+          #1e3a8a 65%,
+          #92400e 100%
+        );
+      }
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 8px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen flex flex-col selection:bg-amber-200 selection:text-navy"
+  >
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div
+      id="toastContainer"
+      class="fixed bottom-5 right-5 z-[120] flex flex-col gap-2 pointer-events-none"
+    ></div>
+
+    <!-- CUSTOM CONFIRM / MESSAGE MODAL -->
+    <div
+      id="customModalOverlay"
+      class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-[110] p-4"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 transform transition-all"
+      >
+        <h3 id="customModalTitle" class="text-lg font-extrabold text-navy mb-2">
+          Konfirmasi
+        </h3>
+        <p
+          id="customModalText"
+          class="text-sm text-slate-600 mb-6 leading-relaxed"
+        ></p>
+        <div class="flex justify-end gap-3" id="customModalActions">
+          <button
+            onclick="closeCustomModal()"
+            class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL KAMERA QR SCANNER ASLI (UNTUK HP / WEBCAM) -->
+    <div
+      id="qrScannerModal"
+      class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center z-[115] p-4"
+    >
+      <div
+        class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-amber-400/40 text-center space-y-4"
+      >
+        <div
+          class="flex justify-between items-center border-b border-slate-200 pb-3"
+        >
+          <h3
+            id="qrScannerTitle"
+            class="font-black text-navy text-sm sm:text-base"
+          >
+            📷 Arahkan Kamera ke QR Code
+          </h3>
+          <button
+            onclick="stopRealQRScanner()"
+            class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 font-bold flex items-center justify-center"
+          >
+            ✕
+          </button>
+        </div>
+        <!-- Area Viewfinder Kamera HP -->
+        <div
+          id="qrReaderBox"
+          class="w-full rounded-2xl overflow-hidden border-2 border-dashed border-amber-400 bg-slate-900 min-h-[250px]"
+        ></div>
+        <p class="text-[11px] text-slate-500 leading-relaxed">
+          Pastikan Anda mengizinkan akses kamera (<b>Allow</b>) pada browser HP
+          Anda.
+        </p>
+        <div
+          id="qrManualFallbackBox"
+          class="hidden pt-2 border-t border-slate-200"
+        >
+          <button
+            id="qrManualFallbackBtn"
+            type="button"
+            class="w-full py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-extrabold text-xs transition"
+          >
+            ✓ Konfirmasi Hadir Tanpa Kamera
+          </button>
+        </div>
+        <button
+          type="button"
+          onclick="stopRealQRScanner()"
+          class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2.5 rounded-xl text-xs transition"
+        >
+          Batal / Tutup Kamera
+        </button>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         1. VIEW LOGIN (TEMA MACOS / IOS NAVY-GOLD)
+         ========================================== -->
+    <div
+      id="viewLogin"
+      class="fixed inset-0 bg-grad-navy flex items-center justify-center z-[90] p-4 overflow-y-auto"
+    >
+      <div
+        class="absolute inset-0 overflow-hidden pointer-events-none opacity-25"
+      >
+        <div
+          class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-amber-400 blur-3xl"
+        ></div>
+        <div
+          class="absolute bottom-10 right-10 w-[28rem] h-[28rem] rounded-full bg-blue-500 blur-3xl"
+        ></div>
+      </div>
+
+      <div
+        class="glass-panel rounded-3xl shadow-2xl border border-white/30 w-full max-w-md p-8 relative z-10"
+      >
+        <div class="text-center mb-6">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-grad-navy text-amber-400 shadow-lg border border-amber-400/40 mb-3"
+          >
+            <span class="text-2xl font-black tracking-tighter">SEO</span>
+          </div>
+          <h1 class="text-2xl font-black text-navy tracking-tight">SEO</h1>
+          <p
+            class="text-xs font-bold uppercase tracking-widest text-amber-600 mt-0.5"
+          >
+            STIT Event Organizer
+          </p>
+        </div>
+
+        <form onsubmit="handleLogin(event)" class="space-y-5">
+          <div>
+            <label
+              class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2"
+              >Nama Pengguna</label
+            >
+            <select
+              id="loginName"
+              onchange="updateLoginRoleHint()"
+              class="w-full px-4 py-3 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition"
+              required
+            >
+              <option value="">-- Pilih Nama Anda (48 SDM STIT) --</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2"
+              >Password Akses</label
+            >
+            <input
+              type="password"
+              id="loginPassword"
+              placeholder="Password"
+              class="w-full px-4 py-3 rounded-2xl border border-slate-300 bg-white text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none transition"
+              required
+            />
+            <div
+              id="loginRoleHint"
+              class="mt-2.5 p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 leading-relaxed"
+            >
+              💡 <b>Panduan Password:</b><br />
+              • SC & Pengelola:
+              <code
+                class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
+                >123</code
+              ><br />
+              • Koordinator Seksi (Dosen/Staff):
+              <code
+                class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
+                >456</code
+              ><br />
+              • Anggota / VIP / Mahasiswa:
+              <code
+                class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
+                >777</code
+              >
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3.5 rounded-2xl bg-grad-navy hover:opacity-95 text-amber-400 font-extrabold text-sm tracking-wide shadow-xl shadow-blue-950/20 transition flex items-center justify-center gap-2"
+          >
+            <span>Masuk ke Ruang Kerja</span>
+            <svg
+              class="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         2. MAIN APPLICATION WRAPPER
+         ========================================== -->
+    <div id="viewApp" class="hidden flex-1 flex flex-col min-h-screen">
+      <!-- TOP BAR NAVIGATION -->
+      <header
+        id="mainHeader"
+        class="bg-grad-navy text-white shadow-lg border-b border-amber-500/30 sticky top-0 z-40"
+      >
+        <div
+          class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4"
+        >
+          <!-- Brand -->
+          <div class="flex items-center gap-3">
+            <div
+              class="w-11 h-11 rounded-2xl bg-grad-gold text-navy font-black flex items-center justify-center text-lg shadow-md"
+            >
+              SEO
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-extrabold text-lg tracking-tight text-white"
+                  >SEO</span
+                >
+                <span
+                  class="text-[11px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30"
+                  >STIT Event Organizer</span
+                >
+                <span
+                  id="cloudSyncBadge"
+                  class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                  >☁️ Local Ready</span
+                >
+              </div>
+              <p class="text-xs text-slate-300">
+                Sistem Informasi Manajemen Kepanitiaan
+              </p>
+            </div>
+          </div>
+
+          <!-- Right Controls: Public Landing (Super Admin Only), User Badge & Logout -->
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              id="btnOpenPublicLanding"
+              onclick="openPublicLanding()"
+              class="hidden px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-navy font-extrabold text-xs shadow-md transition items-center gap-2"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+              <span>🌐 Buka Form Pendaftaran Publik</span>
+            </button>
+
+            <div
+              class="flex items-center gap-3 bg-white/10 border border-white/15 px-3.5 py-2 rounded-2xl"
+            >
+              <div class="text-right">
+                <p
+                  id="headerUserName"
+                  class="text-xs font-extrabold text-white leading-tight"
+                >
+                  -
+                </p>
+                <p
+                  id="headerUserRoleBadge"
+                  class="text-[11px] font-semibold text-amber-300 leading-tight"
+                >
+                  -
+                </p>
+              </div>
+              <button
+                onclick="handleLogout()"
+                class="px-3 py-1.5 rounded-xl bg-rose-500/90 hover:bg-rose-600 text-white text-xs font-bold transition shadow"
+              >
+                Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- BODY LAYOUT: SIDEBAR EVENT CARDS (LEFT) + WORKSPACE (RIGHT) -->
+      <div
+        class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 flex flex-col lg:flex-row gap-6"
+      >
+        <!-- SIDEBAR PEMILIHAN EVENT (BERUPA KARTU, 3 ITEM: NAMA EVENT, DIVISI, TANGGAL) -->
+        <aside class="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+          <div
+            class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2
+                  class="text-sm font-extrabold uppercase tracking-wider text-navy"
+                >
+                  Daftar Agenda Event
+                </h2>
+              </div>
+              <button
+                id="btnCreateNewEventSidebar"
+                onclick="openEventModal('create')"
+                class="hidden px-3 py-1.5 rounded-xl bg-grad-gold text-navy font-extrabold text-xs shadow hover:opacity-95 transition"
+              >
+                + Buat Event
+              </button>
+            </div>
+
+            <!-- Daftar Kartu Event (Hanya 3 Item: Nama Event, Divisi Penyelenggara, Tanggal) -->
+            <div id="sidebarEventCardList" class="space-y-3"></div>
+          </div>
+
+          <!-- Ringkasan Role Aktif di Event Ini -->
+          <div
+            class="bg-slate-900 text-white rounded-3xl p-5 shadow-md border border-amber-500/20"
+          >
+            <p
+              class="text-[11px] uppercase tracking-widest text-amber-400 font-bold mb-1"
+            >
+              Status Akses Anda di Event Ini
+            </p>
+            <p
+              id="sidebarRoleTitle"
+              class="text-sm font-extrabold text-white mb-1"
+            >
+              -
+            </p>
+            <p
+              id="sidebarRoleDesc"
+              class="text-xs text-slate-300 leading-relaxed"
+            >
+              -
+            </p>
+          </div>
+        </aside>
+
+        <!-- MAIN CONTENT COLUMN -->
+        <main class="flex-1 min-w-0 flex flex-col gap-6">
+          <!-- HEADLINE BANNER EVENT AKTIF -->
+          <section
+            id="eventHeadlineSection"
+            class="bg-grad-navy text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-amber-400/30 relative overflow-hidden"
+          >
+            <div
+              class="absolute -right-16 -bottom-16 w-72 h-72 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"
+            ></div>
+            <div
+              class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6"
+            >
+              <div class="space-y-2.5 max-w-3xl">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span
+                    id="headlineDivisiBadge"
+                    class="px-3 py-1 rounded-full bg-amber-400 text-navy font-extrabold text-xs uppercase tracking-wider"
+                    >-</span
+                  >
+                  <span
+                    id="headlineKategoriBadge"
+                    class="px-3 py-1 rounded-full bg-white/15 text-amber-200 font-bold text-xs border border-white/20"
+                    >-</span
+                  >
+                </div>
+                <h2
+                  id="headlineEventTitle"
+                  class="text-2xl sm:text-3xl font-black tracking-tight text-white"
+                >
+                  -
+                </h2>
+                <p
+                  id="headlineEventTheme"
+                  class="text-sm font-semibold text-amber-300 italic"
+                >
+                  -
+                </p>
+                <p
+                  id="headlineEventDesc"
+                  class="text-xs sm:text-sm text-slate-200 leading-relaxed"
+                >
+                  -
+                </p>
+
+                <div class="pt-3 flex flex-wrap gap-4 text-xs text-slate-200">
+                  <div
+                    class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl"
+                  >
+                    <span>📅</span>
+                    <span id="headlineDate" class="font-bold">-</span>
+                  </div>
+                  <div
+                    class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl"
+                  >
+                    <span>⏰</span>
+                    <span id="headlineTime" class="font-bold">-</span>
+                  </div>
+                  <div
+                    class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl"
+                  >
+                    <span>📍</span>
+                    <span id="headlineLocation" class="font-bold">-</span>
+                  </div>
+                </div>
+
+                <!-- Daftar Pemateri & Topik -->
+                <div
+                  id="headlineSpeakersBox"
+                  class="pt-2 flex flex-wrap gap-2"
+                ></div>
+              </div>
+
+              <!-- Tombol Edit Konfigurasi Event (Khusus SC / Pengelola) -->
+              <div
+                id="headlineAdminActions"
+                class="hidden flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0"
+              >
+                <button
+                  onclick="openEventModal('edit')"
+                  class="px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-navy font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <span>Edit & Kelola Event</span>
+                </button>
+                <button
+                  onclick="openFormConfigModal()"
+                  class="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20 transition flex items-center justify-center gap-2"
+                >
+                  <span>🔗 Format & Paket Pendaftaran</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ==========================================
+               RUANG KERJA KHUSUS ANGGOTA (MAHASISWA / SUPPORT)
+               ========================================== -->
+          <div id="memberWorkspaceSection" class="hidden space-y-6">
+            <!-- Banner Check-in Meeting jika ada meeting aktif -->
+            <div
+              id="memberMeetingCheckInBanner"
+              class="hidden bg-amber-50 border-2 border-amber-400 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4"
+            ></div>
+
+            <div
+              class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200"
+            >
+              <div
+                class="flex flex-wrap items-center justify-between gap-4 mb-5"
+              >
+                <div>
+                  <span
+                    id="memberDivisionBadge"
+                    class="text-xs font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-blue-100 text-navy"
+                    >Seksi Anda</span
+                  >
+                  <h3 class="text-xl font-black text-navy mt-2">
+                    Daftar Tugas Pribadi Anda
+                  </h3>
+                  <p class="text-xs text-slate-500">
+                    Centang tugas yang sudah Anda selesaikan untuk menambah poin
+                    progres seksi.
+                  </p>
+                </div>
+                <div class="text-right bg-slate-100 px-4 py-2.5 rounded-2xl">
+                  <span class="text-xs text-slate-500 block"
+                    >Poin Tugas Selesai</span
+                  >
+                  <span
+                    id="memberTaskCounter"
+                    class="text-lg font-black text-navy"
+                    >0 / 0 Tugas</span
+                  >
+                </div>
+              </div>
+              <div id="memberTasksListContainer" class="space-y-2.5"></div>
+            </div>
+
+            <!-- Preview Rundown & Meeting untuk Anggota -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div
+                class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200"
+              >
+                <h4 class="text-base font-extrabold text-navy mb-3">
+                  ⏱️ Rundown Acara
+                </h4>
+                <div id="memberRundownPreview" class="space-y-2 text-xs"></div>
+              </div>
+              <div
+                class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200"
+              >
+                <h4 class="text-base font-extrabold text-navy mb-3">
+                  📝 Jadwal & Notulensi Meeting
+                </h4>
+                <div id="memberMeetingPreview" class="space-y-3 text-xs"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ==========================================
+               DASHBOARD UTAMA (SC, KOORDINATOR, & VIP VIEW-ONLY)
+               ========================================== -->
+          <div id="dashboardWorkspaceSection" class="space-y-6">
+            <!-- CONTAINER MENU TAB -->
+            <div
+              class="bg-slate-200/80 border border-slate-300/80 rounded-3xl p-3 shadow-inner"
+            >
+              <div class="flex flex-wrap gap-2.5" id="dashboardTabButtons">
+                <!-- Tab Khusus Koordinator Seksi -->
+                <button
+                  id="tabBtnCoordMySection"
+                  onclick="switchDashTab('coord_section')"
+                  class="hidden px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>⚡ Kelola Seksi, Jobdesk & Progress</span>
+                </button>
+
+                <button
+                  id="tabBtnOverview"
+                  onclick="switchDashTab('overview')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>📊 Task & Finance</span>
+                </button>
+
+                <button
+                  id="tabBtnStruktur"
+                  onclick="switchDashTab('struktur')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>👥 Struktur Panitia & Semua Tugas</span>
+                </button>
+
+                <button
+                  id="tabBtnKeuangan"
+                  onclick="switchDashTab('keuangan')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>🧮 Keuangan</span>
+                </button>
+
+                <button
+                  id="tabBtnKas"
+                  onclick="switchDashTab('kas')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>💳 Buku Kas & Bukti Nota</span>
+                </button>
+
+                <button
+                  id="tabBtnPeserta"
+                  onclick="switchDashTab('peserta')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span
+                    >🎟️ Database Peserta (<span id="tabPesertaCount">0</span
+                    >)</span
+                  >
+                </button>
+
+                <button
+                  id="tabBtnRundown"
+                  onclick="switchDashTab('rundown')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>⏱️ Rundown Acara</span>
+                </button>
+
+                <button
+                  id="tabBtnMeeting"
+                  onclick="switchDashTab('meeting')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>📝 Meeting & Notulensi</span>
+                </button>
+
+                <button
+                  id="tabBtnDokumen"
+                  onclick="switchDashTab('dokumen')"
+                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                >
+                  <span>📂 Arsip Dokumen & SK</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Banner Info jika VIP View-Only -->
+            <div
+              id="vipReadOnlyBanner"
+              class="hidden bg-amber-50 border border-amber-300 text-amber-900 px-5 py-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between gap-3"
+            >
+              <span
+                >👁️ <b>Mode Anggota VIP (Dosen & Staff):</b> Anda dapat memantau
+                seluruh menu Dashboard secara transparan (View-Only) dan
+                mencentang tugas pribadi Anda di bawah jika ada.</span
+              >
+            </div>
+
+            <!-- TAB CONTENT 0: KELOLA SEKSI & JOBDESK (KHUSUS KOORDINATOR) -->
+            <div id="dashContentCoordSection" class="hidden space-y-6"></div>
+
+            <!-- TAB CONTENT 1: TASK & FINANCE (OVERVIEW) -->
+            <div id="dashContentOverview" class="space-y-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div
+                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                >
+                  <p class="text-xs font-bold uppercase text-slate-400">
+                    Status Anggaran
+                  </p>
+                  <p
+                    id="ovStatusAntiBoncos"
+                    class="text-lg font-black mt-1 text-emerald-600"
+                  >
+                    -
+                  </p>
+                  <p id="ovBepInfo" class="text-[11px] text-slate-500 mt-1">
+                    -
+                  </p>
+                </div>
+                <div
+                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                >
+                  <p class="text-xs font-bold uppercase text-slate-400">
+                    Total Kas Masuk Riil
+                  </p>
+                  <p
+                    id="ovTotalMasuk"
+                    class="text-xl font-black mt-1 text-navy"
+                  >
+                    Rp 0
+                  </p>
+                  <p
+                    id="ovSubsidiAndPeserta"
+                    class="text-[11px] text-slate-500 mt-1"
+                  >
+                    -
+                  </p>
+                </div>
+                <div
+                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                >
+                  <p class="text-xs font-bold uppercase text-slate-400">
+                    Total Pengeluaran Riil
+                  </p>
+                  <p
+                    id="ovTotalKeluar"
+                    class="text-xl font-black mt-1 text-rose-600"
+                  >
+                    Rp 0
+                  </p>
+                  <p
+                    id="ovSisaSaldo"
+                    class="text-[11px] font-bold text-emerald-700 mt-1"
+                  >
+                    Saldo: Rp 0
+                  </p>
+                </div>
+                <div
+                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                >
+                  <p class="text-xs font-bold uppercase text-slate-400">
+                    Progres Tugas Panitia
+                  </p>
+                  <p
+                    id="ovTotalProgress"
+                    class="text-xl font-black mt-1 text-amber-600"
+                  >
+                    0%
+                  </p>
+                  <p
+                    id="ovTotalTasksCount"
+                    class="text-[11px] text-slate-500 mt-1"
+                  >
+                    0 dari 0 tugas selesai
+                  </p>
+                </div>
+              </div>
+
+              <!-- Grafik Progress Tiap Seksi & Ringkasan Keuangan -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                  class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
+                >
+                  <h3 class="text-base font-extrabold text-navy mb-4">
+                    📈 Progres Penyelesaian Tugas per Seksi
+                  </h3>
+                  <div id="ovSectionProgressBars" class="space-y-4"></div>
+                </div>
+                <div
+                  class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
+                >
+                  <h3 class="text-base font-extrabold text-navy mb-4">
+                    💰 Perbandingan Estimasi vs Realisasi Kas
+                  </h3>
+                  <div id="ovFinanceComparisonBox" class="space-y-4"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB CONTENT 2: PROGRES JOBDESK (STRUKTUR PANITIA & SEMUA TUGAS) -->
+            <div id="dashContentStruktur" class="hidden space-y-6">
+              <div
+                class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4"
+              >
+                <div>
+                  <h3 class="text-xl font-black text-navy">Progres Jobdesk</h3>
+                  <p class="text-xs text-slate-500">
+                    Daftar seluruh seksi kepanitiaan, PIC Koordinator, anggota,
+                    dan pembagian 10+ tugas per seksi.
+                  </p>
+                </div>
+                <!-- Form Tambah Seksi Baru (Hanya muncul untuk SC / Pengelola) -->
+                <div
+                  id="strukturAddSectionBar"
+                  class="hidden flex flex-wrap items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    id="newSectionNameInput"
+                    placeholder="Nama Seksi Baru (Mis: Seksi Keamanan)"
+                    class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                  />
+                  <select
+                    id="newSectionPicSelect"
+                    onchange="toggleNewSectionCustomPic()"
+                    class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                  ></select>
+                  <input
+                    type="text"
+                    id="newSectionCustomPicInput"
+                    placeholder="Ketik Nama PIC Baru..."
+                    class="hidden px-3.5 py-2 rounded-xl border border-amber-400 text-xs font-semibold"
+                  />
+                  <button
+                    onclick="addNewDivisionFromStruktur()"
+                    class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow hover:opacity-95 transition"
+                  >
+                    + Tambah Seksi Baru
+                  </button>
+                </div>
+              </div>
+
+              <!-- Grid Kartu Seksi (Warna Berbeda Tiap Seksi) -->
+              <div
+                id="strukturDivisionsGrid"
+                class="grid grid-cols-1 xl:grid-cols-2 gap-6"
+              ></div>
+            </div>
+
+            <!-- TAB CONTENT 3: KEUANGAN -->
+            <div id="dashContentKeuangan" class="hidden space-y-6"></div>
+
+            <!-- TAB CONTENT 4: BUKU KAS & BUKTI NOTA -->
+            <div id="dashContentKas" class="hidden space-y-6"></div>
+
+            <!-- TAB CONTENT 5: DATABASE PESERTA & QR SCANNER -->
+            <div id="dashContentPeserta" class="hidden space-y-6"></div>
+
+            <!-- TAB CONTENT 6: RUNDOWN ACARA -->
+            <div id="dashContentRundown" class="hidden space-y-6"></div>
+
+            <!-- TAB CONTENT 7: MEETING & NOTULENSI -->
+            <div id="dashContentMeeting" class="hidden space-y-6"></div>
+
+            <!-- TAB CONTENT 8: ARSIP DOKUMEN & SK -->
+            <div id="dashContentDokumen" class="hidden space-y-6"></div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         3. VIEW LANDING PAGE PENDAFTARAN PUBLIK (FULLSCREEN MANDIRI)
+         ========================================== -->
+    <div
+      id="viewPublicLanding"
+      class="hidden fixed inset-0 bg-slate-100 z-[95] overflow-y-auto"
+    >
+      <button
+        onclick="closePublicLanding()"
+        class="fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-2xl bg-navy text-amber-400 font-extrabold text-xs shadow-2xl border border-amber-400/40 flex items-center gap-2 hover:scale-105 transition"
+      >
+        <span>⬅️ Kembali ke Dashboard</span>
+      </button>
+
+      <div class="max-w-3xl mx-auto px-4 py-10">
+        <!-- Header Event Publik -->
+        <div
+          class="bg-grad-navy text-white rounded-3xl p-8 shadow-xl border border-amber-400/40 mb-8"
+        >
+          <div class="flex flex-wrap gap-2 mb-3">
+            <span
+              id="pubDivisiBadge"
+              class="px-3 py-1 rounded-full bg-amber-400 text-navy font-extrabold text-xs uppercase"
+              >-</span
+            >
+            <span
+              id="pubKategoriBadge"
+              class="px-3 py-1 rounded-full bg-white/15 text-amber-200 font-bold text-xs"
+              >-</span
+            >
+          </div>
+          <h1
+            id="pubEventTitle"
+            class="text-2xl sm:text-3xl font-black text-white mb-2"
+          >
+            -
+          </h1>
+          <p
+            id="pubEventTheme"
+            class="text-sm font-semibold text-amber-300 italic mb-3"
+          >
+            -
+          </p>
+          <p
+            id="pubEventDesc"
+            class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-5"
+          >
+            -
+          </p>
+          <div
+            class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white/10 p-4 rounded-2xl border border-white/15"
+          >
+            <div>
+              <span class="text-slate-300 block">📅 Tanggal:</span
+              ><span id="pubEventDate" class="font-bold text-white">-</span>
+            </div>
+            <div>
+              <span class="text-slate-300 block">⏰ Waktu:</span
+              ><span id="pubEventTime" class="font-bold text-white">-</span>
+            </div>
+            <div>
+              <span class="text-slate-300 block">📍 Lokasi:</span
+              ><span id="pubEventLocation" class="font-bold text-white">-</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Pendaftaran 4 Kelompok -->
+        <form
+          id="publicRegForm"
+          onsubmit="submitPublicRegistration(event)"
+          class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-200 space-y-6"
+        >
+          <div class="border-b border-slate-200 pb-4">
+            <h2 class="text-xl font-black text-navy">
+              Formulir Pendaftaran Peserta
+            </h2>
+            <p class="text-xs text-slate-500">
+              Isi data berikut dengan benar untuk mendapatkan E-Tiket & QR Code
+              Kehadiran.
+            </p>
+          </div>
+
+          <!-- Kelompok 1: Identitas -->
+          <div
+            id="pubGroupIdentitas"
+            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+          >
+            <h3
+              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+            >
+              1. Kelompok Identitas
+            </h3>
+            <div id="fieldWrapNama">
+              <label class="block text-xs font-bold text-slate-700 mb-1"
+                >Nama Lengkap (Beserta Gelar jika ada) *</label
+              >
+              <input
+                type="text"
+                id="pubNama"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                placeholder="Contoh: Ahmad Fauzi, S.Pd."
+                required
+              />
+            </div>
+            <div id="fieldWrapGender">
+              <label class="block text-xs font-bold text-slate-700 mb-1.5"
+                >Jenis Kelamin *</label
+              >
+              <div class="grid grid-cols-2 gap-3">
+                <label
+                  class="flex items-center gap-2 p-3 rounded-xl border border-slate-300 bg-white cursor-pointer font-semibold text-xs"
+                >
+                  <input
+                    type="radio"
+                    name="pubGender"
+                    value="Laki-laki"
+                    checked
+                  />
+                  <span>Laki-laki</span>
+                </label>
+                <label
+                  class="flex items-center gap-2 p-3 rounded-xl border border-slate-300 bg-white cursor-pointer font-semibold text-xs"
+                >
+                  <input type="radio" name="pubGender" value="Perempuan" />
+                  <span>Perempuan</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kelompok 2: Kontak dan Alamat -->
+          <div
+            id="pubGroupKontak"
+            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+          >
+            <h3
+              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+            >
+              2. Kelompok Kontak & Domisili Saat Ini
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div id="fieldWrapWa">
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Nomor WhatsApp Aktif *</label
+                >
+                <input
+                  type="tel"
+                  id="pubWa"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                  placeholder="0812xxxxxxxx"
+                  required
+                />
+              </div>
+              <div id="fieldWrapEmail">
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Alamat Email *</label
+                >
+                <input
+                  type="email"
+                  id="pubEmail"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                  placeholder="nama@email.com"
+                  required
+                />
+              </div>
+            </div>
+            <div
+              id="fieldWrapDomisili"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200"
+            >
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Provinsi Domisili Saat Ini *</label
+                >
+                <select
+                  id="pubProvinsi"
+                  onchange="populatePublicKota()"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold bg-white"
+                  required
+                ></select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Kabupaten / Kota Domisili *</label
+                >
+                <select
+                  id="pubKota"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold bg-white"
+                  required
+                ></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kelompok 3: Afiliasi -->
+          <div
+            id="pubGroupAfiliasi"
+            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+          >
+            <h3
+              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+            >
+              3. Kelompok Afiliasi & Instansi
+            </h3>
+            <div id="fieldWrapKategoriAfiliasi">
+              <label class="block text-xs font-bold text-slate-700 mb-2"
+                >Kategori Peserta (Pilih Salah Satu) *</label
+              >
+              <div
+                class="grid grid-cols-2 sm:grid-cols-4 gap-2.5"
+                id="pubAfiliasiButtons"
+              >
+                <button
+                  type="button"
+                  onclick="selectPubAfiliasi('Mahasiswa')"
+                  class="pub-afil-btn px-3 py-2.5 rounded-xl border-2 border-navy bg-navy text-amber-400 font-extrabold text-xs transition"
+                >
+                  Mahasiswa
+                </button>
+                <button
+                  type="button"
+                  onclick="selectPubAfiliasi('Dosen')"
+                  class="pub-afil-btn px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs transition"
+                >
+                  Dosen
+                </button>
+                <button
+                  type="button"
+                  onclick="selectPubAfiliasi('Tenaga Kependidikan')"
+                  class="pub-afil-btn px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs transition"
+                >
+                  Tenaga Kependidikan
+                </button>
+                <button
+                  type="button"
+                  onclick="selectPubAfiliasi('Peserta Umum')"
+                  class="pub-afil-btn px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs transition"
+                >
+                  Peserta Umum
+                </button>
+              </div>
+              <input type="hidden" id="pubSelectedAfiliasi" value="Mahasiswa" />
+            </div>
+            <div id="fieldWrapInstansi">
+              <label class="block text-xs font-bold text-slate-700 mb-1"
+                >Asal Instansi / Lembaga Kerja / Kuliah (Sertakan Kota/Cabang di
+                Akhir Nama) *</label
+              >
+              <input
+                type="text"
+                id="pubInstansi"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                placeholder="Contoh: STIT Hidayatunnajah - Bekasi"
+                required
+              />
+            </div>
+          </div>
+
+          <!-- Kelompok 4: Pilihan Paket -->
+          <div
+            id="pubGroupPaket"
+            class="p-5 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-3"
+          >
+            <h3
+              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+            >
+              4. Kelompok Pilihan Paket Pendaftaran
+            </h3>
+            <div
+              id="pubPackagesContainer"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+            ></div>
+            <input type="hidden" id="pubSelectedPackage" value="" />
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-4 rounded-2xl bg-grad-navy hover:opacity-95 text-amber-400 font-black text-sm tracking-wide shadow-xl transition"
+          >
+            DAFTAR SEKARANG & GENERATE QR TIKET
+          </button>
+        </form>
+
+        <!-- Hasil E-Tiket QR Code Setelah Daftar -->
+        <div
+          id="pubTicketResult"
+          class="hidden mt-8 bg-white rounded-3xl p-8 shadow-2xl border-2 border-amber-400 text-center space-y-4"
+        >
+          <span
+            class="px-4 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-xs uppercase"
+            >✓ Pendaftaran Berhasil</span
+          >
+          <h3 class="text-2xl font-black text-navy">
+            E-Tiket Kehadiran Peserta
+          </h3>
+          <p class="text-xs text-slate-500">
+            Tunjukkan QR Code atau Nomor Unik ini kepada panitia saat registrasi
+            kehadiran di lokasi acara.
+          </p>
+          <div class="flex flex-col items-center gap-3 py-3">
+            <img
+              id="pubTicketQrImg"
+              src=""
+              alt="QR Code Tiket"
+              crossorigin="anonymous"
+              class="w-48 h-48 rounded-2xl border-4 border-navy p-2 bg-white shadow-md"
+            />
+            <button type="button" onclick="downloadQrCode()" class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-navy font-black text-xs shadow-md transition flex items-center gap-2">
+                <span>💾 Simpan E-Tiket QR (Gambar)</span>
+            </button>
+            <button id="btnReloadStandalone" onclick="window.location.reload()" class="hidden mt-2 text-slate-500 font-bold text-xs underline">Kembali ke Awal / Daftar Peserta Lain</button>
+          </div>
+          <div
+            class="bg-slate-100 p-4 rounded-2xl max-w-md mx-auto text-left text-xs space-y-1.5"
+          >
+            <div>
+              <span class="text-slate-500">Nomor Tiket Unik:</span>
+              <strong
+                id="ticketCodeText"
+                class="text-navy font-black text-sm"
+              ></strong>
+            </div>
+            <div>
+              <span class="text-slate-500">Nama Peserta:</span>
+              <strong id="ticketNameText" class="text-slate-800"></strong>
+            </div>
+            <div>
+              <span class="text-slate-500">Afiliasi & Instansi:</span>
+              <strong id="ticketInstansiText" class="text-slate-800"></strong>
+            </div>
+            <div>
+              <span class="text-slate-500">Paket Dipilih:</span>
+              <strong
+                id="ticketPackageText"
+                class="text-amber-700 font-extrabold"
+              ></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         4. MODAL WIZARD BUAT / EDIT EVENT BARU
+         ========================================== -->
+    <div
+      id="eventWizardModal"
+      class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 overflow-y-auto"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-5xl w-full my-8 overflow-hidden flex flex-col max-h-[92vh]"
+      >
+        <div
+          class="bg-grad-navy text-white px-6 py-4 flex items-center justify-between shrink-0"
+        >
+          <div>
+            <h3 id="wizardModalTitle" class="text-lg font-black text-amber-400">
+              Buat Event Baru
+            </h3>
+            <p class="text-xs text-slate-300">
+              Konfigurasi Identitas, Parameter Dasar Keuangan, dan Struktur
+              Kepanitiaan
+            </p>
+          </div>
+          <button
+            onclick="closeEventModal()"
+            class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto custom-scroll space-y-8 flex-1">
+          <!-- BAGIAN 1: IDENTITAS EVENT -->
+          <div class="space-y-4">
+            <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span
+                class="w-7 h-7 rounded-lg bg-navy text-amber-400 font-black text-xs flex items-center justify-center"
+                >1</span
+              >
+              <h4 class="text-base font-black text-navy">
+                Identitas & Informasi Dasar Event
+              </h4>
+            </div>
+
+            <div
+              class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+            >
+              <p
+                class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              >
+                Kelompok A — Program Kerja Divisi & Identitas Acara
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Divisi Penyelenggara *</label
+                  >
+                  <select
+                    id="wizDivisi"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                  >
+                    <option value="HRD">HRD</option>
+                    <option value="LPM">LPM</option>
+                    <option value="LP2M">LP2M</option>
+                    <option value="Kaprodi MPI">Kaprodi MPI</option>
+                    <option value="BAA/BAU">BAA/BAU</option>
+                    <option value="Divisi Jurnal">Divisi Jurnal</option>
+                    <option value="Divisi Media">Divisi Media</option>
+                    <option value="Divisi IT">Divisi IT</option>
+                    =
+                    <option value="Divisi Marketing">Divisi Marketing</option>
+                    <option value="Divisi Sarpras / General Affairs (GA)">
+                      Divisi Sarpras / General Affairs (GA)
+                    </option>
+                    <option value="UPT Perpustakaan">UPT Perpustakaan</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Kategori Agenda *</label
+                  >
+                  <select
+                    id="wizKategori"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                  >
+                    <option value="Orientasi Mahasiswa Baru">
+                      Orientasi Mahasiswa Baru
+                    </option>
+                    <option value="Pelatihan">Pelatihan</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Seminar Nasional">Seminar Nasional</option>
+                    <option value="Rapat Kerja / Evaluasi">
+                      Rapat Kerja / Evaluasi
+                    </option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Nama Event *</label
+                  >
+                  <input
+                    type="text"
+                    id="wizNamaEvent"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                    placeholder="Contoh: Workshop Metodologi Penelitian 2026"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Tema Event *</label
+                  >
+                  <input
+                    type="text"
+                    id="wizTema"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                    placeholder="Masukkan tema acara..."
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Deskripsi Singkat Event</label
+                >
+                <textarea
+                  id="wizDeskripsi"
+                  rows="2"
+                  class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                  placeholder="Deskripsi tujuan kegiatan..."
+                ></textarea>
+              </div>
+            </div>
+
+            <div
+              class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+            >
+              <p
+                class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              >
+                Kelompok B — Waktu & Tempat Pelaksanaan
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Tanggal Pelaksanaan (Date Picker)</label
+                  >
+                  <input
+                    type="date"
+                    id="wizTanggal"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                  />
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1"
+                      >Jam Mulai</label
+                    >
+                    <input
+                      type="time"
+                      id="wizJamMulai"
+                      class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1"
+                      >Jam Selesai</label
+                    >
+                    <input
+                      type="time"
+                      id="wizJamSelesai"
+                      class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Tempat / Lokasi Event</label
+                  >
+                  <select
+                    id="wizLokasiSelect"
+                    onchange="toggleWizCustomLokasi()"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                  >
+                    <option value="Aula Utama Lt. 2 Kampus STIT">
+                      Aula Utama Lt. 2 Kampus STIT
+                    </option>
+                    <option value="Ruang Auditorium Terpadu STIT">
+                      Ruang Auditorium Terpadu STIT
+                    </option>
+                    <option value="Hall Serbaguna / Zoom Hybrid STIT">
+                      Hall Serbaguna / Zoom Hybrid STIT
+                    </option>
+                    <option value="__custom__">+ Tulis Tempat Baru...</option>
+                  </select>
+                  <input
+                    type="text"
+                    id="wizLokasiCustom"
+                    placeholder="Ketik nama tempat/lokasi baru..."
+                    class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-amber-400 text-xs font-semibold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3"
+            >
+              <div class="flex items-center justify-between">
+                <p
+                  class="text-xs font-extrabold uppercase tracking-wider text-navy"
+                >
+                  Kelompok C — Daftar Pemateri & Topik Pembahasan
+                </p>
+                <button
+                  type="button"
+                  onclick="addSpeakerRowInWizard()"
+                  class="px-3 py-1.5 rounded-xl bg-navy text-amber-400 font-bold text-xs"
+                >
+                  + Tambah Pemateri
+                </button>
+              </div>
+              <div id="wizSpeakersContainer" class="space-y-2.5"></div>
+            </div>
+          </div>
+
+          <!-- BAGIAN 2: PARAMETER DASAR KEUANGAN -->
+          <div class="space-y-4">
+            <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+              <span
+                class="w-7 h-7 rounded-lg bg-navy text-amber-400 font-black text-xs flex items-center justify-center"
+                >2</span
+              >
+              <h4 class="text-base font-black text-navy">
+                Parameter Dasar Keuangan
+              </h4>
+            </div>
+            <div
+              class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200"
+            >
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Target Jumlah Peserta (Orang)</label
+                >
+                <input
+                  type="number"
+                  id="wizTargetPeserta"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  value="60"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Subsidi / Dana Awal Kampus (Rp)</label
+                >
+                <input
+                  type="number"
+                  id="wizSubsidi"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  value="2000000"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >Harga Tiket / HTM Peserta Default (Rp)</label
+                >
+                <input
+                  type="number"
+                  id="wizHtm"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  value="75000"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- BAGIAN 3: STRUKTUR KEPANITIAAN -->
+          <div class="space-y-4">
+            <div
+              class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2"
+            >
+              <div class="flex items-center gap-2">
+                <span
+                  class="w-7 h-7 rounded-lg bg-navy text-amber-400 font-black text-xs flex items-center justify-center"
+                  >3</span
+                >
+                <div>
+                  <h4 class="text-base font-black text-navy">
+                    Struktur Kepanitiaan
+                  </h4>
+                  <p class="text-[11px] text-slate-500">
+                    Pilih PIC Koordinator, klik tombol mahasiswa (Angkatan 2025
+                    & 2026) anti-dobel, atau tambah seksi baru.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onclick="addWizardDivisionCard()"
+                class="px-3.5 py-2 rounded-xl bg-grad-gold text-navy font-extrabold text-xs shadow"
+              >
+                + Tambah Seksi Baru
+              </button>
+            </div>
+
+            <div id="wizDivisionsContainer" class="space-y-5"></div>
+          </div>
+        </div>
+
+        <div
+          class="bg-slate-100 px-6 py-4 flex justify-end gap-3 border-t border-slate-200 shrink-0"
+        >
+          <button
+            type="button"
+            onclick="closeEventModal()"
+            class="px-5 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 font-bold text-xs"
+          >
+            Batal
+          </button>
+          <button
+            type="button"
+            onclick="saveEventFromWizard()"
+            class="px-6 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow-lg"
+          >
+            Simpan Konfigurasi Event
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         5. MODAL KONFIGURASI FORM & PAKET PENDAFTARAN PESERTA
+         ========================================== -->
+    <div
+      id="formConfigModal"
+      class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center z-[105] p-4 overflow-y-auto"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full p-6 space-y-5"
+      >
+        <div
+          class="flex items-center justify-between border-b border-slate-200 pb-3"
+        >
+          <div>
+            <h3 class="text-lg font-black text-navy">
+              🔗 Kustomisasi Format & Paket Link Pendaftaran
+            </h3>
+            <p class="text-xs text-slate-500">
+              Centang field yang dipakai dan atur daftar pilihan paket
+              pendaftaran.
+            </p>
+          </div>
+          <button
+            onclick="closeFormConfigModal()"
+            class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Checkbox Aktifkan Form Pendaftaran (Hanya muncul saat formConfig dibuka) -->
+        <div class="bg-amber-50 border border-amber-300 p-4 rounded-2xl flex items-center justify-between gap-3">
+          <div>
+             <h4 class="text-sm font-extrabold text-navy">Aktivasi Link Pendaftaran Publik</h4>
+             <p class="text-[11px] text-slate-600">Centang untuk membuka pendaftaran peserta via Landing Page eksternal.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+             <input type="checkbox" id="cfgIsActive" class="sr-only peer">
+             <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+          </label>
+        </div>
+
+        <div class="space-y-3">
+          <p class="text-xs font-extrabold uppercase text-navy">
+            Field Formulir yang Ditampilkan:
+          </p>
+          <div class="grid grid-cols-2 gap-2.5 text-xs font-semibold">
+            <label
+              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
+              ><input type="checkbox" id="cfgUseGender" checked /> Jenis
+              Kelamin</label
+            >
+            <label
+              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
+              ><input type="checkbox" id="cfgUseWa" checked /> Nomor
+              WhatsApp</label
+            >
+            <label
+              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
+              ><input type="checkbox" id="cfgUseEmail" checked /> Alamat
+              Email</label
+            >
+            <label
+              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
+              ><input type="checkbox" id="cfgUseDomisili" checked /> Domisili
+              (Provinsi & Kota)</label
+            >
+            <label
+              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
+              ><input type="checkbox" id="cfgUseAfiliasi" checked /> Kategori
+              Afiliasi & Instansi</label
+            >
+            <label
+              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
+              ><input type="checkbox" id="cfgUsePaket" checked /> Kelompok
+              Pilihan Paket</label
+            >
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2 border-t border-slate-200">
+          <div class="flex items-center justify-between">
+            <p class="text-xs font-extrabold uppercase text-navy">
+              Daftar Pilihan Paket (Dapat Diubah / Ditambah / Dikurangi):
+            </p>
+            <button
+              type="button"
+              onclick="addPackageConfigRow()"
+              class="px-3 py-1 rounded-lg bg-navy text-amber-400 font-bold text-xs"
+            >
+              + Tambah Paket
+            </button>
+          </div>
+          <div id="cfgPackagesList" class="space-y-2"></div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-200">
+          <button
+            onclick="closeFormConfigModal()"
+            class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+          >
+            Tutup
+          </button>
+          <button
+            onclick="saveFormConfigModal()"
+            class="px-5 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs"
+          >
+            Simpan Pengaturan Pendaftaran
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT ENGINE, FIREBASE SYNC & REAL QR CAMERA
+         ========================================== -->
+    <script>
+      // ==========================================
+      // 0. KONFIGURASI FIREBASE FIRESTORE CLOUD SYNC
+      // ==========================================
+      const firebaseConfig = {
+        apiKey: "AIzaSyANv_7KsZzB6mD2IJgw8IVdO8eT2hVm0Mc",
+        authDomain: "seo-db-fe9c4.firebaseapp.com",
+        projectId: "seo-db-fe9c4",
+        storageBucket: "seo-db-fe9c4.firebasestorage.app",
+        messagingSenderId: "530084249965",
+        appId: "1:530084249965:web:b73ebbc55289fe060ada64",
+      };
+
+      let db = null;
+      let isFirebaseActive = false;
+      
+      // Deteksi mode Standalone untuk Landing Page Publik
+      let isPublicStandaloneMode = false;
+
+      function initFirebaseConnection() {
+        try {
+          if (
+            typeof firebase !== "undefined" &&
+            firebaseConfig.apiKey &&
+            !firebaseConfig.apiKey.includes("YourApiKeyHere")
+          ) {
+            if (!firebase.apps.length) {
+              firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            isFirebaseActive = true;
+            const badge = document.getElementById("cloudSyncBadge");
+            if (badge) badge.textContent = "☁️ Cloud Sync Aktif";
+            listenFromCloud();
+          } else {
+            const savedLocal = localStorage.getItem("seo_stit_events_backup");
+            if (savedLocal) {
+              eventsData = JSON.parse(savedLocal);
+              checkStandaloneURL();
+            }
+          }
+        } catch (err) {
+          console.warn("Firebase fallback:", err);
+        }
+      }
+      
+      // Jika URL memiliki parameter ?daftar=evt_id, langsung buka Landing Page Publik
+      function checkStandaloneURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const daftarId = urlParams.get('daftar');
+        if (daftarId) {
+            const targetEvent = eventsData.find(e => e.id === daftarId);
+            if (targetEvent && targetEvent.formConfig && targetEvent.formConfig.isActive) {
+                activeEventId = daftarId;
+                isPublicStandaloneMode = true;
+                
+                // Sembunyikan login & dashboard
+                document.getElementById('viewLogin').classList.add('hidden');
+                document.getElementById('viewApp').classList.add('hidden');
+                
+                // Buka Public Landing & Sembunyikan tombol kembali ke Dashboard
+                const btnBack = document.getElementById('btnBackToDashboard');
+                if(btnBack) btnBack.classList.add('hidden');
+                
+                const btnReload = document.getElementById('btnReloadStandalone');
+                if(btnReload) btnReload.classList.remove('hidden');
+                
+                openPublicLanding();
+                return true;
+            } else {
+                showToast("Link Pendaftaran Tidak Aktif atau Event tidak ditemukan.", "error");
+            }
+        }
+        return false;
+      }
+
+      async function syncToCloud() {
+        try {
+          localStorage.setItem(
+            "seo_stit_events_backup",
+            JSON.stringify(eventsData),
+          );
+        } catch (e) {}
+
+        if (!isFirebaseActive || !db) return;
+        try {
+          await db.collection("seo_app_state").doc("main_data").set({
+            eventsData: eventsData,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (err) {}
+      }
+
+      function listenFromCloud() {
+        if (!isFirebaseActive || !db) return;
+        db.collection("seo_app_state")
+          .doc("main_data")
+          .onSnapshot((doc) => {
+            if (doc.exists) {
+              const cloudData = doc.data();
+              if (cloudData && cloudData.eventsData) {
+                eventsData = cloudData.eventsData;
+                
+                // Jika sedang dalam mode daftar publik, jangan ganggu layar mereka dengan renderAll dashboard
+                if (isPublicStandaloneMode) {
+                    return; 
+                }
+                
+                // Cek apakah mode standalone harus aktif setelah data turun dari Firebase
+                if(checkStandaloneURL()) return;
+
+                if (currentUser) {
+                  const updatedRole = evaluateUserRoleForActiveEvent(
+                    currentUser.name,
+                  );
+                  currentUser.role = updatedRole.role;
+                  currentUser.roleLabel = updatedRole.roleLabel;
+                  currentUser.coordDivisionId = updatedRole.coordDivisionId;
+                  renderAll();
+                }
+              }
+            } else {
+              syncToCloud();
+            }
+          });
+      }
+
+      // ==========================================
+      // MASTER SDM & DATA AWAL
+      // ==========================================
+      const SDM_STIT = [
+        "Mhd Saleh, M.Pd.",
+        "Suworo, S.Si., M.M.",
+        "Zikra Juninawan, M.Ed.",
+        "Muhammad Bakri Rahimin, Lc., M.E.",
+        "M. Zuhriansah, M.Pd.",
+        "Nurhalisa, M.Pd.",
+        "Muhamad Zacky Haidar, B.A.",
+        "Yusuf Abdullah, M.Pd.",
+        "Fortin Sri Haryani, S.Si., M.Pd.",
+        "Jaya Wiharja, M.Pd.",
+        "Siti Salwa, M.Pd.",
+        "Sandi Sanry, M.Pd.",
+        "Said Imanullah, S.Ag.",
+        "Sumarni, S.Ag., M.Pd.",
+        "Siti Bariyah, M.Pd.",
+        "Afghani, S.Kom.",
+        "Mulyadi Rasyid",
+      ];
+      const SDM_SUPPORT = ["Budiman", "Edin", "Iqbal", "Faqih"];
+      const SDM_MHS_2025 = [
+        "Abdullah Ibnul Mubarak (2025)",
+        "Nadzmina Al Khalifi Humaira (2025)",
+        "Alya Lutfia Mumtaz (2025)",
+        "Winarnoko (2025)",
+        "Farrelino Achmad Darief (2025)",
+        "Abdul Qowi Fawwaz Al-Atsari (2025)",
+        "Khonsa Abdurrochman (2025)",
+        "Octavia Zulkarnaen (2025)",
+        "Muthia Nabila Husna (2025)",
+        "Siti Namira Uqba Hasanah (2025)",
+        "Muhammad Lutfir Amin Rahman (2025)",
+        "Indah (2025)",
+        "Ahmad Zaid (2025)",
+        "Balqis Zerlinda Ciputri (2025)",
+        "Rayya Rifkah Falihah (2025)",
+        "Anisaul Karimah (2025)",
+      ];
+      const SDM_MHS_2026 = [
+        "Irsyad (2026)",
+        "Muhamad Ihsan (2026)",
+        "Rafif Muafa (2026)",
+        "Izhar (2026)",
+        "Talita (2026)",
+        "Syahidah (2026)",
+        "Yuli Eka Oktafiani (2026)",
+        "Aisyah (2026)",
+        "Shafa (2026)",
+        "Haliza (2026)",
+        "Lia Apriani (2026)",
+      ];
+
+      const SUPER_ADMIN_NAME = "Afghani, S.Kom.";
+      const SC_MANAGERS = [
+        "Afghani, S.Kom.",
+        "Mhd Saleh, M.Pd.",
+        "Suworo, S.Si., M.M.",
+        "Zikra Juninawan, M.Ed.",
+        "Muhammad Bakri Rahimin, Lc., M.E.",
+        "Muhamad Zacky Haidar, B.A.",
+        "Nurhalisa, M.Pd.",
+      ];
+      const DUMMY_SPEAKERS = [
+        "Dr. Ali Saman Hasan, Lc., M.A.",
+        "Yusuf Utsman Baisa, Lc.",
+        "Prof. Taufik Kasturi, P.Si., M.Si, Ph.D.",
+        "Ustadz Kartiko Adi Pramono, Dipl. Ing. HTL., ACMC., M.Pd.",
+        "Dr. Mhd Saleh, M.Pd.",
+        "Suworo, S.Si., M.M.",
+        "Zikra Juninawan, M.Ed.",
+        "Muhammad Bakri Rahimin, Lc., M.E.",
+      ];
+
+      const PROVINSI_KOTA = {
+        "Jawa Barat": ["Kab. Bekasi", "Kota Bekasi", "Kota Depok", "Kab. Bogor", "Kota Bandung", "Kab. Karawang"],
+        "DKI Jakarta": ["Jakarta Selatan", "Jakarta Timur", "Jakarta Pusat", "Jakarta Barat", "Jakarta Utara"],
+        "Banten": ["Kota Tangerang", "Kota Tangerang Selatan", "Kab. Tangerang", "Kota Serang"],
+        "Jawa Tengah": ["Kota Semarang", "Kota Surakarta", "Kab. Banyumas", "Kota Magelang"],
+        "Jawa Timur": ["Kota Surabaya", "Kota Malang", "Kab. Sidoarjo", "Kab. Gresik"],
+        "Luar Pulau Jawa": ["Kota Medan", "Kota Padang", "Kota Makassar", "Kota Balikpapan", "Kota Banjarmasin"],
+      };
+
+      const SECTION_CARD_THEMES = [
+        { bg: "bg-blue-50/70", border: "border-blue-300", badge: "bg-blue-600 text-white", bar: "bg-blue-600" },
+        { bg: "bg-amber-50/70", border: "border-amber-300", badge: "bg-amber-600 text-white", bar: "bg-amber-500" },
+        { bg: "bg-emerald-50/70", border: "border-emerald-300", badge: "bg-emerald-600 text-white", bar: "bg-emerald-600" },
+        { bg: "bg-purple-50/70", border: "border-purple-300", badge: "bg-purple-600 text-white", bar: "bg-purple-600" },
+        { bg: "bg-rose-50/70", border: "border-rose-300", badge: "bg-rose-600 text-white", bar: "bg-rose-600" },
+        { bg: "bg-cyan-50/70", border: "border-cyan-300", badge: "bg-cyan-600 text-white", bar: "bg-cyan-600" },
+      ];
+
+      function getDefault10Tasks(sectionName, defaultPic) {
+        const templates = {
+          "Seksi Acara": [
+            "Menyusun Term of Reference (TOR) kegiatan secara lengkap",
+            "Menghubungi dan konfirmasi kesediaan pemateri/narasumber",
+            "Menyusun rundown acara detail menit ke menit",
+            "Menentukan dan melatih MC serta moderator acara",
+            "Menyiapkan qori pembaca ayat suci Al-Quran dan pembaca doa",
+            "Mengumpulkan materi presentasi (PPT/Makalah) dari narasumber",
+            "Menyiapkan lembar penilaian/evaluasi acara untuk peserta",
+            "Memimpin pelaksanaan gladi kotor dan gladi bersih H-1",
+            "Mengatur ketepatan durasi waktu (time keeping) saat hari H",
+            "Menyusun laporan evaluasi pelaksanaan acara pasca kegiatan",
+          ],
+          "Seksi Konsumsi": [
+            "Melakukan survei minimal 3 vendor katering dan snack",
+            "Menyesuaikan menu konsumsi dengan pagu Unit Economics",
+            "Menentukan menu jamuan khusus VIP / Pemateri dan SC",
+            "Mendata kuota porsi makan siang peserta dan panitia",
+            "Melakukan pemesanan (booking) dan pembayaran DP katering",
+            "Menyiapkan air mineral botol/gelas untuk meja pemateri & peserta",
+            "Mengatur meja prasmanan/distribusi konsumsi di lokasi acara",
+            "Mendistribusikan snack box saat registrasi / coffee break",
+            "Mendistribusikan paket makan siang tepat waktu saat ISHOMA",
+            "Memastikan kebersihan area konsumsi dan rekap nota konsumsi",
+          ],
+          "Seksi Logistik / Perlengkapan": [
+            "Mengurus peminjaman dan perizinan penggunaan Aula / Ruangan",
+            "Menata layout kursi peserta, meja pemateri, dan meja registrasi",
+            "Memeriksa fungsi mikrofon, speaker, dan sound system utama",
+            "Menyiapkan proyektor, layar LCD, dan kabel konektor HDMI",
+            "Memasang banner backdrop panggung dan spanduk selamat datang",
+            "Menyiapkan pengadaan paket seminar kit (totebag, notebook, pulpen)",
+            "Memastikan ketersediaan cadangan listrik dan kabel roll",
+            "Menyiapkan plakat/cindera mata dan map sertifikat pemateri",
+            "Mengawasi keamanan perlengkapan selama acara berlangsung",
+            "Mengembalikan seluruh inventaris kampus ke kondisi semula",
+          ],
+          "Seksi Humas & Sponsorship": [
+            "Menyusun daftar undangan resmi internal dan instansi eksternal",
+            "Mendistribusikan surat undangan ke pimpinan, dosen, dan tamu VIP",
+            "Menyebarkan informasi dan poster pendaftaran ke grup WhatsApp",
+            "Melakukan follow-up calon peserta yang mendaftar di Landing Page",
+            "Memverifikasi bukti pembayaran HTM peserta yang masuk",
+            "Menyiapkan meja registrasi dan daftar hadir QR Code di Hari H",
+            "Menyambut kedatangan narasumber dan tamu VIP di lokasi",
+            "Menyusun proposal penawaran kerja sama / sponsorship",
+            "Menjaga komunikasi dengan mitra pendukung acara",
+            "Mengirimkan ucapan terima kasih resmi kepada pemateri & mitra",
+          ],
+          "Seksi Dokumentasi & Publikasi": [
+            "Membuat desain poster utama dan flyer digital kegiatan",
+            "Membuat desain banner backdrop panggung dan photobooth",
+            "Membuat desain template E-Sertifikat pemateri, peserta, dan panitia",
+            "Membuat konten teaser dan hitung mundur (countdown) media sosial",
+            "Menyiapkan kamera, baterai cadangan, dan memori penyimpanan",
+            "Mengambil dokumentasi foto dan video seluruh sesi pada Hari H",
+            "Menyiapkan perangkat live streaming / rekaman jika hybrid",
+            "Melakukan seleksi dan editing foto/video highlight kegiatan",
+            "Mengunggah seluruh file dokumentasi ke Google Drive Arsip STIT",
+            "Mempublikasikan rilis berita pasca-acara di kanal resmi kampus",
+          ],
+        };
+
+        const list = templates[sectionName] || [
+          "Menyusun rencana kerja operasional seksi",
+          "Melakukan koordinasi kebutuhan anggaran seksi dengan bendahara",
+          "Menyiapkan daftar perlengkapan kerja seksi",
+          "Membagi penugasan teknis harian kepada anggota seksi",
+          "Melakukan pengecekan kesiapan H-7 pelaksanaan",
+          "Melakukan pengecekan kesiapan H-3 pelaksanaan",
+          "Melakukan pengecekan kesiapan H-1 pelaksanaan",
+          "Menjalankan tugas operasional seksi pada Hari H",
+          "Melakukan evaluasi kendala lapangan bersama koordinator",
+          "Menyusun laporan pertanggungjawaban seksi",
+        ];
+
+        return list.map((title, idx) => ({
+          id: "t_" + Math.random().toString(36).substring(2, 9) + "_" + idx,
+          title: title,
+          pic: defaultPic || "",
+          done: idx < 2,
+        }));
+      }
+
+      let eventsData = [
+        {
+          id: "evt_1",
+          divisi: "LP2M",
+          kategori: "Workshop",
+          nama: "Workshop Nasional Metodologi Penelitian & Publikasi Ilmiah 2026",
+          tema: "Membangun Ekosistem Riset Dosen & Mahasiswa STIT yang Bereputasi",
+          deskripsi: "Program kerja unggulan LP2M STIT untuk membekali civitas akademika dan peserta umum dalam penulisan karya ilmiah terindeks.",
+          tanggal: "2026-11-15",
+          jamMulai: "08:00",
+          jamSelesai: "15:30",
+          lokasi: "Aula Utama Lt. 2 Kampus STIT",
+          speakers: [
+            { name: "Prof. Dr. H. Mahmud Yunus, M.A.", topic: "Strategi Tembus Jurnal Bereputasi Nasional & Internasional" },
+            { name: "Dr. Mhd Saleh, M.Pd.", topic: "Metodologi Riset Pendidikan Islam Kontemporer" },
+          ],
+          targetPeserta: 60,
+          subsidiKampus: 2500000,
+          htmPeserta: 85000,
+          unitEconomics: [
+            { id: "ue1", item: "Makan Siang Box", cost: 25000 },
+            { id: "ue2", item: "Snack Coffee Break", cost: 10000 },
+            { id: "ue3", item: "Seminar Kit (Totebag & Notebook)", cost: 20000 },
+            { id: "ue4", item: "E-Sertifikat & Modul Materi", cost: 10000 },
+          ],
+          biayaOperasional: [
+            { id: "bo1", item: "Honorarium 2 Pemateri Utama", cost: 2000000 },
+            { id: "bo2", item: "Cetak Backdrop & Dekorasi Panggung", cost: 450000 },
+            { id: "bo3", item: "Kebersihan & Operasional Sound", cost: 350000 },
+          ],
+          divisions: [
+            {
+              id: "div_1",
+              name: "Seksi Acara",
+              pic: "Yusuf Abdullah, M.Pd.",
+              members: ["Abdullah Ibnul Mubarak (2025)", "Nadzmina Al Khalifi Humaira (2025)", "Irsyad (2026)"],
+              tasks: getDefault10Tasks("Seksi Acara", "Abdullah Ibnul Mubarak (2025)"),
+            },
+            {
+              id: "div_2",
+              name: "Seksi Konsumsi",
+              pic: "Sumarni, S.Ag., M.Pd.",
+              members: ["Alya Lutfia Mumtaz (2025)", "Winarnoko (2025)", "Muhamad Ihsan (2026)"],
+              tasks: getDefault10Tasks("Seksi Konsumsi", "Winarnoko (2025)"),
+            },
+          ],
+          kasTransactions: [
+            { id: "k1", tanggal: "2026-10-25", tipe: "masuk", uraian: "Pencairan Dana Subsidi Awal Kampus STIT", nominal: 2500000, seksi: "Pengelola Inti", pic: "Nurhalisa, M.Pd.", notaUrl: "https://drive.google.com" },
+            { id: "k2", tanggal: "2026-10-28", tipe: "keluar", uraian: "DP Katering Makan Siang & Snack Peserta", nominal: 1000000, seksi: "Seksi Konsumsi", pic: "Sumarni, S.Ag., M.Pd.", notaUrl: "https://drive.google.com" },
+            { id: "k3", tanggal: "2026-10-29", tipe: "keluar", uraian: "Cetak Banner Backdrop & Spanduk", nominal: 450000, seksi: "Seksi Dokumentasi & Publikasi", pic: "Afghani, S.Kom.", notaUrl: "https://drive.google.com" },
+          ],
+          participants: [
+            {
+              id: "p1", ticketCode: "SEO-2026-881", nama: "Ahmad Fauzi, S.Pd.", gender: "Laki-laki", wa: "081288990011", email: "ahmad@stit.ac.id", provinsi: "Jawa Barat", kota: "Kab. Bekasi",
+              afiliasi: "Mahasiswa", instansi: "STIT Hidayatunnajah - Bekasi", paket: "Paket-A (Reguler + Seminar Kit)", htmPaid: 85000, checkedIn: true, checkInTime: "07:52 WIB", statusAktif: true,
+            },
+            {
+              id: "p2", ticketCode: "SEO-2026-882", nama: "Dr. Siti Rahmah, M.Ag.", gender: "Perempuan", wa: "081377665544", email: "rahmah@kampus.ac.id", provinsi: "DKI Jakarta", kota: "Jakarta Selatan",
+              afiliasi: "Dosen", instansi: "UIN Syarif Hidayatullah - Jakarta", paket: "Paket-B (VIP + Buku Prosiding)", htmPaid: 125000, checkedIn: false, checkInTime: "-", statusAktif: true,
+            }
+          ],
+          rundown: [
+            { id: "r1", start: "07:30", end: "08:15", durasi: "45 Menit", kegiatan: "Registrasi Peserta & Scan QR E-Tiket", pic: "Seksi Humas & Sponsorship", ruangan: "Lobby Aula Lt. 2" },
+            { id: "r2", start: "08:15", end: "08:45", durasi: "30 Menit", kegiatan: "Pembukaan, Tilawah Al-Quran & Sambutan Ketua STIT", pic: "Seksi Acara", ruangan: "Aula Utama Lt. 2" },
+            { id: "r3", start: "08:45", end: "11:30", durasi: "165 Menit", kegiatan: "Sesi Materi 1: Strategi Publikasi Jurnal Bereputasi", pic: "Yusuf Abdullah, M.Pd.", ruangan: "Aula Utama Lt. 2" },
+          ],
+          meetings: [
+            {
+              id: "m1", code: "MTG-STIT-101", agenda: "Rapat Pleno Fiksasi Persiapan H-7 Workshop LP2M", tanggal: "2026-11-08", waktu: "13:30", tempat: "Ruang Rapat Utama STIT", isOpen: true,
+              attendees: [
+                { name: "Afghani, S.Kom.", time: "13:25 WIB" },
+                { name: "Yusuf Abdullah, M.Pd.", time: "13:28 WIB" },
+                { name: "Sumarni, S.Ag., M.Pd.", time: "13:30 WIB" },
+              ],
+              notulensi: "1. Seluruh seksi wajib menyelesaikan minimal 70% jobdesk pada H-3.\n2. Seksi Konsumsi memastikan kuota tambahan 10 box cadangan.",
+            },
+          ],
+          documents: [
+            { id: "d1", title: "SK Kepanitiaan Resmi Workshop LP2M 2026", category: "SK Kepanitiaan", uploader: "Afghani, S.Kom.", url: "https://drive.google.com" },
+          ],
+          formConfig: {
+            isActive: true, // SC bisa matikan agar orang luar tidak bisa daftar
+            useGender: true, useWa: true, useEmail: true, useDomisili: true, useAfiliasi: true, usePaket: true,
+            packages: [
+              { name: "Paket-A (Reguler + Seminar Kit)", price: 85000 },
+              { name: "Paket-B (VIP + Buku Prosiding)", price: 125000 },
+            ],
+          },
+        },
+      ];
+
+      let currentUser = null;
+      let activeEventId = "evt_1";
+      let activeDashTab = "overview";
+      let wizardMode = "create";
+      let wizardTempDivisions = [];
+      let wizardTempSpeakers = [];
+
+      function formatRp(num) {
+        return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+      }
+
+      function getActiveEvent() {
+        return eventsData.find((e) => e.id === activeEventId) || eventsData[0];
+      }
+
+      function showToast(msg, type = "success") {
+        const container = document.getElementById("toastContainer");
+        if (!container) return;
+        const el = document.createElement("div");
+        const bg = type === "error" ? "bg-rose-600" : "bg-navy";
+        el.className = `${bg} text-white px-4 py-3 rounded-2xl shadow-xl border border-amber-400/40 text-xs font-bold flex items-center gap-2 pointer-events-auto transition-all`;
+        el.innerHTML = `<span class="text-amber-400">✨</span><span>${msg}</span>`;
+        container.appendChild(el);
+        setTimeout(() => {
+          el.remove();
+        }, 3200);
+      }
+
+      function showCustomModal(title, text) {
+        document.getElementById("customModalTitle").textContent = title;
+        document.getElementById("customModalText").textContent = text;
+        const ov = document.getElementById("customModalOverlay");
+        ov.classList.remove("hidden");
+        ov.classList.add("flex");
+      }
+
+      function closeCustomModal() {
+        const ov = document.getElementById("customModalOverlay");
+        ov.classList.add("hidden");
+        ov.classList.remove("flex");
+      }
+
+      let html5QrCodeInstance = null;
+
+      function openRealQRScanner(mode, targetMeetingId = null) {
+        const modal = document.getElementById("qrScannerModal");
+        const titleEl = document.getElementById("qrScannerTitle");
+        const fallbackBox = document.getElementById("qrManualFallbackBox");
+        const fallbackBtn = document.getElementById("qrManualFallbackBtn");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        if (mode === "meeting") {
+          titleEl.textContent = "📷 Scan QR Kehadiran Rapat";
+          fallbackBox.classList.remove("hidden");
+          fallbackBtn.onclick = () => {
+            stopRealQRScanner();
+            checkInMeetingByUser(targetMeetingId);
+          };
+        } else {
+          titleEl.textContent = "📷 Scan QR E-Tiket Peserta";
+          fallbackBox.classList.add("hidden");
+        }
+
+        if (typeof Html5Qrcode === "undefined") {
+          showToast("Library kamera belum termuat.", "error");
+          return;
+        }
+
+        html5QrCodeInstance = new Html5Qrcode("qrReaderBox");
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+        html5QrCodeInstance
+          .start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+              stopRealQRScanner();
+              if (mode === "meeting") {
+                checkInMeetingByUser(targetMeetingId);
+                showToast(`Berhasil Scan QR Rapat: ${decodedText}`);
+              } else if (mode === "peserta") {
+                const rawCode = decodedText.split("|")[0].trim();
+                const inp = document.getElementById("qrScanTicketInput");
+                if (inp) inp.value = rawCode;
+                scanParticipantQrTicket();
+              }
+            },
+            () => {}
+          )
+          .catch((err) => {
+            showToast("Kamera tidak dapat dibuka. Pastikan buka via link HTTPS.", "error");
+          });
+      }
+
+      function stopRealQRScanner() {
+        const modal = document.getElementById("qrScannerModal");
+        if (html5QrCodeInstance) {
+          html5QrCodeInstance
+            .stop()
+            .then(() => {
+              html5QrCodeInstance.clear();
+              html5QrCodeInstance = null;
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            })
+            .catch(() => {
+              html5QrCodeInstance = null;
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            });
+        } else {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+        }
+      }
+
+      function initLoginDropdown() {
+        const sel = document.getElementById("loginName");
+        if (!sel) return;
+        sel.innerHTML = `<option value="">Nama Pengguna</option>`;
+
+        const addGroup = (label, arr) => {
+          const grp = document.createElement("optgroup");
+          grp.label = label;
+          arr.forEach((name) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            grp.appendChild(opt);
+          });
+          sel.appendChild(grp);
+        };
+
+        addGroup("1. Kelompok Dosen & Staff STIT (17 Orang)", SDM_STIT);
+        addGroup("2. Kelompok Support (4 Orang)", SDM_SUPPORT);
+        addGroup("3. Mahasiswa Angkatan 2025 (16 Orang)", SDM_MHS_2025);
+        addGroup("4. Mahasiswa Angkatan 2026 (11 Orang)", SDM_MHS_2026);
+      }
+
+      function buildGroupedSdmOptionsHtml(selectedValue = "", includeCustom = false) {
+        let html = `<option value="">-- Pilih Nama Personil --</option>`;
+        const groups = [
+          { label: "Kelompok Dosen & Staff STIT", list: SDM_STIT },
+          { label: "Kelompok Support", list: SDM_SUPPORT },
+          { label: "Mahasiswa Angkatan 2025", list: SDM_MHS_2025 },
+          { label: "Mahasiswa Angkatan 2026", list: SDM_MHS_2026 },
+        ];
+        groups.forEach((g) => {
+          html += `<optgroup label="${g.label}">`;
+          g.list.forEach((n) => {
+            const sel = n === selectedValue ? "selected" : "";
+            html += `<option value="${n}" ${sel}>${n}</option>`;
+          });
+          html += `</optgroup>`;
+        });
+        if (includeCustom) {
+          html += `<option value="__custom__">+ Tulis Nama Sendiri...</option>`;
+        }
+        return html;
+      }
+
+      function evaluateUserRoleForActiveEvent(userName) {
+        const ev = getActiveEvent();
+        const isStitStaff = SDM_STIT.includes(userName);
+        const isScManager = SC_MANAGERS.includes(userName);
+        const coordDiv = ev.divisions.find((d) => d.pic === userName);
+
+        if (isScManager) {
+          return {
+            role: "sc",
+            roleLabel: userName === SUPER_ADMIN_NAME ? "Super Admin & SC" : "Steering Committee / Pengelola",
+            coordDivisionId: coordDiv ? coordDiv.id : null,
+          };
+        }
+        if (coordDiv) {
+          return { role: "koordinator", roleLabel: `Koordinator ${coordDiv.name}`, coordDivisionId: coordDiv.id };
+        }
+        if (isStitStaff) {
+          return { role: "vip_anggota", roleLabel: "Anggota VIP (Dosen & Staff - View Only)", coordDivisionId: null };
+        }
+        return { role: "anggota", roleLabel: "Anggota Pelaksana Panitia", coordDivisionId: null };
+      }
+
+      function updateLoginRoleHint() {
+        const name = document.getElementById("loginName").value;
+        const hint = document.getElementById("loginRoleHint");
+        if (!name) return;
+        if (SC_MANAGERS.includes(name)) {
+          hint.innerHTML = `🔐 <b>${name}</b> terdeteksi sebagai <b>SC / Pengelola</b>. Gunakan Password Akses: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">123</code>`;
+        } else if (SDM_STIT.includes(name)) {
+          hint.innerHTML = `🔐 <b>${name}</b> (Dosen & Staff STIT). Gunakan Password Koordinator: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">456</code> (atau <code class="font-bold">777</code> saat menjadi Anggota VIP).`;
+        } else {
+          hint.innerHTML = `🔐 <b>${name}</b> (Mahasiswa / Support). Gunakan Password Anggota: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">777</code> (atau <code class="font-bold">456</code> jika ditunjuk sebagai Koordinator).`;
+        }
+      }
+
+      function handleLogin(e) {
+        e.preventDefault();
+        const name = document.getElementById("loginName").value;
+        const pass = document.getElementById("loginPassword").value.trim();
+        if (!name) {
+          showToast("Pilih Nama Pengguna terlebih dahulu!", "error");
+          return;
+        }
+
+        const isSc = SC_MANAGERS.includes(name);
+        const isStit = SDM_STIT.includes(name);
+        let validPass = false;
+        
+        if (isSc && pass === "123") validPass = true;
+        else if (isStit && (pass === "456" || pass === "777")) validPass = true;
+        else if (!isStit && (pass === "777" || pass === "456")) validPass = true;
+
+        if (!validPass) {
+          showToast("Password Akses tidak sesuai! Cek petunjuk password di bawah kolom.", "error");
+          return;
+        }
+
+        const roleInfo = evaluateUserRoleForActiveEvent(name);
+        currentUser = { name: name, ...roleInfo };
+
+        document.getElementById("viewLogin").classList.add("hidden");
+        document.getElementById("viewApp").classList.remove("hidden");
+
+        if (currentUser.role === "koordinator") activeDashTab = "coord_section";
+        else activeDashTab = "overview";
+
+        renderAll();
+        showToast(`Selamat datang, ${currentUser.name} (${currentUser.roleLabel})`);
+      }
+
+      function handleLogout() {
+        currentUser = null;
+        document.getElementById("loginPassword").value = "";
+        document.getElementById("viewApp").classList.add("hidden");
+        document.getElementById("viewLogin").classList.remove("hidden");
+      }
+
+      function selectEventFromSidebar(eventId) {
+        activeEventId = eventId;
+        if (currentUser) {
+          const updatedRole = evaluateUserRoleForActiveEvent(currentUser.name);
+          currentUser.role = updatedRole.role;
+          currentUser.roleLabel = updatedRole.roleLabel;
+          currentUser.coordDivisionId = updatedRole.coordDivisionId;
+
+          if (currentUser.role === "koordinator") activeDashTab = "coord_section";
+          else if (activeDashTab === "coord_section") activeDashTab = "overview";
+        }
+        renderAll();
+        const ev = getActiveEvent();
+        showToast(`Beralih ke: ${ev.nama} — Akses: ${currentUser ? currentUser.roleLabel : ""}`);
+      }
+
+      function switchDashTab(tabKey) {
+        activeDashTab = tabKey;
+        renderDashboardTabsAndContent();
+      }
+
+      function renderAll() {
+        if (!currentUser) return;
+        const ev = getActiveEvent();
+
+        document.getElementById("headerUserName").textContent = currentUser.name;
+        document.getElementById("headerUserRoleBadge").textContent = currentUser.roleLabel;
+
+        const btnCreateSidebar = document.getElementById("btnCreateNewEventSidebar");
+        if (currentUser.role === "sc") btnCreateSidebar.classList.remove("hidden");
+        else btnCreateSidebar.classList.add("hidden");
+
+        // Fitur Tombol Salin Link di Sidebar
+        const cardList = document.getElementById("sidebarEventCardList");
+        cardList.innerHTML = eventsData
+          .map((item) => {
+            const isActive = item.id === activeEventId;
+            const cardClass = isActive
+              ? "bg-grad-card-active text-white border-amber-400 shadow-lg scale-[1.01]"
+              : "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200";
+            const divBadgeClass = isActive ? "bg-amber-400 text-navy" : "bg-slate-200 text-slate-700";
+            const dateClass = isActive ? "text-amber-200" : "text-slate-500";
+            
+            // Periksa apakah form config aktif
+            const formActive = item.formConfig && item.formConfig.isActive;
+            const linkUrl = window.location.origin + window.location.pathname + "?daftar=" + item.id;
+            
+            const actionButtonsHTML = isActive && currentUser.role === "sc" ? `
+                <div class="mt-3 pt-3 border-t border-amber-500/50 flex flex-col gap-2">
+                    ${formActive 
+                        ? `
+                        <div class="flex gap-2">
+                            <button onclick="window.open('${linkUrl}', '_blank')" class="flex-1 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-navy font-bold text-[10px] text-center transition">Buka Form Publik</button>
+                            <button onclick="copyLinkToClipboard('${linkUrl}')" class="flex-1 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] text-center transition">Salin Link Form</button>
+                        </div>
+                        <p class="text-[9px] text-amber-200 text-center">Status Link: <b class="text-emerald-300">Aktif & Terbuka</b></p>
+                        ` 
+                        : `
+                        <p class="text-[9px] text-center text-rose-200 bg-rose-900/40 p-1.5 rounded-lg border border-rose-400/30">Form Pendaftaran Non-Aktif. Buka <b>Format & Paket Pendaftaran</b> lalu aktifkan form untuk mendapat Link.</p>
+                        `
+                    }
+                </div>
+            ` : '';
+
+            return `
+                    <div class="rounded-2xl p-4 border-2 transition-all ${cardClass}">
+                        <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${divBadgeClass}">${item.divisi}</span>
+                                <span class="text-[11px] font-bold ${dateClass}">📅 ${item.tanggal}</span>
+                            </div>
+                            <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
+                        </div>
+                        ${actionButtonsHTML}
+                    </div>
+                `;
+          })
+          .join("");
+
+        document.getElementById("sidebarRoleTitle").textContent = currentUser.roleLabel;
+        const roleDescriptions = {
+          sc: "Anda memiliki otoritas penuh membuat/mengedit event, mengelola seksi, keuangan, dan membuka QR Meeting.",
+          koordinator: "Anda dapat mengelola anggota & jobdesk di seksi Anda, menginput kas seksi Anda, dan melihat menu lainnya secara View-Only.",
+          vip_anggota: "Sebagai Dosen/Staff di event ini, Anda memiliki akses Anggota VIP untuk memantau seluruh menu secara View-Only.",
+          anggota: "Anda fokus pada eksekusi daftar tugas pribadi Anda, melihat rundown, dan melakukan QR Check-in rapat.",
+        };
+        document.getElementById("sidebarRoleDesc").textContent = roleDescriptions[currentUser.role] || "";
+
+        document.getElementById("headlineDivisiBadge").textContent = `Divisi: ${ev.divisi}`;
+        document.getElementById("headlineKategoriBadge").textContent = ev.kategori;
+        document.getElementById("headlineEventTitle").textContent = ev.nama;
+        document.getElementById("headlineEventTheme").textContent = `"${ev.tema}"`;
+        document.getElementById("headlineEventDesc").textContent = ev.deskripsi;
+        document.getElementById("headlineDate").textContent = ev.tanggal;
+        document.getElementById("headlineTime").textContent = `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
+        document.getElementById("headlineLocation").textContent = ev.lokasi;
+
+        const spkBox = document.getElementById("headlineSpeakersBox");
+        spkBox.innerHTML = (ev.speakers || [])
+          .map((s, idx) => `
+                <div class="bg-white/10 border border-amber-400/30 px-3 py-1.5 rounded-xl text-xs">
+                    <span class="text-amber-300 font-extrabold">🎤 Pemateri ${idx + 1}:</span>
+                    <span class="font-bold text-white">${s.name}</span>
+                    <span class="text-slate-300 italic">(${s.topic})</span>
+                </div>
+            `)
+          .join("");
+
+        const adminAct = document.getElementById("headlineAdminActions");
+        if (currentUser.role === "sc") {
+          adminAct.classList.remove("hidden");
+          adminAct.classList.add("flex");
+        } else {
+          adminAct.classList.add("hidden");
+          adminAct.classList.remove("flex");
+        }
+
+        const memberSec = document.getElementById("memberWorkspaceSection");
+        const dashSec = document.getElementById("dashboardWorkspaceSection");
+
+        if (currentUser.role === "anggota") {
+          memberSec.classList.remove("hidden");
+          dashSec.classList.add("hidden");
+          renderMemberWorkspace(ev);
+        } else {
+          memberSec.classList.add("hidden");
+          dashSec.classList.remove("hidden");
+          renderDashboardTabsAndContent();
+        }
+      }
+      
+      function copyLinkToClipboard(urlText) {
+          navigator.clipboard.writeText(urlText).then(() => {
+              showToast("Link Pendaftaran berhasil disalin ke Clipboard!");
+          }).catch(err => {
+              showToast("Gagal menyalin link.", "error");
+          });
+      }
+
+      function renderMemberWorkspace(ev) {
+        const openMtg = (ev.meetings || []).find((m) => m.isOpen);
+        const banner = document.getElementById("memberMeetingCheckInBanner");
+        if (openMtg) {
+          const alreadyIn = openMtg.attendees.some((a) => a.name === currentUser.name);
+          banner.classList.remove("hidden");
+          banner.innerHTML = `
+                    <div>
+                        <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-navy font-black text-[10px] uppercase">Rapat Sedang Berlangsung</span>
+                        <h4 class="text-sm font-black text-navy mt-1">${openMtg.agenda} (${openMtg.code})</h4>
+                        <p class="text-xs text-slate-600">📅 ${openMtg.tanggal} | ⏰ ${openMtg.waktu} | 📍 ${openMtg.tempat}</p>
+                    </div>
+                    ${
+                      alreadyIn
+                        ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Check-in Hadir</span>`
+                        : `<div class="flex flex-wrap gap-2">
+                             <button onclick="openRealQRScanner('meeting', '${openMtg.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">📷 Buka Kamera Scan QR Rapat</button>
+                             <button onclick="checkInMeetingByUser('${openMtg.id}')" class="px-4 py-2.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-navy font-extrabold text-xs">✓ Check-in Cepat</button>
+                           </div>`
+                    }
+                `;
+        } else {
+          banner.classList.add("hidden");
+        }
+
+        let myDivName = "Belum Terplot di Seksi";
+        let myTasks = [];
+        ev.divisions.forEach((d) => {
+          if (d.members.includes(currentUser.name) || d.pic === currentUser.name) myDivName = d.name;
+          d.tasks.forEach((t) => {
+            if (t.pic === currentUser.name) myTasks.push({ ...t, divId: d.id, divName: d.name });
+          });
+        });
+
+        document.getElementById("memberDivisionBadge").textContent = myDivName;
+        const doneCount = myTasks.filter((t) => t.done).length;
+        document.getElementById("memberTaskCounter").textContent = `${doneCount} / ${myTasks.length} Selesai`;
+
+        const listEl = document.getElementById("memberTasksListContainer");
+        if (myTasks.length === 0) {
+          listEl.innerHTML = `<div class="p-6 rounded-2xl bg-slate-50 text-center text-xs text-slate-500">Belum ada tugas spesifik yang di-plot atas nama <b>${currentUser.name}</b> pada event ini.</div>`;
+        } else {
+          listEl.innerHTML = myTasks
+            .map((t) => `
+                    <label class="flex items-center justify-between gap-3 p-3.5 rounded-2xl border ${t.done ? "bg-emerald-50/60 border-emerald-300" : "bg-slate-50 border-slate-200"} cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTaskDone('${t.divId}', '${t.id}')" class="w-5 h-5 rounded text-navy">
+                            <div>
+                                <p class="text-xs sm:text-sm font-bold ${t.done ? "line-through text-slate-400" : "text-slate-800"}">${t.title}</p>
+                                <span class="text-[10px] font-semibold text-slate-500">${t.divName}</span>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold ${t.done ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}">${t.done ? "Selesai" : "Proses"}</span>
+                    </label>
+                `)
+            .join("");
+        }
+
+        const rdEl = document.getElementById("memberRundownPreview");
+        rdEl.innerHTML = (ev.rundown || [])
+            .map((r) => `
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between gap-2">
+                    <div><strong class="text-navy">${r.start}-${r.end}</strong> — ${r.kegiatan}</div>
+                    <span class="text-slate-500 font-semibold shrink-0">${r.pic}</span>
+                </div>
+            `)
+            .join("") || `<p class="text-slate-400 italic">Belum ada rundown.</p>`;
+
+        const mtgEl = document.getElementById("memberMeetingPreview");
+        mtgEl.innerHTML = (ev.meetings || [])
+            .map((m) => `
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                    <div class="font-bold text-navy">${m.agenda}</div>
+                    <div class="text-[11px] text-slate-500">📅 ${m.tanggal} (${m.waktu}) — 📍 ${m.tempat}</div>
+                    <div class="text-[11px] text-slate-700 whitespace-pre-line bg-white p-2 rounded-lg border">${m.notulensi || "-"}</div>
+                </div>
+            `)
+            .join("") || `<p class="text-slate-400 italic">Belum ada jadwal rapat.</p>`;
+      }
+
+      function renderDashboardTabsAndContent() {
+        const ev = getActiveEvent();
+        const isCoord = currentUser.role === "koordinator";
+        const isVip = currentUser.role === "vip_anggota";
+
+        const btnCoord = document.getElementById("tabBtnCoordMySection");
+        if (isCoord) btnCoord.classList.remove("hidden");
+        else btnCoord.classList.add("hidden");
+
+        const vipBanner = document.getElementById("vipReadOnlyBanner");
+        if (isVip) vipBanner.classList.remove("hidden");
+        else vipBanner.classList.add("hidden");
+
+        const activeParticipants = (ev.participants || []).filter((p) => p.statusAktif !== false);
+        document.getElementById("tabPesertaCount").textContent = activeParticipants.length;
+
+        const tabMap = {
+          coord_section: "tabBtnCoordMySection", overview: "tabBtnOverview", struktur: "tabBtnStruktur",
+          keuangan: "tabBtnKeuangan", kas: "tabBtnKas", peserta: "tabBtnPeserta", rundown: "tabBtnRundown", meeting: "tabBtnMeeting", dokumen: "tabBtnDokumen",
+        };
+
+        Object.entries(tabMap).forEach(([key, btnId]) => {
+          const btn = document.getElementById(btnId);
+          if (!btn) return;
+          if (key === activeDashTab) {
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-grad-navy text-amber-400 shadow-lg scale-[1.02] border border-amber-400/50`;
+          } else {
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-white hover:bg-amber-50 text-slate-700 border border-slate-200/90 shadow-sm`;
+          }
+        });
+
+        const contentIds = ["dashContentCoordSection", "dashContentOverview", "dashContentStruktur", "dashContentKeuangan", "dashContentKas", "dashContentPeserta", "dashContentRundown", "dashContentMeeting", "dashContentDokumen"];
+        contentIds.forEach((id) => { const el = document.getElementById(id); if (el) el.classList.add("hidden"); });
+
+        if (activeDashTab === "coord_section" && isCoord) { document.getElementById("dashContentCoordSection").classList.remove("hidden"); renderCoordMySectionTab(ev); }
+        else if (activeDashTab === "overview") { document.getElementById("dashContentOverview").classList.remove("hidden"); renderOverviewTab(ev); }
+        else if (activeDashTab === "struktur") { document.getElementById("dashContentStruktur").classList.remove("hidden"); renderStrukturTab(ev); }
+        else if (activeDashTab === "keuangan") { document.getElementById("dashContentKeuangan").classList.remove("hidden"); renderKeuanganTab(ev); }
+        else if (activeDashTab === "kas") { document.getElementById("dashContentKas").classList.remove("hidden"); renderKasTab(ev); }
+        else if (activeDashTab === "peserta") { document.getElementById("dashContentPeserta").classList.remove("hidden"); renderPesertaTab(ev); }
+        else if (activeDashTab === "rundown") { document.getElementById("dashContentRundown").classList.remove("hidden"); renderRundownTab(ev); }
+        else if (activeDashTab === "meeting") { document.getElementById("dashContentMeeting").classList.remove("hidden"); renderMeetingTab(ev); }
+        else if (activeDashTab === "dokumen") { document.getElementById("dashContentDokumen").classList.remove("hidden"); renderDokumenTab(ev); }
+      }
+
+      function renderCoordMySectionTab(ev) {
+        const container = document.getElementById("dashContentCoordSection");
+        const div = ev.divisions.find((d) => d.id === currentUser.coordDivisionId) || ev.divisions.find((d) => d.pic === currentUser.name);
+        if (!div) { container.innerHTML = `<div class="bg-white p-6 rounded-3xl border text-sm text-slate-600">Seksi koordinasi Anda tidak ditemukan pada event ini.</div>`; return; }
+
+        const doneCount = div.tasks.filter((t) => t.done).length;
+        const totalCount = div.tasks.length;
+        const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+        const memberOptions = [div.pic, ...div.members].map((m) => `<option value="${m}">${m}</option>`).join("");
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border-2 border-amber-400 shadow-md space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <span class="px-3 py-1 rounded-full bg-amber-400 text-navy font-black text-xs uppercase">Ruang Kendali Koordinator</span>
+                            <h3 class="text-2xl font-black text-navy mt-1">${div.name}</h3>
+                            <p class="text-xs text-slate-500">PIC Koordinator: <b>${div.pic}</b> • Anggota: <b>${div.members.join(", ") || "Belum ada anggota"}</b></p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-black text-navy">${pct}%</span>
+                            <span class="block text-xs text-slate-500">${doneCount} / ${totalCount} Jobdesk Selesai</span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                        <div class="text-xs font-bold text-navy">👥 Tambah Anggota Pelaksana ke ${div.name}:</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="text" id="coordNewMemberInput" placeholder="Ketik Nama Anggota Baru..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold">
+                            <button onclick="coordAddMember('${div.id}')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah Anggota</button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-300 flex flex-col sm:flex-row gap-2.5">
+                        <input type="text" id="coordNewTaskTitle" placeholder="Tulis jobdesk baru untuk ${div.name}..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                        <select id="coordNewTaskPic" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"><option value="">-- Plot PIC Anggota --</option>${memberOptions}</select>
+                        <button onclick="coordAddTask('${div.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Tambah Jobdesk</button>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        ${div.tasks
+                          .map((t) => `
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border ${t.done ? "bg-emerald-50/60 border-emerald-300" : "bg-white border-slate-200"}">
+                                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                    <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTaskDone('${div.id}', '${t.id}')" class="w-5 h-5 rounded text-navy">
+                                    <span class="text-xs sm:text-sm font-bold ${t.done ? "line-through text-slate-400" : "text-slate-800"}">${t.title}</span>
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <select onchange="assignTaskPic('${div.id}', '${t.id}', this.value)" class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50">
+                                        <option value="">-- Pilih PIC --</option>
+                                        ${[div.pic, ...div.members].map((m) => `<option value="${m}" ${t.pic === m ? "selected" : ""}>PIC: ${m}</option>`).join("")}
+                                    </select>
+                                    <button onclick="editTaskTitlePrompt('${div.id}', '${t.id}')" title="Edit Jobdesk" class="p-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 transition">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    </button>
+                                    <button onclick="deleteTaskFromDivision('${div.id}', '${t.id}')" title="Hapus Jobdesk" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `)
+                          .join("")}
+                    </div>
+                </div>
+            `;
+      }
+
+      function coordAddMember(divId) {
+        const inp = document.getElementById("coordNewMemberInput");
+        const val = inp ? inp.value.trim() : "";
+        if (!val) return;
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (div && !div.members.includes(val)) {
+          div.members.push(val);
+          syncToCloud();
+          renderAll();
+          showToast(`Anggota ${val} ditambahkan ke ${div.name}`);
+        }
+      }
+
+      function coordAddTask(divId) {
+        const titleEl = document.getElementById("coordNewTaskTitle");
+        const picEl = document.getElementById("coordNewTaskPic");
+        const title = titleEl ? titleEl.value.trim() : "";
+        const pic = picEl ? picEl.value : "";
+        if (!title) { showToast("Isi nama jobdesk terlebih dahulu!", "error"); return; }
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (div) {
+          div.tasks.push({ id: "t_" + Date.now(), title: title, pic: pic || div.pic, done: false });
+          syncToCloud();
+          renderAll();
+          showToast("Jobdesk baru berhasil ditambahkan!");
+        }
+      }
+
+      function renderOverviewTab(ev) {
+        const unitCostPerPerson = (ev.unitEconomics || []).reduce((acc, u) => acc + (Number(u.cost) || 0), 0);
+        const totalVariableCost = unitCostPerPerson * (Number(ev.targetPeserta) || 0);
+        const totalFixedCost = (ev.biayaOperasional || []).reduce((acc, b) => acc + (Number(b.cost) || 0), 0);
+        const totalEstExpense = totalVariableCost + totalFixedCost;
+        const totalEstIncome = (Number(ev.subsidiKampus) || 0) + (Number(ev.htmPeserta) || 0) * (Number(ev.targetPeserta) || 0);
+        const estSurplus = totalEstIncome - totalEstExpense;
+        const bepHtm = ev.targetPeserta > 0 ? Math.max(0, Math.ceil((totalEstExpense - ev.subsidiKampus) / ev.targetPeserta)) : 0;
+
+        const statusEl = document.getElementById("ovStatusAntiBoncos");
+        if (estSurplus >= 0) { statusEl.textContent = `✅ AMAN (+${formatRp(estSurplus)})`; statusEl.className = "text-lg font-black mt-1 text-emerald-600"; }
+        else { statusEl.textContent = `⚠️ RAWAN BONCOS (${formatRp(estSurplus)})`; statusEl.className = "text-lg font-black mt-1 text-rose-600"; }
+        document.getElementById("ovBepInfo").textContent = `BEP HTM Minimal: ${formatRp(bepHtm)} / peserta`;
+
+        const activePeserta = (ev.participants || []).filter((p) => p.statusAktif !== false);
+        const incomeFromPeserta = activePeserta.reduce((acc, p) => acc + (Number(p.htmPaid) || 0), 0);
+        const kasMasukManual = (ev.kasTransactions || []).filter((k) => k.tipe === "masuk").reduce((acc, k) => acc + (Number(k.nominal) || 0), 0);
+        const kasKeluarManual = (ev.kasTransactions || []).filter((k) => k.tipe === "keluar").reduce((acc, k) => acc + (Number(k.nominal) || 0), 0);
+        const totalRiilMasuk = kasMasukManual + incomeFromPeserta;
+        const sisaSaldo = totalRiilMasuk - kasKeluarManual;
+
+        document.getElementById("ovTotalMasuk").textContent = formatRp(totalRiilMasuk);
+        document.getElementById("ovSubsidiAndPeserta").textContent = `Kas Masuk: ${formatRp(kasMasukManual)} + Tiket Peserta: ${formatRp(incomeFromPeserta)}`;
+        document.getElementById("ovTotalKeluar").textContent = formatRp(kasKeluarManual);
+        document.getElementById("ovSisaSaldo").textContent = `Saldo Kas Riil: ${formatRp(sisaSaldo)}`;
+
+        let allTasks = 0; let doneTasks = 0;
+        const barsHtml = ev.divisions
+          .map((d, idx) => {
+            const tCount = d.tasks.length; const dCount = d.tasks.filter((t) => t.done).length;
+            allTasks += tCount; doneTasks += dCount;
+            const pct = tCount > 0 ? Math.round((dCount / tCount) * 100) : 0;
+            const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+            return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-navy">${d.name} <span class="text-slate-400 font-normal">(${d.pic})</span></span>
+                            <span class="text-slate-700">${dCount}/${tCount} Tugas (${pct}%)</span>
+                        </div>
+                        <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
+                            <div class="h-full ${theme.bar} transition-all" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+
+        const totalPct = allTasks > 0 ? Math.round((doneTasks / allTasks) * 100) : 0;
+        document.getElementById("ovTotalProgress").textContent = `${totalPct}%`;
+        document.getElementById("ovTotalTasksCount").textContent = `${doneTasks} dari ${allTasks} poin tugas selesai`;
+        document.getElementById("ovSectionProgressBars").innerHTML = barsHtml;
+
+        document.getElementById("ovFinanceComparisonBox").innerHTML = `
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                    <div class="flex justify-between"><span>Target Peserta:</span><strong>${ev.targetPeserta} Orang (Terdaftar Aktif: ${activePeserta.length} Orang)</strong></div>
+                    <div class="flex justify-between"><span>Unit Economics per Peserta:</span><strong>${formatRp(unitCostPerPerson)}</strong></div>
+                    <div class="flex justify-between"><span>Total Biaya Operasional:</span><strong>${formatRp(totalFixedCost)}</strong></div>
+                    <div class="flex justify-between border-t pt-2"><span>Total Estimasi Kebutuhan Anggaran:</span><strong class="text-navy">${formatRp(totalEstExpense)}</strong></div>
+                    <div class="flex justify-between"><span>Proyeksi Pendapatan Maksimal:</span><strong class="text-emerald-700">${formatRp(totalEstIncome)}</strong></div>
+                </div>
+            `;
+      }
+
+      function renderStrukturTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const addBar = document.getElementById("strukturAddSectionBar");
+        if (isSc) { addBar.classList.remove("hidden"); document.getElementById("newSectionPicSelect").innerHTML = buildGroupedSdmOptionsHtml("", true); }
+        else addBar.classList.add("hidden");
+
+        const grid = document.getElementById("strukturDivisionsGrid");
+        grid.innerHTML = ev.divisions
+          .map((d, idx) => {
+            const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+            const doneCount = d.tasks.filter((t) => t.done).length; const totalCount = d.tasks.length;
+            const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+            const canModifyThisCard = isSc;
+
+            return `
+                    <div class="rounded-3xl p-6 border-2 ${theme.bg} ${theme.border} shadow-sm flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="px-3 py-1 rounded-full text-[11px] font-extrabold ${theme.badge}">${d.name}</span>
+                                    <p class="text-xs font-bold text-navy mt-2">PIC Koordinator: <span class="underline">${d.pic}</span></p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-black text-navy">${doneCount}/${totalCount} (${pct}%)</span>
+                                    ${canModifyThisCard ? `
+                                        <button onclick="deleteDivisionFromStruktur('${d.id}')" title="Hapus Seksi" class="p-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    ` : ""}
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${(d.members || []).map((m) => `<span class="px-2.5 py-1 rounded-xl bg-white/90 border border-slate-200 text-[11px] font-semibold text-slate-700">👤 ${m}</span>`).join("") || `<span class="text-xs text-slate-400 italic">Belum ada anggota</span>`}
+                            </div>
+                            <div class="space-y-2 max-h-80 overflow-y-auto custom-scroll pr-1 pt-2 border-t border-slate-200/80">
+                                ${d.tasks.map((t) => `
+                                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/95 border border-slate-200 text-xs">
+                                        <label class="flex items-center gap-2.5 flex-1 ${canModifyThisCard || t.pic === currentUser.name ? "cursor-pointer" : "cursor-default"}">
+                                            <input type="checkbox" ${t.done ? "checked" : ""} ${canModifyThisCard || t.pic === currentUser.name ? `onchange="toggleTaskDone('${d.id}', '${t.id}')"` : "disabled"} class="w-4 h-4 rounded text-navy">
+                                            <span class="font-semibold ${t.done ? "line-through text-slate-400" : "text-slate-800"}">${t.title}</span>
+                                        </label>
+                                        <div class="flex items-center gap-1.5 shrink-0">
+                                            ${canModifyThisCard ? `
+                                                <select onchange="assignTaskPic('${d.id}', '${t.id}', this.value)" class="px-2 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold bg-slate-50">
+                                                    <option value="">-- PIC --</option>
+                                                    ${[d.pic, ...d.members].map((m) => `<option value="${m}" ${t.pic === m ? "selected" : ""}>${m}</option>`).join("")}
+                                                </select>
+                                                <button onclick="editTaskTitlePrompt('${d.id}', '${t.id}')" title="Edit Tugas" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                </button>
+                                                <button onclick="deleteTaskFromDivision('${d.id}', '${t.id}')" title="Hapus Tugas" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            ` : `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${t.pic || "Belum diplot"}</span>`}
+                                        </div>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        </div>
+                        ${canModifyThisCard ? `
+                            <div class="pt-3 border-t border-slate-200/80 flex gap-2">
+                                <input type="text" id="newTaskInput_${d.id}" placeholder="Tambah jobdesk baru ke ${d.name}..." class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                                <button onclick="addTaskToDivision('${d.id}')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tugas</button>
+                            </div>
+                        ` : ""}
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      function toggleNewSectionCustomPic() {
+        const sel = document.getElementById("newSectionPicSelect");
+        const inp = document.getElementById("newSectionCustomPicInput");
+        if (sel.value === "__custom__") inp.classList.remove("hidden");
+        else inp.classList.add("hidden");
+      }
+
+      function addNewDivisionFromStruktur() {
+        const nameInp = document.getElementById("newSectionNameInput");
+        const picSel = document.getElementById("newSectionPicSelect");
+        const picCustom = document.getElementById("newSectionCustomPicInput");
+        const name = nameInp.value.trim();
+        const pic = picSel.value === "__custom__" ? picCustom.value.trim() : picSel.value;
+
+        if (!name || !pic) { showToast("Nama Seksi dan PIC Koordinator wajib diisi!", "error"); return; }
+
+        const ev = getActiveEvent();
+        ev.divisions.push({ id: "div_" + Date.now(), name: name, pic: pic, members: [], tasks: getDefault10Tasks(name, pic) });
+        nameInp.value = ""; picCustom.value = "";
+        syncToCloud();
+        renderAll();
+        showToast(`Seksi "${name}" beserta 10 tugas default berhasil ditambahkan!`);
+      }
+
+      function deleteDivisionFromStruktur(divId) {
+        const ev = getActiveEvent();
+        ev.divisions = ev.divisions.filter((d) => d.id !== divId);
+        syncToCloud();
+        renderAll();
+        showToast("Seksi berhasil dihapus.");
+      }
+
+      function toggleTaskDone(divId, taskId) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        const task = div.tasks.find((t) => t.id === taskId);
+        if (task) { task.done = !task.done; syncToCloud(); renderAll(); }
+      }
+
+      function assignTaskPic(divId, taskId, newPic) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        const task = div.tasks.find((t) => t.id === taskId);
+        if (task) { task.pic = newPic; syncToCloud(); renderAll(); showToast(`PIC tugas diplot ke ${newPic}`); }
+      }
+
+      function addTaskToDivision(divId) {
+        const inp = document.getElementById(`newTaskInput_${divId}`);
+        if (!inp || !inp.value.trim()) return;
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (div) {
+          div.tasks.push({ id: "t_" + Date.now(), title: inp.value.trim(), pic: div.pic, done: false });
+          inp.value = ""; syncToCloud(); renderAll(); showToast("Tugas baru ditambahkan!");
+        }
+      }
+
+      function editTaskTitlePrompt(divId, taskId) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        const task = div.tasks.find((t) => t.id === taskId);
+        if (!task) return;
+        const updated = prompt("Edit Deskripsi Jobdesk:", task.title);
+        if (updated !== null && updated.trim() !== "") {
+          task.title = updated.trim(); syncToCloud(); renderAll(); showToast("Jobdesk diperbarui.");
+        }
+      }
+
+      function deleteTaskFromDivision(divId, taskId) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        div.tasks = div.tasks.filter((t) => t.id !== taskId);
+        syncToCloud();
+        renderAll();
+        showToast("Jobdesk dihapus.");
+      }
+
+      // ==========================================
+      // TAB 3: KEUANGAN
+      // ==========================================
+      let editUeId = null;
+      let editBoId = null;
+
+      function renderKeuanganTab(ev) {
+        const isReadOnly = currentUser.role !== "sc";
+        const container = document.getElementById("dashContentKeuangan");
+        const unitSum = (ev.unitEconomics || []).reduce((a, b) => a + (Number(b.cost) || 0), 0);
+        const opSum = (ev.biayaOperasional || []).reduce((a, b) => a + (Number(b.cost) || 0), 0);
+        const totalVar = unitSum * (Number(ev.targetPeserta) || 0);
+        const totalNeed = totalVar + opSum;
+        const bep = ev.targetPeserta > 0 ? Math.max(0, Math.ceil((totalNeed - ev.subsidiKampus) / ev.targetPeserta)) : 0;
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">Manajemen Keuangan & Parameter</h3>
+                            <p class="text-xs text-slate-500">Simulasi Unit Economics per peserta dan tabel Biaya Operasional kegiatan.</p>
+                        </div>
+                        ${isReadOnly ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div class="p-4 rounded-2xl bg-slate-50 border">
+                            <label class="text-[11px] font-bold text-slate-500 block">Target Peserta</label>
+                            <input type="number" value="${ev.targetPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('targetPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50 border">
+                            <label class="text-[11px] font-bold text-slate-500 block">Subsidi Kampus (Rp)</label>
+                            <input type="number" value="${ev.subsidiKampus}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('subsidiKampus', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50 border">
+                            <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
+                            <input type="number" value="${ev.htmPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                        </div>
+                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300">
+                            <span class="text-[11px] font-bold text-amber-800 block">Rekomendasi BEP HTM Minimal</span>
+                            <strong class="text-lg font-black text-navy mt-1 block">${formatRp(bep)} / org</strong>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div><h4 class="text-sm font-extrabold text-navy">1. Tabel Unit Economics (Per Peserta)</h4><p class="text-[11px] text-slate-500">Total per Peserta: <b>${formatRp(unitSum)}</b> (x ${ev.targetPeserta} = ${formatRp(totalVar)})</p></div>
+                            </div>
+                            ${!isReadOnly ? `
+                                <div class="flex gap-2">
+                                    <input type="text" id="ueItemInput" placeholder="Nama Benefit (Mis: Makan Siang)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <input type="number" id="ueCostInput" placeholder="Harga Satuan (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <button onclick="saveUnitEconomicItem()" id="ueSubmitBtn" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah</button>
+                                </div>
+                            ` : ""}
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead><tr class="bg-slate-200/70 text-navy"><th class="p-2.5 rounded-l-xl">Komponen Benefit Peserta</th><th class="p-2.5">Harga Satuan</th>${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}</tr></thead>
+                                    <tbody class="divide-y">
+                                        ${(ev.unitEconomics || []).map((u) => `
+                                            <tr class="bg-white">
+                                                <td class="p-2.5 font-semibold">${u.item}</td><td class="p-2.5 font-bold text-navy">${formatRp(u.cost)}</td>
+                                                ${!isReadOnly ? `
+                                                    <td class="p-2.5 text-right"><div class="inline-flex gap-1.5"><button onclick="startEditUe('${u.id}')" class="p-1.5 rounded-lg bg-amber-100 text-amber-800"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button><button onclick="deleteUe('${u.id}')" class="p-1.5 rounded-lg bg-rose-100 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
+                                                ` : ""}
+                                            </tr>
+                                        `).join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div><h4 class="text-sm font-extrabold text-navy">2. Tabel Biaya Operasional</h4><p class="text-[11px] text-slate-500">Total Biaya Operasional: <b>${formatRp(opSum)}</b></p></div>
+                            </div>
+                            ${!isReadOnly ? `
+                                <div class="flex gap-2">
+                                    <input type="text" id="boItemInput" placeholder="Biaya Lain (Mis: Honor Pemateri)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <input type="number" id="boCostInput" placeholder="Nominal (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <button onclick="saveBiayaOperasionalItem()" id="boSubmitBtn" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Biaya Lain</button>
+                                </div>
+                            ` : ""}
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead><tr class="bg-slate-200/70 text-navy"><th class="p-2.5 rounded-l-xl">Uraian Biaya Operasional</th><th class="p-2.5">Nominal</th>${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}</tr></thead>
+                                    <tbody class="divide-y">
+                                        ${(ev.biayaOperasional || []).map((b) => `
+                                            <tr class="bg-white">
+                                                <td class="p-2.5 font-semibold">${b.item}</td><td class="p-2.5 font-bold text-navy">${formatRp(b.cost)}</td>
+                                                ${!isReadOnly ? `
+                                                    <td class="p-2.5 text-right"><div class="inline-flex gap-1.5"><button onclick="startEditBo('${b.id}')" class="p-1.5 rounded-lg bg-amber-100 text-amber-800"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button><button onclick="deleteBo('${b.id}')" class="p-1.5 rounded-lg bg-rose-100 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
+                                                ` : ""}
+                                            </tr>
+                                        `).join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function updateBasicFinanceParam(field, val) {
+        const ev = getActiveEvent(); ev[field] = Number(val) || 0;
+        syncToCloud(); renderAll(); showToast("Parameter dasar keuangan diperbarui.");
+      }
+
+      function saveUnitEconomicItem() {
+        const itemEl = document.getElementById("ueItemInput"); const costEl = document.getElementById("ueCostInput");
+        if (!itemEl.value.trim()) return;
+        const ev = getActiveEvent();
+        if (editUeId) { const t = ev.unitEconomics.find((u) => u.id === editUeId); if (t) { t.item = itemEl.value.trim(); t.cost = Number(costEl.value) || 0; } editUeId = null; }
+        else { ev.unitEconomics.push({ id: "ue_" + Date.now(), item: itemEl.value.trim(), cost: Number(costEl.value) || 0 }); }
+        syncToCloud(); renderAll(); showToast("Unit Economics disimpan.");
+      }
+      function startEditUe(id) {
+        const ev = getActiveEvent(); const t = ev.unitEconomics.find((u) => u.id === id); if (!t) return;
+        editUeId = id; document.getElementById("ueItemInput").value = t.item; document.getElementById("ueCostInput").value = t.cost; document.getElementById("ueSubmitBtn").textContent = "Update";
+      }
+      function deleteUe(id) { const ev = getActiveEvent(); ev.unitEconomics = ev.unitEconomics.filter((u) => u.id !== id); syncToCloud(); renderAll(); }
+
+      function saveBiayaOperasionalItem() {
+        const itemEl = document.getElementById("boItemInput"); const costEl = document.getElementById("boCostInput");
+        if (!itemEl.value.trim()) return;
+        const ev = getActiveEvent();
+        if (editBoId) { const t = ev.biayaOperasional.find((b) => b.id === editBoId); if (t) { t.item = itemEl.value.trim(); t.cost = Number(costEl.value) || 0; } editBoId = null; }
+        else { ev.biayaOperasional.push({ id: "bo_" + Date.now(), item: itemEl.value.trim(), cost: Number(costEl.value) || 0 }); }
+        syncToCloud(); renderAll(); showToast("Biaya Operasional disimpan.");
+      }
+      function startEditBo(id) {
+        const ev = getActiveEvent(); const t = ev.biayaOperasional.find((b) => b.id === id); if (!t) return;
+        editBoId = id; document.getElementById("boItemInput").value = t.item; document.getElementById("boCostInput").value = t.cost; document.getElementById("boSubmitBtn").textContent = "Update";
+      }
+      function deleteBo(id) { const ev = getActiveEvent(); ev.biayaOperasional = ev.biayaOperasional.filter((b) => b.id !== id); syncToCloud(); renderAll(); }
+
+      // ==========================================
+      // TAB 4: BUKU KAS & BUKTI NOTA
+      // ==========================================
+      function renderKasTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const isCoord = currentUser.role === "koordinator";
+        const isVip = currentUser.role === "vip_anggota";
+
+        const coordDiv = ev.divisions.find((d) => d.id === currentUser.coordDivisionId) || ev.divisions.find((d) => d.pic === currentUser.name);
+        const coordSectionName = coordDiv ? coordDiv.name : "Seksi Koordinator";
+        const transactions = isCoord ? (ev.kasTransactions || []).filter((k) => k.seksi === coordSectionName || k.pic === currentUser.name) : ev.kasTransactions || [];
+
+        const container = document.getElementById("dashContentKas");
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">Buku Kas & Bukti Nota</h3>
+                            <p class="text-xs text-slate-500">${isCoord ? `Mode Koordinator: Pencatatan & riwayat khusus untuk <b>${coordSectionName} (${currentUser.name})</b>` : "Pencatatan seluruh arus kas masuk/keluar beserta tautan bukti nota."}</p>
+                        </div>
+                    </div>
+
+                    ${!isVip ? `
+                        <form onsubmit="addKasTransaction(event)" class="p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Transaksi</label><input type="date" id="kasTanggal" value="2026-10-31" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis Arus Kas</label><select id="kasTipe" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"><option value="keluar">Pengeluaran (-)</option><option value="masuk">Pemasukan (+)</option></select></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Nominal (Rp)</label><input type="number" id="kasNominal" placeholder="Contoh: 350000" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Uraian Keperluan</label><input type="text" id="kasUraian" placeholder="Contoh: Pembelian Air Mineral" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            ${isSc ? `
+                                <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Seksi Terkait</label><select id="kasSeksi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"><option value="Pengelola Inti">Pengelola Inti</option>${ev.divisions.map((d) => `<option value="${d.name}">${d.name}</option>`).join("")}</select></div>
+                                <div><label class="block text-[11px] font-bold text-slate-600 mb-1">PIC Panitia</label><select id="kasPic" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>${buildGroupedSdmOptionsHtml(currentUser.name, false)}</select></div>
+                            ` : ""}
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Link Bukti Nota / Kwitansi</label><input type="url" id="kasNotaUrl" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"></div>
+                            <div class="flex items-end"><button type="submit" class="w-full py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Catat Transaksi Kas</button></div>
+                        </form>
+                    ` : ""}
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead><tr class="bg-slate-100 text-navy"><th class="p-3 rounded-l-xl">Tanggal</th><th class="p-3">Tipe</th><th class="p-3">Uraian Transaksi</th><th class="p-3">Seksi & PIC</th><th class="p-3">Nominal</th><th class="p-3">Bukti Nota</th>${!isVip ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}</tr></thead>
+                            <tbody class="divide-y">
+                                ${transactions.map((k) => `
+                                    <tr>
+                                        <td class="p-3 font-semibold">${k.tanggal}</td>
+                                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${k.tipe === "masuk" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">${k.tipe === "masuk" ? "MASUK (+)" : "KELUAR (-)"}</span></td>
+                                        <td class="p-3 font-bold text-slate-800">${k.uraian}</td>
+                                        <td class="p-3 text-slate-600">${k.seksi} • <b>${k.pic}</b></td>
+                                        <td class="p-3 font-black ${k.tipe === "masuk" ? "text-emerald-700" : "text-rose-600"}">${formatRp(k.nominal)}</td>
+                                        <td class="p-3">${k.notaUrl ? `<a href="${k.notaUrl}" target="_blank" class="text-blue-600 underline font-bold">Lihat Nota</a>` : "-"}</td>
+                                        ${!isVip ? `<td class="p-3 text-right"><button onclick="deleteKasItem('${k.id}')" title="Hapus Transaksi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>` : ""}
+                                    </tr>
+                                `).join("") || `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada transaksi tercatat.</td></tr>`}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function addKasTransaction(e) {
+        e.preventDefault();
+        const ev = getActiveEvent();
+        const isCoord = currentUser.role === "koordinator";
+        const coordDiv = ev.divisions.find((d) => d.id === currentUser.coordDivisionId) || ev.divisions.find((d) => d.pic === currentUser.name);
+
+        const seksiVal = isCoord ? (coordDiv ? coordDiv.name : "Seksi Koordinator") : document.getElementById("kasSeksi").value;
+        const picVal = isCoord ? currentUser.name : document.getElementById("kasPic").value;
+
+        ev.kasTransactions.unshift({
+          id: "kas_" + Date.now(), tanggal: document.getElementById("kasTanggal").value,
+          tipe: document.getElementById("kasTipe").value, nominal: Number(document.getElementById("kasNominal").value) || 0,
+          uraian: document.getElementById("kasUraian").value.trim(), seksi: seksiVal, pic: picVal, notaUrl: document.getElementById("kasNotaUrl").value.trim(),
+        });
+        syncToCloud(); renderAll(); showToast("Transaksi kas berhasil dicatat!");
+      }
+
+      function deleteKasItem(id) { const ev = getActiveEvent(); ev.kasTransactions = ev.kasTransactions.filter((k) => k.id !== id); syncToCloud(); renderAll(); showToast("Transaksi kas dihapus."); }
+
+      // ==========================================
+      // TAB 5: DATABASE PESERTA & GATE QR CHECK-IN
+      // ==========================================
+      function renderPesertaTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const container = document.getElementById("dashContentPeserta");
+        const list = ev.participants || [];
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">Database Peserta & Gate Registrasi QR</h3>
+                            <p class="text-xs text-slate-500">Data pendaftar dari Landing Page beserta status QR Check-in Kehadiran.</p>
+                        </div>
+                        ${!isSc ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
+                    </div>
+
+                    ${isSc ? `
+                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-xs font-extrabold uppercase text-navy">📲 Gate Scanner QR Kehadiran Peserta (Hari-H)</h4>
+                                <p class="text-[11px] text-slate-600">Gunakan kamera HP untuk scan QR E-Tiket peserta atau ketik kode tiket (Contoh: <b>SEO-2026-882</b>).</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" onclick="openRealQRScanner('peserta')" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-navy font-extrabold text-xs shadow flex items-center gap-1.5">
+                                    <span>📷 Buka Kamera Scan QR</span>
+                                </button>
+                                <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                                <button onclick="scanParticipantQrTicket()" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">Check-in Manual</button>
+                            </div>
+                        </div>
+                    ` : ""}
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-navy">
+                                    <th class="p-3 rounded-l-xl">Kode QR</th>
+                                    <th class="p-3">Nama Lengkap & JK</th>
+                                    <th class="p-3">Kontak & Domisili</th>
+                                    <th class="p-3">Afiliasi & Instansi</th>
+                                    <th class="p-3">Paket Dipilih</th>
+                                    <th class="p-3">Status Kehadiran</th>
+                                    ${isSc ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map((p) => `
+                                    <tr class="${p.statusAktif === false ? "opacity-50 bg-rose-50/40" : ""}">
+                                        <td class="p-3 font-black text-navy">${p.ticketCode}</td>
+                                        <td class="p-3"><div class="font-bold text-slate-800">${p.nama}</div><div class="text-[11px] text-slate-500">${p.gender}</div></td>
+                                        <td class="p-3"><div>${p.wa}</div><div class="text-[11px] text-slate-500">${p.kota}, ${p.provinsi}</div></td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px]">${p.afiliasi}</span><div class="font-semibold text-slate-700 mt-0.5">${p.instansi}</div></td>
+                                        <td class="p-3 font-bold text-amber-800">${p.paket}</td>
+                                        <td class="p-3">
+                                            ${p.statusAktif === false
+                                                ? `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[10px]">Batal Mengikuti Event</span>`
+                                                : p.checkedIn
+                                                  ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">✓ Hadir (${p.checkInTime})</span>`
+                                                  : `<button ${isSc ? `onclick="toggleParticipantCheckIn('${p.id}')"` : "disabled"} class="px-2.5 py-1 rounded-full bg-slate-200 hover:bg-amber-200 text-slate-700 font-bold text-[10px]">📲 Klik Check-in</button>`
+                                            }
+                                        </td>
+                                        ${isSc ? `
+                                            <td class="p-3 text-right">
+                                                <div class="inline-flex gap-1.5">
+                                                    <button onclick="editParticipantPrompt('${p.id}')" title="Edit Peserta" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+                                                    <button onclick="cancelParticipantStatus('${p.id}')" title="Batal Mengikuti Event" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg></button>
+                                                </div>
+                                            </td>
+                                        ` : ""}
+                                    </tr>
+                                `).join("") || `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada peserta terdaftar.</td></tr>`}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function scanParticipantQrTicket() {
+        const inp = document.getElementById("qrScanTicketInput");
+        const code = inp ? inp.value.trim().toUpperCase() : "";
+        if (!code) return;
+        const ev = getActiveEvent();
+        const target = ev.participants.find((p) => p.ticketCode.toUpperCase() === code);
+        if (!target) { showToast("Nomor Tiket QR tidak ditemukan!", "error"); return; }
+        const now = new Date();
+        target.checkedIn = true;
+        target.checkInTime = now.toTimeString().slice(0, 5) + " WIB";
+        if (inp) inp.value = "";
+        syncToCloud();
+        renderAll();
+        showToast(`Check-in Berhasil: ${target.nama} (${target.ticketCode})`);
+      }
+
+      function toggleParticipantCheckIn(pId) {
+        const ev = getActiveEvent(); const target = ev.participants.find((p) => p.id === pId); if (!target) return;
+        const now = new Date(); target.checkedIn = !target.checkedIn; target.checkInTime = target.checkedIn ? now.toTimeString().slice(0, 5) + " WIB" : "-";
+        syncToCloud(); renderAll(); showToast(`Status kehadiran ${target.nama} diperbarui.`);
+      }
+
+      function editParticipantPrompt(pId) {
+        const ev = getActiveEvent(); const target = ev.participants.find((p) => p.id === pId); if (!target) return;
+        const newName = prompt("Edit Nama Peserta:", target.nama);
+        if (newName !== null && newName.trim() !== "") {
+          target.nama = newName.trim(); const newInst = prompt("Edit Asal Instansi & Kota:", target.instansi); if (newInst !== null) target.instansi = newInst.trim();
+          syncToCloud(); renderAll(); showToast("Data peserta berhasil diperbarui.");
+        }
+      }
+
+      function cancelParticipantStatus(pId) {
+        const ev = getActiveEvent(); const target = ev.participants.find((p) => p.id === pId); if (!target) return;
+        target.statusAktif = target.statusAktif === false ? true : false; syncToCloud(); renderAll();
+        showToast(target.statusAktif === false ? `${target.nama} ditandai Batal Mengikuti Event.` : `${target.nama} diaktifkan kembali.`);
+      }
+
+      // ==========================================
+      // FITUR UNDUH QR TIKET SEBAGAI GAMBAR
+      // ==========================================
+      function downloadQrCode() {
+          const img = document.getElementById("pubTicketQrImg");
+          const ticketCode = document.getElementById("ticketCodeText").textContent;
+          if (!img.src || img.src === "") {
+              showToast("QR Code belum tersedia!", "error");
+              return;
+          }
+          
+          fetch(img.src)
+            .then(res => res.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.style.display = "none";
+                a.href = url;
+                a.download = `SEO_Tiket_${ticketCode}.png`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                showToast("E-Tiket berhasil diunduh!");
+            })
+            .catch(err => {
+                // Fallback untuk bypass masalah CORS secara manual
+                const a = document.createElement("a");
+                a.href = img.src;
+                a.download = `SEO_Tiket_${ticketCode}.png`;
+                a.target = "_blank";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            });
+      }
+
+      // ==========================================
+      // TAB 6: RUNDOWN ACARA
+      // ==========================================
+      function renderRundownTab(ev) {
+        const canEdit = currentUser.role === "sc" || currentUser.role === "koordinator";
+        const container = document.getElementById("dashContentRundown");
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">⏱️ Tabel Rundown Acara</h3>
+                            <p class="text-xs text-slate-500">Susunan waktu pelaksanaan acara dari awal hingga penutupan menggunakan Time Picker.</p>
+                        </div>
+                    </div>
+
+                    ${canEdit ? `
+                        <form onsubmit="addRundownRow(event)" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Mulai</label><input type="time" id="rdStart" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Selesai</label><input type="time" id="rdEnd" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Sesi / Kegiatan</label><input type="text" id="rdKegiatan" placeholder="Contoh: Sesi Materi 1" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">PIC / Penanggung Jawab</label><input type="text" id="rdPic" placeholder="Contoh: Seksi Acara" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div class="flex items-end gap-2"><input type="text" id="rdRuangan" placeholder="Ruangan..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"><button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shrink-0">+ Sesi</button></div>
+                        </form>
+                    ` : ""}
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-navy">
+                                    <th class="p-3 rounded-l-xl">Waktu</th><th class="p-3">Durasi</th><th class="p-3">Sesi Kegiatan</th><th class="p-3">PIC Lapangan</th><th class="p-3">Ruangan</th>${canEdit ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${(ev.rundown || []).map((r) => `
+                                    <tr>
+                                        <td class="p-3 font-black text-navy">${r.start} - ${r.end}</td>
+                                        <td class="p-3 text-slate-500 font-semibold">${r.durasi}</td>
+                                        <td class="p-3 font-bold text-slate-800">${r.kegiatan}</td>
+                                        <td class="p-3 font-semibold text-amber-800">${r.pic}</td>
+                                        <td class="p-3 text-slate-600">${r.ruangan || "-"}</td>
+                                        ${canEdit ? `<td class="p-3 text-right"><button onclick="deleteRundownRow('${r.id}')" title="Hapus Sesi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>` : ""}
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function addRundownRow(e) {
+        e.preventDefault();
+        const s = document.getElementById("rdStart").value;
+        const en = document.getElementById("rdEnd").value;
+        const [sh, sm] = s.split(":").map(Number);
+        const [eh, em] = en.split(":").map(Number);
+        const diff = Math.max(0, eh * 60 + em - (sh * 60 + sm));
+
+        const ev = getActiveEvent();
+        ev.rundown.push({
+          id: "rd_" + Date.now(), start: s, end: en, durasi: `${diff} Menit`,
+          kegiatan: document.getElementById("rdKegiatan").value.trim(), pic: document.getElementById("rdPic").value.trim(), ruangan: document.getElementById("rdRuangan").value.trim(),
+        });
+        syncToCloud(); renderAll(); showToast("Sesi rundown berhasil ditambahkan!");
+      }
+
+      function deleteRundownRow(id) { const ev = getActiveEvent(); ev.rundown = ev.rundown.filter((r) => r.id !== id); syncToCloud(); renderAll(); }
+    </script>
+  </body>
+</html>

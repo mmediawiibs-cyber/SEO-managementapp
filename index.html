@@ -880,7 +880,7 @@
         onclick="closePublicLanding()"
         class="fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-2xl bg-navy text-amber-400 font-extrabold text-xs shadow-2xl border border-amber-400/40 flex items-center gap-2 hover:scale-105 transition"
       >
-        <span>⬅️ Kembali ke Dashboard Super Admin</span>
+        <span>⬅️ Kembali ke Dashboard</span>
       </button>
 
       <div class="max-w-3xl mx-auto px-4 py-10">
@@ -1169,13 +1169,28 @@
             Tunjukkan QR Code atau Nomor Unik ini kepada panitia saat registrasi
             kehadiran di lokasi acara.
           </p>
-          <div class="flex justify-center py-3">
+          <div class="flex flex-col items-center gap-3 py-3">
             <img
               id="pubTicketQrImg"
               src=""
               alt="QR Code Tiket"
+              crossorigin="anonymous"
               class="w-48 h-48 rounded-2xl border-4 border-navy p-2 bg-white shadow-md"
             />
+            <button
+              type="button"
+              onclick="downloadQrCode()"
+              class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-navy font-black text-xs shadow-md transition flex items-center gap-2"
+            >
+              <span>💾 Simpan E-Tiket QR (Gambar)</span>
+            </button>
+            <button
+              id="btnReloadStandalone"
+              onclick="window.location.reload()"
+              class="hidden mt-2 text-slate-500 font-bold text-xs underline"
+            >
+              Kembali ke Awal / Daftar Peserta Lain
+            </button>
           </div>
           <div
             class="bg-slate-100 p-4 rounded-2xl max-w-md mx-auto text-left text-xs space-y-1.5"
@@ -1513,28 +1528,6 @@
 
             <div id="wizDivisionsContainer" class="space-y-5"></div>
           </div>
-
-          <!-- TOMBOL KUSTOMISASI LINK PENDAFTARAN PESERTA -->
-          <div
-            class="p-5 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-4"
-          >
-            <div>
-              <h5 class="text-sm font-black text-navy">
-                🔗 Pengaturan Form & Paket Link Pendaftaran Peserta
-              </h5>
-              <p class="text-xs text-slate-600">
-                Tentukan field mana yang diaktifkan serta sesuaikan nama &
-                jumlah paket pendaftaran (Paket-A, Paket-B, dst).
-              </p>
-            </div>
-            <button
-              type="button"
-              onclick="openFormConfigModal()"
-              class="px-4 py-2.5 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow"
-            >
-              Buat Link Pendaftaran Peserta
-            </button>
-          </div>
         </div>
 
         <div
@@ -1586,6 +1579,27 @@
           >
             ✕
           </button>
+        </div>
+
+        <!-- Checkbox Aktifkan Form Pendaftaran (Hanya muncul saat formConfig dibuka) -->
+        <div
+          class="bg-amber-50 border border-amber-300 p-4 rounded-2xl flex items-center justify-between gap-3"
+        >
+          <div>
+            <h4 class="text-sm font-extrabold text-navy">
+              Aktivasi Link Pendaftaran Publik
+            </h4>
+            <p class="text-[11px] text-slate-600">
+              Centang untuk membuka pendaftaran peserta via Landing Page
+              eksternal.
+            </p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="cfgIsActive" class="sr-only peer" />
+            <div
+              class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"
+            ></div>
+          </label>
         </div>
 
         <div class="space-y-3">
@@ -1653,7 +1667,7 @@
             onclick="saveFormConfigModal()"
             class="px-5 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs"
           >
-            Simpan Format Pendaftaran
+            Simpan Pengaturan Pendaftaran
           </button>
         </div>
       </div>
@@ -1666,7 +1680,6 @@
       // ==========================================
       // 0. KONFIGURASI FIREBASE FIRESTORE CLOUD SYNC
       // ==========================================
-      // Ganti nilai di bawah ini dengan firebaseConfig asli dari Firebase Console Anda:
       const firebaseConfig = {
         apiKey: "AIzaSyANv_7KsZzB6mD2IJgw8IVdO8eT2hVm0Mc",
         authDomain: "seo-db-fe9c4.firebaseapp.com",
@@ -1678,6 +1691,9 @@
 
       let db = null;
       let isFirebaseActive = false;
+
+      // Deteksi mode Standalone untuk Landing Page Publik
+      let isPublicStandaloneMode = false;
 
       function initFirebaseConnection() {
         try {
@@ -1695,22 +1711,55 @@
             if (badge) badge.textContent = "☁️ Cloud Sync Aktif";
             listenFromCloud();
           } else {
-            // Fallback penyimpanan lokal browser jika apiKey belum diganti
             const savedLocal = localStorage.getItem("seo_stit_events_backup");
             if (savedLocal) {
               eventsData = JSON.parse(savedLocal);
+              checkStandaloneURL();
             }
           }
         } catch (err) {
-          console.warn(
-            "Firebase belum dikonfigurasi penuh, menggunakan LocalStorage:",
-            err,
-          );
+          console.warn("Firebase fallback:", err);
         }
       }
 
+      // Jika URL memiliki parameter ?daftar=evt_id, langsung buka Landing Page Publik
+      function checkStandaloneURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const daftarId = urlParams.get("daftar");
+        if (daftarId) {
+          const targetEvent = eventsData.find((e) => e.id === daftarId);
+          if (
+            targetEvent &&
+            targetEvent.formConfig &&
+            targetEvent.formConfig.isActive
+          ) {
+            activeEventId = daftarId;
+            isPublicStandaloneMode = true;
+
+            // Sembunyikan login & dashboard
+            document.getElementById("viewLogin").classList.add("hidden");
+            document.getElementById("viewApp").classList.add("hidden");
+
+            // Buka Public Landing & Sembunyikan tombol kembali ke Dashboard
+            const btnBack = document.getElementById("btnBackToDashboard");
+            if (btnBack) btnBack.classList.add("hidden");
+
+            const btnReload = document.getElementById("btnReloadStandalone");
+            if (btnReload) btnReload.classList.remove("hidden");
+
+            openPublicLanding();
+            return true;
+          } else {
+            showToast(
+              "Link Pendaftaran Tidak Aktif atau Event tidak ditemukan.",
+              "error",
+            );
+          }
+        }
+        return false;
+      }
+
       async function syncToCloud() {
-        // Simpan cadangan ke LocalStorage juga agar selalu aman
         try {
           localStorage.setItem(
             "seo_stit_events_backup",
@@ -1724,9 +1773,7 @@
             eventsData: eventsData,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           });
-        } catch (err) {
-          console.error("Gagal menyimpan ke Firebase:", err);
-        }
+        } catch (err) {}
       }
 
       function listenFromCloud() {
@@ -1738,6 +1785,15 @@
               const cloudData = doc.data();
               if (cloudData && cloudData.eventsData) {
                 eventsData = cloudData.eventsData;
+
+                // Jika sedang dalam mode daftar publik, jangan ganggu layar mereka dengan renderAll dashboard
+                if (isPublicStandaloneMode) {
+                  return;
+                }
+
+                // Cek apakah mode standalone harus aktif setelah data turun dari Firebase
+                if (checkStandaloneURL()) return;
+
                 if (currentUser) {
                   const updatedRole = evaluateUserRoleForActiveEvent(
                     currentUser.name,
@@ -1755,10 +1811,9 @@
       }
 
       // ==========================================
-      // 1. MASTER SDM STIT (48 ORANG)
+      // MASTER SDM & DATA AWAL
       // ==========================================
       const SDM_STIT = [
-        "Afghani, S.Kom.",
         "Mhd Saleh, M.Pd.",
         "Suworo, S.Si., M.M.",
         "Zikra Juninawan, M.Ed.",
@@ -1774,11 +1829,10 @@
         "Said Imanullah, S.Ag.",
         "Sumarni, S.Ag., M.Pd.",
         "Siti Bariyah, M.Pd.",
+        "Afghani, S.Kom.",
         "Mulyadi Rasyid",
       ];
-
       const SDM_SUPPORT = ["Budiman", "Edin", "Iqbal", "Faqih"];
-
       const SDM_MHS_2025 = [
         "Abdullah Ibnul Mubarak (2025)",
         "Nadzmina Al Khalifi Humaira (2025)",
@@ -1797,7 +1851,6 @@
         "Rayya Rifkah Falihah (2025)",
         "Anisaul Karimah (2025)",
       ];
-
       const SDM_MHS_2026 = [
         "Irsyad (2026)",
         "Muhamad Ihsan (2026)",
@@ -1819,8 +1872,9 @@
         "Suworo, S.Si., M.M.",
         "Zikra Juninawan, M.Ed.",
         "Muhammad Bakri Rahimin, Lc., M.E.",
+        "Muhamad Zacky Haidar, B.A.",
+        "Nurhalisa, M.Pd.",
       ];
-
       const DUMMY_SPEAKERS = [
         "Dr. Ali Saman Hasan, Lc., M.A.",
         "Yusuf Utsman Baisa, Lc.",
@@ -1914,7 +1968,6 @@
         },
       ];
 
-      // 2. 10 TUGAS DEFAULT PER SEKSI
       function getDefault10Tasks(sectionName, defaultPic) {
         const templates = {
           "Seksi Acara": [
@@ -2000,7 +2053,6 @@
         }));
       }
 
-      // 3. INITIAL EVENTS DATABASE (2 EVENT AWAL)
       let eventsData = [
         {
           id: "evt_1",
@@ -2053,63 +2105,25 @@
               name: "Seksi Acara",
               pic: "Yusuf Abdullah, M.Pd.",
               members: [
-                "Rizky Pratama (2025)",
-                "Aisyah Putri (2025)",
-                "Aufa Zaki (2026)",
+                "Abdullah Ibnul Mubarak (2025)",
+                "Nadzmina Al Khalifi Humaira (2025)",
+                "Irsyad (2026)",
               ],
-              tasks: getDefault10Tasks("Seksi Acara", "Rizky Pratama (2025)"),
+              tasks: getDefault10Tasks(
+                "Seksi Acara",
+                "Abdullah Ibnul Mubarak (2025)",
+              ),
             },
             {
               id: "div_2",
               name: "Seksi Konsumsi",
               pic: "Sumarni, S.Ag., M.Pd.",
               members: [
-                "Muhammad Ilham (2025)",
-                "Siti Nurhaliza (2025)",
-                "Zahra Amalia (2026)",
+                "Alya Lutfia Mumtaz (2025)",
+                "Winarnoko (2025)",
+                "Muhamad Ihsan (2026)",
               ],
-              tasks: getDefault10Tasks(
-                "Seksi Konsumsi",
-                "Siti Nurhaliza (2025)",
-              ),
-            },
-            {
-              id: "div_3",
-              name: "Seksi Logistik / Perlengkapan",
-              pic: "Muhamad Zacky Haidar, B.A.",
-              members: [
-                "Fajar Ramadhan (2025)",
-                "Luthfi Halim (2026)",
-                "Budiman",
-              ],
-              tasks: getDefault10Tasks(
-                "Seksi Logistik / Perlengkapan",
-                "Fajar Ramadhan (2025)",
-              ),
-            },
-            {
-              id: "div_4",
-              name: "Seksi Humas & Sponsorship",
-              pic: "Said Imanullah, S.Ag.",
-              members: ["Dewi Sartika (2025)", "Khansa Humaira (2026)"],
-              tasks: getDefault10Tasks(
-                "Seksi Humas & Sponsorship",
-                "Dewi Sartika (2025)",
-              ),
-            },
-            {
-              id: "div_5",
-              name: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Kom.",
-              members: [
-                "Reza Pahlevi (2025)",
-                "Salman Alfarisi (2026)",
-                "Iqbal",
-              ],
-              tasks: getDefault10Tasks(
-                "Seksi Dokumentasi & Publikasi",
-                "Reza Pahlevi (2025)",
-              ),
+              tasks: getDefault10Tasks("Seksi Konsumsi", "Winarnoko (2025)"),
             },
           ],
           kasTransactions: [
@@ -2179,23 +2193,6 @@
               checkInTime: "-",
               statusAktif: true,
             },
-            {
-              id: "p3",
-              ticketCode: "SEO-2026-883",
-              nama: "Budi Santoso",
-              gender: "Laki-laki",
-              wa: "085711223344",
-              email: "budi@umum.com",
-              provinsi: "Jawa Barat",
-              kota: "Kota Depok",
-              afiliasi: "Peserta Umum",
-              instansi: "Yayasan Pendidikan Islam - Depok",
-              paket: "Paket-A (Reguler + Seminar Kit)",
-              htmPaid: 85000,
-              checkedIn: false,
-              checkInTime: "-",
-              statusAktif: true,
-            },
           ],
           rundown: [
             {
@@ -2225,15 +2222,6 @@
               pic: "Yusuf Abdullah, M.Pd.",
               ruangan: "Aula Utama Lt. 2",
             },
-            {
-              id: "r4",
-              start: "11:30",
-              end: "13:00",
-              durasi: "90 Menit",
-              kegiatan: "ISHOMA & Pembagian Konsumsi Makan Siang",
-              pic: "Seksi Konsumsi",
-              ruangan: "Area Prasmanan",
-            },
           ],
           meetings: [
             {
@@ -2250,7 +2238,7 @@
                 { name: "Sumarni, S.Ag., M.Pd.", time: "13:30 WIB" },
               ],
               notulensi:
-                "1. Seluruh seksi wajib menyelesaikan minimal 70% jobdesk pada H-3.\n2. Seksi Konsumsi memastikan kuota tambahan 10 box cadangan.\n3. Gladi bersih dilaksanakan sehari sebelum acara pukul 14.00 WIB.",
+                "1. Seluruh seksi wajib menyelesaikan minimal 70% jobdesk pada H-3.\n2. Seksi Konsumsi memastikan kuota tambahan 10 box cadangan.",
             },
           ],
           documents: [
@@ -2261,15 +2249,9 @@
               uploader: "Afghani, S.Kom.",
               url: "https://drive.google.com",
             },
-            {
-              id: "d2",
-              title: "TOR & Proposal Anggaran Kegiatan",
-              category: "Proposal & TOR",
-              uploader: "Yusuf Abdullah, M.Pd.",
-              url: "https://drive.google.com",
-            },
           ],
           formConfig: {
+            isActive: true, // SC bisa matikan agar orang luar tidak bisa daftar
             useGender: true,
             useWa: true,
             useEmail: true,
@@ -2282,95 +2264,8 @@
             ],
           },
         },
-        {
-          id: "evt_2",
-          divisi: "Kaprodi MPI",
-          kategori: "Orientasi Mahasiswa Baru",
-          nama: "Ta'aruf & Orientasi Akademik Mahasiswa Baru Prodi MPI 2026",
-          tema: "Membentuk Pemimpin Pendidikan Islam yang Unggul & Beradab",
-          deskripsi:
-            "Kegiatan pengenalan sistem akademik, budaya kampus, dan keprodian bagi seluruh mahasiswa baru angkatan 2026.",
-          tanggal: "2026-12-05",
-          jamMulai: "07:30",
-          jamSelesai: "16:00",
-          lokasi: "Ruang Auditorium Terpadu STIT",
-          speakers: [
-            {
-              name: "Suworo, S.Si., M.M.",
-              topic: "Visi Misi & Budaya Akademik Kampus STIT",
-            },
-          ],
-          targetPeserta: 100,
-          subsidiKampus: 3000000,
-          htmPeserta: 65000,
-          unitEconomics: [
-            { id: "ue21", item: "Makan Siang & Snack", cost: 30000 },
-            { id: "ue22", item: "Atribut & ID Card Ta'aruf", cost: 20000 },
-          ],
-          biayaOperasional: [
-            { id: "bo21", item: "Dekorasi & Spanduk Utama", cost: 600000 },
-          ],
-          divisions: [
-            {
-              id: "div2_1",
-              name: "Seksi Acara",
-              pic: "Siti Salwa, M.Pd.",
-              members: ["Dimas Anggara (2025)", "Putri Marino (2025)"],
-              tasks: getDefault10Tasks("Seksi Acara", "Dimas Anggara (2025)"),
-            },
-            {
-              id: "div2_2",
-              name: "Seksi Konsumsi",
-              pic: "Rahmawati, M.Pd.",
-              members: ["Nabila Syakieb (2025)"],
-              tasks: getDefault10Tasks(
-                "Seksi Konsumsi",
-                "Nabila Syakieb (2025)",
-              ),
-            },
-          ],
-          kasTransactions: [
-            {
-              id: "k21",
-              tanggal: "2026-11-01",
-              tipe: "masuk",
-              uraian: "Subsidi Prodi MPI",
-              nominal: 3000000,
-              seksi: "Pengelola Inti",
-              pic: "Mhd Saleh, M.Pd.",
-              notaUrl: "https://drive.google.com",
-            },
-          ],
-          participants: [],
-          rundown: [
-            {
-              id: "r21",
-              start: "07:30",
-              end: "08:30",
-              durasi: "60 Menit",
-              kegiatan: "Apel Pagi & Pengenalan Panitia",
-              pic: "Siti Salwa, M.Pd.",
-              ruangan: "Lapangan Utama",
-            },
-          ],
-          meetings: [],
-          documents: [],
-          formConfig: {
-            useGender: true,
-            useWa: true,
-            useEmail: true,
-            useDomisili: true,
-            useAfiliasi: true,
-            usePaket: true,
-            packages: [
-              { name: "Paket-A (Mahasiswa Baru)", price: 65000 },
-              { name: "Paket-B (Panitia/Pendamping)", price: 50000 },
-            ],
-          },
-        },
       ];
 
-      // STATE APLIKASI AKTIF
       let currentUser = null;
       let activeEventId = "evt_1";
       let activeDashTab = "overview";
@@ -2378,7 +2273,6 @@
       let wizardTempDivisions = [];
       let wizardTempSpeakers = [];
 
-      // HELPER FORMAT RUPIAH
       function formatRp(num) {
         return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
       }
@@ -2414,9 +2308,6 @@
         ov.classList.remove("flex");
       }
 
-      // ==========================================
-      // KAMERA SCANNER QR ASLI (HTML5-QRCODE)
-      // ==========================================
       let html5QrCodeInstance = null;
 
       function openRealQRScanner(mode, targetMeetingId = null) {
@@ -2458,21 +2349,17 @@
                 checkInMeetingByUser(targetMeetingId);
                 showToast(`Berhasil Scan QR Rapat: ${decodedText}`);
               } else if (mode === "peserta") {
-                // Ekstrak kode tiket jika formatnya "SEO-2026-881 | Nama | Paket"
                 const rawCode = decodedText.split("|")[0].trim();
                 const inp = document.getElementById("qrScanTicketInput");
                 if (inp) inp.value = rawCode;
                 scanParticipantQrTicket();
               }
             },
-            () => {
-              // Abaikan frame yang belum fokus membaca QR
-            },
+            () => {},
           )
           .catch((err) => {
-            console.warn("Kamera tidak dapat diakses:", err);
             showToast(
-              "Kamera tidak dapat dibuka. Gunakan tombol Konfirmasi Hadir di bawahnya atau pastikan buka via link HTTPS.",
+              "Kamera tidak dapat dibuka. Pastikan buka via link HTTPS.",
               "error",
             );
           });
@@ -2500,7 +2387,6 @@
         }
       }
 
-      // 4. INISIALISASI DROPDOWN LOGIN (48 SDM STIT)
       function initLoginDropdown() {
         const sel = document.getElementById("loginName");
         if (!sel) return;
@@ -2610,8 +2496,8 @@
 
         const isSc = SC_MANAGERS.includes(name);
         const isStit = SDM_STIT.includes(name);
-
         let validPass = false;
+
         if (isSc && pass === "123") validPass = true;
         else if (isStit && (pass === "456" || pass === "777")) validPass = true;
         else if (!isStit && (pass === "777" || pass === "456"))
@@ -2626,19 +2512,13 @@
         }
 
         const roleInfo = evaluateUserRoleForActiveEvent(name);
-        currentUser = {
-          name: name,
-          ...roleInfo,
-        };
+        currentUser = { name: name, ...roleInfo };
 
         document.getElementById("viewLogin").classList.add("hidden");
         document.getElementById("viewApp").classList.remove("hidden");
 
-        if (currentUser.role === "koordinator") {
-          activeDashTab = "coord_section";
-        } else {
-          activeDashTab = "overview";
-        }
+        if (currentUser.role === "koordinator") activeDashTab = "coord_section";
+        else activeDashTab = "overview";
 
         renderAll();
         showToast(
@@ -2661,11 +2541,10 @@
           currentUser.roleLabel = updatedRole.roleLabel;
           currentUser.coordDivisionId = updatedRole.coordDivisionId;
 
-          if (currentUser.role === "koordinator") {
+          if (currentUser.role === "koordinator")
             activeDashTab = "coord_section";
-          } else if (activeDashTab === "coord_section") {
+          else if (activeDashTab === "coord_section")
             activeDashTab = "overview";
-          }
         }
         renderAll();
         const ev = getActiveEvent();
@@ -2679,9 +2558,6 @@
         renderDashboardTabsAndContent();
       }
 
-      // ==========================================
-      // MASTER RENDER FUNCTION
-      // ==========================================
       function renderAll() {
         if (!currentUser) return;
         const ev = getActiveEvent();
@@ -2691,24 +2567,14 @@
         document.getElementById("headerUserRoleBadge").textContent =
           currentUser.roleLabel;
 
-        const btnLanding = document.getElementById("btnOpenPublicLanding");
-        if (currentUser.name === SUPER_ADMIN_NAME) {
-          btnLanding.classList.remove("hidden");
-          btnLanding.classList.add("inline-flex");
-        } else {
-          btnLanding.classList.add("hidden");
-          btnLanding.classList.remove("inline-flex");
-        }
-
         const btnCreateSidebar = document.getElementById(
           "btnCreateNewEventSidebar",
         );
-        if (currentUser.role === "sc") {
+        if (currentUser.role === "sc")
           btnCreateSidebar.classList.remove("hidden");
-        } else {
-          btnCreateSidebar.classList.add("hidden");
-        }
+        else btnCreateSidebar.classList.add("hidden");
 
+        // Fitur Tombol Salin Link di Sidebar
         const cardList = document.getElementById("sidebarEventCardList");
         cardList.innerHTML = eventsData
           .map((item) => {
@@ -2721,13 +2587,45 @@
               : "bg-slate-200 text-slate-700";
             const dateClass = isActive ? "text-amber-200" : "text-slate-500";
 
-            return `
-                    <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer rounded-2xl p-4 border-2 transition-all ${cardClass}">
-                        <div class="flex items-center justify-between gap-2 mb-1.5">
-                            <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${divBadgeClass}">${item.divisi}</span>
-                            <span class="text-[11px] font-bold ${dateClass}">📅 ${item.tanggal}</span>
+            // Periksa apakah form config aktif
+            const formActive = item.formConfig && item.formConfig.isActive;
+            const linkUrl =
+              window.location.origin +
+              window.location.pathname +
+              "?daftar=" +
+              item.id;
+
+            const actionButtonsHTML =
+              isActive && currentUser.role === "sc"
+                ? `
+                <div class="mt-3 pt-3 border-t border-amber-500/50 flex flex-col gap-2">
+                    ${
+                      formActive
+                        ? `
+                        <div class="flex gap-2">
+                            <button onclick="window.open('${linkUrl}', '_blank')" class="flex-1 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-navy font-bold text-[10px] text-center transition">Buka Form Publik</button>
+                            <button onclick="copyLinkToClipboard('${linkUrl}')" class="flex-1 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white font-bold text-[10px] text-center transition">Salin Link Form</button>
                         </div>
-                        <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
+                        <p class="text-[9px] text-amber-200 text-center">Status Link: <b class="text-emerald-300">Aktif & Terbuka</b></p>
+                        `
+                        : `
+                        <p class="text-[9px] text-center text-rose-200 bg-rose-900/40 p-1.5 rounded-lg border border-rose-400/30">Form Pendaftaran Non-Aktif. Buka <b>Format & Paket Pendaftaran</b> lalu aktifkan form untuk mendapat Link.</p>
+                        `
+                    }
+                </div>
+            `
+                : "";
+
+            return `
+                    <div class="rounded-2xl p-4 border-2 transition-all ${cardClass}">
+                        <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${divBadgeClass}">${item.divisi}</span>
+                                <span class="text-[11px] font-bold ${dateClass}">📅 ${item.tanggal}</span>
+                            </div>
+                            <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
+                        </div>
+                        ${actionButtonsHTML}
                     </div>
                 `;
           })
@@ -2796,14 +2694,17 @@
         }
       }
 
-      // Alias agar kompatibel jika dipanggil oleh listener Firebase
-      function renderAllViews() {
-        renderAll();
+      function copyLinkToClipboard(urlText) {
+        navigator.clipboard
+          .writeText(urlText)
+          .then(() => {
+            showToast("Link Pendaftaran berhasil disalin ke Clipboard!");
+          })
+          .catch((err) => {
+            showToast("Gagal menyalin link.", "error");
+          });
       }
 
-      // ==========================================
-      // RENDER RUANG KERJA ANGGOTA (MAHASISWA / SUPPORT)
-      // ==========================================
       function renderMemberWorkspace(ev) {
         const openMtg = (ev.meetings || []).find((m) => m.isOpen);
         const banner = document.getElementById("memberMeetingCheckInBanner");
@@ -2837,13 +2738,11 @@
           if (
             d.members.includes(currentUser.name) ||
             d.pic === currentUser.name
-          ) {
+          )
             myDivName = d.name;
-          }
           d.tasks.forEach((t) => {
-            if (t.pic === currentUser.name) {
+            if (t.pic === currentUser.name)
               myTasks.push({ ...t, divId: d.id, divName: d.name });
-            }
           });
         });
 
@@ -2904,20 +2803,14 @@
           `<p class="text-slate-400 italic">Belum ada jadwal rapat.</p>`;
       }
 
-      // ==========================================
-      // RENDER DASHBOARD TABS & ACTIVE TAB CONTENT
-      // ==========================================
       function renderDashboardTabsAndContent() {
         const ev = getActiveEvent();
         const isCoord = currentUser.role === "koordinator";
         const isVip = currentUser.role === "vip_anggota";
 
         const btnCoord = document.getElementById("tabBtnCoordMySection");
-        if (isCoord) {
-          btnCoord.classList.remove("hidden");
-        } else {
-          btnCoord.classList.add("hidden");
-        }
+        if (isCoord) btnCoord.classList.remove("hidden");
+        else btnCoord.classList.add("hidden");
 
         const vipBanner = document.getElementById("vipReadOnlyBanner");
         if (isVip) vipBanner.classList.remove("hidden");
@@ -3013,15 +2906,11 @@
         }
       }
 
-      // ==========================================
-      // TAB 0: KELOLA SEKSI, JOBDESK & PROGRESS
-      // ==========================================
       function renderCoordMySectionTab(ev) {
         const container = document.getElementById("dashContentCoordSection");
         const div =
           ev.divisions.find((d) => d.id === currentUser.coordDivisionId) ||
           ev.divisions.find((d) => d.pic === currentUser.name);
-
         if (!div) {
           container.innerHTML = `<div class="bg-white p-6 rounded-3xl border text-sm text-slate-600">Seksi koordinasi Anda tidak ditemukan pada event ini.</div>`;
           return;
@@ -3031,7 +2920,6 @@
         const totalCount = div.tasks.length;
         const pct =
           totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-
         const memberOptions = [div.pic, ...div.members]
           .map((m) => `<option value="${m}">${m}</option>`)
           .join("");
@@ -3060,10 +2948,7 @@
 
                     <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-300 flex flex-col sm:flex-row gap-2.5">
                         <input type="text" id="coordNewTaskTitle" placeholder="Tulis jobdesk baru untuk ${div.name}..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
-                        <select id="coordNewTaskPic" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
-                            <option value="">-- Plot PIC Anggota --</option>
-                            ${memberOptions}
-                        </select>
+                        <select id="coordNewTaskPic" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"><option value="">-- Plot PIC Anggota --</option>${memberOptions}</select>
                         <button onclick="coordAddTask('${div.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Tambah Jobdesk</button>
                     </div>
 
@@ -3135,9 +3020,6 @@
         }
       }
 
-      // ==========================================
-      // TAB 1: TASK & FINANCE (OVERVIEW)
-      // ==========================================
       function renderOverviewTab(ev) {
         const unitCostPerPerson = (ev.unitEconomics || []).reduce(
           (acc, u) => acc + (Number(u.cost) || 0),
@@ -3188,7 +3070,6 @@
         const kasKeluarManual = (ev.kasTransactions || [])
           .filter((k) => k.tipe === "keluar")
           .reduce((acc, k) => acc + (Number(k.nominal) || 0), 0);
-
         const totalRiilMasuk = kasMasukManual + incomeFromPeserta;
         const sisaSaldo = totalRiilMasuk - kasKeluarManual;
 
@@ -3243,19 +3124,14 @@
             `;
       }
 
-      // ==========================================
-      // TAB 2: PROGRES JOBDESK (STRUKTUR PANITIA & SEMUA TUGAS)
-      // ==========================================
       function renderStrukturTab(ev) {
         const isSc = currentUser.role === "sc";
         const addBar = document.getElementById("strukturAddSectionBar");
         if (isSc) {
           addBar.classList.remove("hidden");
-          const sel = document.getElementById("newSectionPicSelect");
-          sel.innerHTML = buildGroupedSdmOptionsHtml("", true);
-        } else {
-          addBar.classList.add("hidden");
-        }
+          document.getElementById("newSectionPicSelect").innerHTML =
+            buildGroupedSdmOptionsHtml("", true);
+        } else addBar.classList.add("hidden");
 
         const grid = document.getElementById("strukturDivisionsGrid");
         grid.innerHTML = ev.divisions
@@ -3265,7 +3141,6 @@
             const totalCount = d.tasks.length;
             const pct =
               totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-
             const canModifyThisCard = isSc;
 
             return `
@@ -3289,11 +3164,9 @@
                                     }
                                 </div>
                             </div>
-
                             <div class="flex flex-wrap gap-1.5">
                                 ${(d.members || []).map((m) => `<span class="px-2.5 py-1 rounded-xl bg-white/90 border border-slate-200 text-[11px] font-semibold text-slate-700">👤 ${m}</span>`).join("") || `<span class="text-xs text-slate-400 italic">Belum ada anggota</span>`}
                             </div>
-
                             <div class="space-y-2 max-h-80 overflow-y-auto custom-scroll pr-1 pt-2 border-t border-slate-200/80">
                                 ${d.tasks
                                   .map(
@@ -3318,9 +3191,7 @@
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </button>
                                             `
-                                                : `
-                                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${t.pic || "Belum diplot"}</span>
-                                            `
+                                                : `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${t.pic || "Belum diplot"}</span>`
                                             }
                                         </div>
                                     </div>
@@ -3329,7 +3200,6 @@
                                   .join("")}
                             </div>
                         </div>
-
                         ${
                           canModifyThisCard
                             ? `
@@ -3357,7 +3227,6 @@
         const nameInp = document.getElementById("newSectionNameInput");
         const picSel = document.getElementById("newSectionPicSelect");
         const picCustom = document.getElementById("newSectionCustomPicInput");
-
         const name = nameInp.value.trim();
         const pic =
           picSel.value === "__custom__" ? picCustom.value.trim() : picSel.value;
@@ -3375,7 +3244,6 @@
           members: [],
           tasks: getDefault10Tasks(name, pic),
         });
-
         nameInp.value = "";
         picCustom.value = "";
         syncToCloud();
@@ -3471,7 +3339,6 @@
       function renderKeuanganTab(ev) {
         const isReadOnly = currentUser.role !== "sc";
         const container = document.getElementById("dashContentKeuangan");
-
         const unitSum = (ev.unitEconomics || []).reduce(
           (a, b) => a + (Number(b.cost) || 0),
           0,
@@ -3522,12 +3389,8 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <h4 class="text-sm font-extrabold text-navy">1. Tabel Unit Economics (Per Peserta)</h4>
-                                    <p class="text-[11px] text-slate-500">Total per Peserta: <b>${formatRp(unitSum)}</b> (x ${ev.targetPeserta} = ${formatRp(totalVar)})</p>
-                                </div>
+                                <div><h4 class="text-sm font-extrabold text-navy">1. Tabel Unit Economics (Per Peserta)</h4><p class="text-[11px] text-slate-500">Total per Peserta: <b>${formatRp(unitSum)}</b> (x ${ev.targetPeserta} = ${formatRp(totalVar)})</p></div>
                             </div>
-
                             ${
                               !isReadOnly
                                 ? `
@@ -3539,36 +3402,19 @@
                             `
                                 : ""
                             }
-
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left text-xs border-collapse">
-                                    <thead>
-                                        <tr class="bg-slate-200/70 text-navy">
-                                            <th class="p-2.5 rounded-l-xl">Komponen Benefit Peserta</th>
-                                            <th class="p-2.5">Harga Satuan</th>
-                                            ${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}
-                                        </tr>
-                                    </thead>
+                                    <thead><tr class="bg-slate-200/70 text-navy"><th class="p-2.5 rounded-l-xl">Komponen Benefit Peserta</th><th class="p-2.5">Harga Satuan</th>${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}</tr></thead>
                                     <tbody class="divide-y">
                                         ${(ev.unitEconomics || [])
                                           .map(
                                             (u) => `
                                             <tr class="bg-white">
-                                                <td class="p-2.5 font-semibold">${u.item}</td>
-                                                <td class="p-2.5 font-bold text-navy">${formatRp(u.cost)}</td>
+                                                <td class="p-2.5 font-semibold">${u.item}</td><td class="p-2.5 font-bold text-navy">${formatRp(u.cost)}</td>
                                                 ${
                                                   !isReadOnly
                                                     ? `
-                                                    <td class="p-2.5 text-right">
-                                                        <div class="inline-flex gap-1.5">
-                                                            <button onclick="startEditUe('${u.id}')" title="Edit Item" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                                            </button>
-                                                            <button onclick="deleteUe('${u.id}')" title="Hapus Item" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                    <td class="p-2.5 text-right"><div class="inline-flex gap-1.5"><button onclick="startEditUe('${u.id}')" class="p-1.5 rounded-lg bg-amber-100 text-amber-800"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button><button onclick="deleteUe('${u.id}')" class="p-1.5 rounded-lg bg-rose-100 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                                                 `
                                                     : ""
                                                 }
@@ -3583,12 +3429,8 @@
 
                         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                             <div class="flex items-center justify-between">
-                                <div>
-                                    <h4 class="text-sm font-extrabold text-navy">2. Tabel Biaya Operasional</h4>
-                                    <p class="text-[11px] text-slate-500">Total Biaya Operasional: <b>${formatRp(opSum)}</b></p>
-                                </div>
+                                <div><h4 class="text-sm font-extrabold text-navy">2. Tabel Biaya Operasional</h4><p class="text-[11px] text-slate-500">Total Biaya Operasional: <b>${formatRp(opSum)}</b></p></div>
                             </div>
-
                             ${
                               !isReadOnly
                                 ? `
@@ -3600,36 +3442,19 @@
                             `
                                 : ""
                             }
-
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left text-xs border-collapse">
-                                    <thead>
-                                        <tr class="bg-slate-200/70 text-navy">
-                                            <th class="p-2.5 rounded-l-xl">Uraian Biaya Operasional</th>
-                                            <th class="p-2.5">Nominal</th>
-                                            ${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}
-                                        </tr>
-                                    </thead>
+                                    <thead><tr class="bg-slate-200/70 text-navy"><th class="p-2.5 rounded-l-xl">Uraian Biaya Operasional</th><th class="p-2.5">Nominal</th>${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}</tr></thead>
                                     <tbody class="divide-y">
                                         ${(ev.biayaOperasional || [])
                                           .map(
                                             (b) => `
                                             <tr class="bg-white">
-                                                <td class="p-2.5 font-semibold">${b.item}</td>
-                                                <td class="p-2.5 font-bold text-navy">${formatRp(b.cost)}</td>
+                                                <td class="p-2.5 font-semibold">${b.item}</td><td class="p-2.5 font-bold text-navy">${formatRp(b.cost)}</td>
                                                 ${
                                                   !isReadOnly
                                                     ? `
-                                                    <td class="p-2.5 text-right">
-                                                        <div class="inline-flex gap-1.5">
-                                                            <button onclick="startEditBo('${b.id}')" title="Edit Biaya" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                                            </button>
-                                                            <button onclick="deleteBo('${b.id}')" title="Hapus Biaya" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                            </button>
-                                                        </div>
-                                                    </td>
+                                                    <td class="p-2.5 text-right"><div class="inline-flex gap-1.5"><button onclick="startEditBo('${b.id}')" class="p-1.5 rounded-lg bg-amber-100 text-amber-800"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button><button onclick="deleteBo('${b.id}')" class="p-1.5 rounded-lg bg-rose-100 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                                                 `
                                                     : ""
                                                 }
@@ -3660,10 +3485,10 @@
         if (!itemEl.value.trim()) return;
         const ev = getActiveEvent();
         if (editUeId) {
-          const target = ev.unitEconomics.find((u) => u.id === editUeId);
-          if (target) {
-            target.item = itemEl.value.trim();
-            target.cost = Number(costEl.value) || 0;
+          const t = ev.unitEconomics.find((u) => u.id === editUeId);
+          if (t) {
+            t.item = itemEl.value.trim();
+            t.cost = Number(costEl.value) || 0;
           }
           editUeId = null;
         } else {
@@ -3677,17 +3502,15 @@
         renderAll();
         showToast("Unit Economics disimpan.");
       }
-
       function startEditUe(id) {
         const ev = getActiveEvent();
-        const target = ev.unitEconomics.find((u) => u.id === id);
-        if (!target) return;
+        const t = ev.unitEconomics.find((u) => u.id === id);
+        if (!t) return;
         editUeId = id;
-        document.getElementById("ueItemInput").value = target.item;
-        document.getElementById("ueCostInput").value = target.cost;
+        document.getElementById("ueItemInput").value = t.item;
+        document.getElementById("ueCostInput").value = t.cost;
         document.getElementById("ueSubmitBtn").textContent = "Update";
       }
-
       function deleteUe(id) {
         const ev = getActiveEvent();
         ev.unitEconomics = ev.unitEconomics.filter((u) => u.id !== id);
@@ -3701,10 +3524,10 @@
         if (!itemEl.value.trim()) return;
         const ev = getActiveEvent();
         if (editBoId) {
-          const target = ev.biayaOperasional.find((b) => b.id === editBoId);
-          if (target) {
-            target.item = itemEl.value.trim();
-            target.cost = Number(costEl.value) || 0;
+          const t = ev.biayaOperasional.find((b) => b.id === editBoId);
+          if (t) {
+            t.item = itemEl.value.trim();
+            t.cost = Number(costEl.value) || 0;
           }
           editBoId = null;
         } else {
@@ -3718,17 +3541,15 @@
         renderAll();
         showToast("Biaya Operasional disimpan.");
       }
-
       function startEditBo(id) {
         const ev = getActiveEvent();
-        const target = ev.biayaOperasional.find((b) => b.id === id);
-        if (!target) return;
+        const t = ev.biayaOperasional.find((b) => b.id === id);
+        if (!t) return;
         editBoId = id;
-        document.getElementById("boItemInput").value = target.item;
-        document.getElementById("boCostInput").value = target.cost;
+        document.getElementById("boItemInput").value = t.item;
+        document.getElementById("boCostInput").value = t.cost;
         document.getElementById("boSubmitBtn").textContent = "Update";
       }
-
       function deleteBo(id) {
         const ev = getActiveEvent();
         ev.biayaOperasional = ev.biayaOperasional.filter((b) => b.id !== id);
@@ -3748,7 +3569,6 @@
           ev.divisions.find((d) => d.id === currentUser.coordDivisionId) ||
           ev.divisions.find((d) => d.pic === currentUser.name);
         const coordSectionName = coordDiv ? coordDiv.name : "Seksi Koordinator";
-
         const transactions = isCoord
           ? (ev.kasTransactions || []).filter(
               (k) => k.seksi === coordSectionName || k.pic === currentUser.name,
@@ -3769,53 +3589,20 @@
                       !isVip
                         ? `
                         <form onsubmit="addKasTransaction(event)" class="p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Transaksi</label>
-                                <input type="date" id="kasTanggal" value="2026-10-31" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis Arus Kas</label>
-                                <select id="kasTipe" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                    <option value="keluar">Pengeluaran (-)</option>
-                                    <option value="masuk">Pemasukan (+)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nominal (Rp)</label>
-                                <input type="number" id="kasNominal" placeholder="Contoh: 350000" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Uraian Keperluan</label>
-                                <input type="text" id="kasUraian" placeholder="Contoh: Pembelian Air Mineral" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Transaksi</label><input type="date" id="kasTanggal" value="2026-10-31" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis Arus Kas</label><select id="kasTipe" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"><option value="keluar">Pengeluaran (-)</option><option value="masuk">Pemasukan (+)</option></select></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Nominal (Rp)</label><input type="number" id="kasNominal" placeholder="Contoh: 350000" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Uraian Keperluan</label><input type="text" id="kasUraian" placeholder="Contoh: Pembelian Air Mineral" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
                             ${
                               isSc
                                 ? `
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Seksi Terkait</label>
-                                    <select id="kasSeksi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                        <option value="Pengelola Inti">Pengelola Inti</option>
-                                        ${ev.divisions.map((d) => `<option value="${d.name}">${d.name}</option>`).join("")}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">PIC Panitia (Dikelompokkan)</label>
-                                    <select id="kasPic" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                                        ${buildGroupedSdmOptionsHtml(currentUser.name, false)}
-                                    </select>
-                                </div>
+                                <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Seksi Terkait</label><select id="kasSeksi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"><option value="Pengelola Inti">Pengelola Inti</option>${ev.divisions.map((d) => `<option value="${d.name}">${d.name}</option>`).join("")}</select></div>
+                                <div><label class="block text-[11px] font-bold text-slate-600 mb-1">PIC Panitia</label><select id="kasPic" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>${buildGroupedSdmOptionsHtml(currentUser.name, false)}</select></div>
                             `
                                 : ""
                             }
-
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Link Bukti Nota / Kwitansi</label>
-                                <input type="url" id="kasNotaUrl" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                            </div>
-                            <div class="flex items-end">
-                                <button type="submit" class="w-full py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Catat Transaksi Kas</button>
-                            </div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Link Bukti Nota / Kwitansi</label><input type="url" id="kasNotaUrl" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"></div>
+                            <div class="flex items-end"><button type="submit" class="w-full py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Catat Transaksi Kas</button></div>
                         </form>
                     `
                         : ""
@@ -3823,17 +3610,7 @@
 
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-slate-100 text-navy">
-                                    <th class="p-3 rounded-l-xl">Tanggal</th>
-                                    <th class="p-3">Tipe</th>
-                                    <th class="p-3">Uraian Transaksi</th>
-                                    <th class="p-3">Seksi & PIC</th>
-                                    <th class="p-3">Nominal</th>
-                                    <th class="p-3">Bukti Nota</th>
-                                    ${!isVip ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
-                                </tr>
-                            </thead>
+                            <thead><tr class="bg-slate-100 text-navy"><th class="p-3 rounded-l-xl">Tanggal</th><th class="p-3">Tipe</th><th class="p-3">Uraian Transaksi</th><th class="p-3">Seksi & PIC</th><th class="p-3">Nominal</th><th class="p-3">Bukti Nota</th>${!isVip ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}</tr></thead>
                             <tbody class="divide-y">
                                 ${
                                   transactions
@@ -3841,28 +3618,12 @@
                                       (k) => `
                                     <tr>
                                         <td class="p-3 font-semibold">${k.tanggal}</td>
-                                        <td class="p-3">
-                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${k.tipe === "masuk" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">
-                                                ${k.tipe === "masuk" ? "MASUK (+)" : "KELUAR (-)"}
-                                            </span>
-                                        </td>
+                                        <td class="p-3"><span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${k.tipe === "masuk" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">${k.tipe === "masuk" ? "MASUK (+)" : "KELUAR (-)"}</span></td>
                                         <td class="p-3 font-bold text-slate-800">${k.uraian}</td>
                                         <td class="p-3 text-slate-600">${k.seksi} • <b>${k.pic}</b></td>
                                         <td class="p-3 font-black ${k.tipe === "masuk" ? "text-emerald-700" : "text-rose-600"}">${formatRp(k.nominal)}</td>
-                                        <td class="p-3">
-                                            ${k.notaUrl ? `<a href="${k.notaUrl}" target="_blank" class="text-blue-600 underline font-bold">Lihat Nota</a>` : "-"}
-                                        </td>
-                                        ${
-                                          !isVip
-                                            ? `
-                                            <td class="p-3 text-right">
-                                                <button onclick="deleteKasItem('${k.id}')" title="Hapus Transaksi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                </button>
-                                            </td>
-                                        `
-                                            : ""
-                                        }
+                                        <td class="p-3">${k.notaUrl ? `<a href="${k.notaUrl}" target="_blank" class="text-blue-600 underline font-bold">Lihat Nota</a>` : "-"}</td>
+                                        ${!isVip ? `<td class="p-3 text-right"><button onclick="deleteKasItem('${k.id}')" title="Hapus Transaksi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>` : ""}
                                     </tr>
                                 `,
                                     )
@@ -3903,7 +3664,6 @@
           pic: picVal,
           notaUrl: document.getElementById("kasNotaUrl").value.trim(),
         });
-
         syncToCloud();
         renderAll();
         showToast("Transaksi kas berhasil dicatat!");
@@ -3975,18 +3735,9 @@
                                       (p) => `
                                     <tr class="${p.statusAktif === false ? "opacity-50 bg-rose-50/40" : ""}">
                                         <td class="p-3 font-black text-navy">${p.ticketCode}</td>
-                                        <td class="p-3">
-                                            <div class="font-bold text-slate-800">${p.nama}</div>
-                                            <div class="text-[11px] text-slate-500">${p.gender}</div>
-                                        </td>
-                                        <td class="p-3">
-                                            <div>${p.wa}</div>
-                                            <div class="text-[11px] text-slate-500">${p.kota}, ${p.provinsi}</div>
-                                        </td>
-                                        <td class="p-3">
-                                            <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px]">${p.afiliasi}</span>
-                                            <div class="font-semibold text-slate-700 mt-0.5">${p.instansi}</div>
-                                        </td>
+                                        <td class="p-3"><div class="font-bold text-slate-800">${p.nama}</div><div class="text-[11px] text-slate-500">${p.gender}</div></td>
+                                        <td class="p-3"><div>${p.wa}</div><div class="text-[11px] text-slate-500">${p.kota}, ${p.provinsi}</div></td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px]">${p.afiliasi}</span><div class="font-semibold text-slate-700 mt-0.5">${p.instansi}</div></td>
                                         <td class="p-3 font-bold text-amber-800">${p.paket}</td>
                                         <td class="p-3">
                                             ${
@@ -4002,12 +3753,8 @@
                                             ? `
                                             <td class="p-3 text-right">
                                                 <div class="inline-flex gap-1.5">
-                                                    <button onclick="editParticipantPrompt('${p.id}')" title="Edit Peserta" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                                    </button>
-                                                    <button onclick="cancelParticipantStatus('${p.id}')" title="Batal Mengikuti Event" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
-                                                    </button>
+                                                    <button onclick="editParticipantPrompt('${p.id}')" title="Edit Peserta" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>
+                                                    <button onclick="cancelParticipantStatus('${p.id}')" title="Batal Mengikuti Event" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg></button>
                                                 </div>
                                             </td>
                                         `
@@ -4091,6 +3838,44 @@
       }
 
       // ==========================================
+      // FITUR UNDUH QR TIKET SEBAGAI GAMBAR
+      // ==========================================
+      function downloadQrCode() {
+        const img = document.getElementById("pubTicketQrImg");
+        const ticketCode =
+          document.getElementById("ticketCodeText").textContent;
+        if (!img.src || img.src === "") {
+          showToast("QR Code belum tersedia!", "error");
+          return;
+        }
+
+        fetch(img.src)
+          .then((res) => res.blob())
+          .then((blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.style.display = "none";
+            a.href = url;
+            a.download = `SEO_Tiket_${ticketCode}.png`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            showToast("E-Tiket berhasil diunduh!");
+          })
+          .catch((err) => {
+            // Fallback untuk bypass masalah CORS secara manual
+            const a = document.createElement("a");
+            a.href = img.src;
+            a.download = `SEO_Tiket_${ticketCode}.png`;
+            a.target = "_blank";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          });
+      }
+
+      // ==========================================
       // TAB 6: RUNDOWN ACARA
       // ==========================================
       function renderRundownTab(ev) {
@@ -4111,26 +3896,11 @@
                       canEdit
                         ? `
                         <form onsubmit="addRundownRow(event)" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-5 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Mulai</label>
-                                <input type="time" id="rdStart" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Selesai</label>
-                                <input type="time" id="rdEnd" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Sesi / Kegiatan</label>
-                                <input type="text" id="rdKegiatan" placeholder="Contoh: Sesi Materi 1" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">PIC / Penanggung Jawab</label>
-                                <input type="text" id="rdPic" placeholder="Contoh: Seksi Acara" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div class="flex items-end gap-2">
-                                <input type="text" id="rdRuangan" placeholder="Ruangan..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                <button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shrink-0">+ Sesi</button>
-                            </div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Mulai</label><input type="time" id="rdStart" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Selesai</label><input type="time" id="rdEnd" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Sesi / Kegiatan</label><input type="text" id="rdKegiatan" placeholder="Contoh: Sesi Materi 1" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div><label class="block text-[11px] font-bold text-slate-600 mb-1">PIC / Penanggung Jawab</label><input type="text" id="rdPic" placeholder="Contoh: Seksi Acara" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required></div>
+                            <div class="flex items-end gap-2"><input type="text" id="rdRuangan" placeholder="Ruangan..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white"><button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shrink-0">+ Sesi</button></div>
                         </form>
                     `
                         : ""
@@ -4140,12 +3910,7 @@
                         <table class="w-full text-left text-xs border-collapse">
                             <thead>
                                 <tr class="bg-slate-100 text-navy">
-                                    <th class="p-3 rounded-l-xl">Waktu</th>
-                                    <th class="p-3">Durasi</th>
-                                    <th class="p-3">Sesi Kegiatan</th>
-                                    <th class="p-3">PIC Lapangan</th>
-                                    <th class="p-3">Ruangan</th>
-                                    ${canEdit ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
+                                    <th class="p-3 rounded-l-xl">Waktu</th><th class="p-3">Durasi</th><th class="p-3">Sesi Kegiatan</th><th class="p-3">PIC Lapangan</th><th class="p-3">Ruangan</th>${canEdit ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
@@ -4158,17 +3923,7 @@
                                         <td class="p-3 font-bold text-slate-800">${r.kegiatan}</td>
                                         <td class="p-3 font-semibold text-amber-800">${r.pic}</td>
                                         <td class="p-3 text-slate-600">${r.ruangan || "-"}</td>
-                                        ${
-                                          canEdit
-                                            ? `
-                                            <td class="p-3 text-right">
-                                                <button onclick="deleteRundownRow('${r.id}')" title="Hapus Sesi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                                </button>
-                                            </td>
-                                        `
-                                            : ""
-                                        }
+                                        ${canEdit ? `<td class="p-3 text-right"><button onclick="deleteRundownRow('${r.id}')" title="Hapus Sesi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></td>` : ""}
                                     </tr>
                                 `,
                                   )
@@ -4209,1009 +3964,6 @@
         syncToCloud();
         renderAll();
       }
-
-      // ==========================================
-      // TAB 7: MEETING & NOTULENSI (DENGAN KAMERA QR SCANNER ASLI)
-      // ==========================================
-      function renderMeetingTab(ev) {
-        const isSc = currentUser.role === "sc";
-        const container = document.getElementById("dashContentMeeting");
-
-        container.innerHTML = `
-                <div class="space-y-6">
-                    ${
-                      isSc
-                        ? `
-                        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="text-lg font-black text-navy">📅 Buat Schedule Meeting Baru & Generate QR Check-in Panitia</h3>
-                            <form onsubmit="createNewMeetingSchedule(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Agenda Rapat *</label>
-                                    <input type="text" id="mtgAgenda" placeholder="Contoh: Rapat Koordinasi H-3" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Rapat (Date Picker) *</label>
-                                    <input type="date" id="mtgTanggal" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Rapat (Time Picker) *</label>
-                                    <input type="time" id="mtgWaktu" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tempat / Ruangan Meeting *</label>
-                                    <select id="mtgTempatSelect" onchange="toggleMtgCustomTempat()" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                        <option value="Ruang Rapat Utama STIT">Ruang Rapat Utama STIT</option>
-                                        <option value="Aula Lt. 2 Kampus STIT">Aula Lt. 2 Kampus STIT</option>
-                                        <option value="Online via Google Meet / Zoom">Online via Google Meet / Zoom</option>
-                                        <option value="__custom__">+ Tulis Tempat Baru...</option>
-                                    </select>
-                                    <input type="text" id="mtgTempatCustom" placeholder="Ketik tempat rapat..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold">
-                                </div>
-                                <div class="sm:col-span-4 flex justify-end">
-                                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Buat Schedule & Buka QR Meeting</button>
-                                </div>
-                            </form>
-                        </div>
-                    `
-                        : ""
-                    }
-
-                    <div class="space-y-6">
-                        ${
-                          (ev.meetings || [])
-                            .map((m) => {
-                              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(m.code + " - " + m.agenda)}`;
-                              const alreadyCheckedIn = m.attendees.some(
-                                (a) => a.name === currentUser.name,
-                              );
-
-                              return `
-                                <div class="bg-white rounded-3xl p-6 border-2 ${m.isOpen ? "border-amber-400" : "border-slate-200"} shadow-sm space-y-5">
-                                    <div class="flex flex-col lg:flex-row justify-between gap-6 border-b border-slate-200 pb-5">
-                                        <div class="space-y-2">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="px-3 py-1 rounded-full text-xs font-black ${m.isOpen ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}">
-                                                    ${m.isOpen ? "🟢 QR Meeting Terbuka" : "🔒 Sesi Ditutup"}
-                                                </span>
-                                                <span class="text-xs font-black text-navy bg-amber-100 px-2.5 py-1 rounded-lg">Kode: ${m.code}</span>
-                                            </div>
-                                            <h4 class="text-lg font-black text-navy">${m.agenda}</h4>
-                                            <div class="flex flex-wrap gap-4 text-xs text-slate-600 font-semibold">
-                                                <span>📅 Tanggal: <b>${m.tanggal}</b></span>
-                                                <span>⏰ Waktu: <b>${m.waktu} WIB</b></span>
-                                                <span>📍 Tempat: <b>${m.tempat}</b></span>
-                                            </div>
-
-                                            <div class="pt-2 flex flex-wrap gap-2">
-                                                ${
-                                                  alreadyCheckedIn
-                                                    ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Tercatat Hadir</span>`
-                                                    : m.isOpen
-                                                      ? `<button onclick="openRealQRScanner('meeting', '${m.id}')" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow flex items-center gap-1.5">
-                                                           <span>📷 Buka Kamera HP & Scan QR Rapat</span>
-                                                         </button>
-                                                         <button onclick="checkInMeetingByUser('${m.id}')" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-bold text-xs">
-                                                           ✓ Check-in Cepat (${currentUser.name})
-                                                         </button>`
-                                                      : ""
-                                                }
-                                                ${
-                                                  isSc
-                                                    ? `
-                                                    <button onclick="toggleMeetingOpenStatus('${m.id}')" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700">
-                                                        ${m.isOpen ? "Tutup Sesi QR" : "Buka Kembali QR"}
-                                                    </button>
-                                                `
-                                                    : ""
-                                                }
-                                            </div>
-                                        </div>
-
-                                        ${
-                                          m.isOpen
-                                            ? `
-                                            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 shrink-0">
-                                                <img src="${qrUrl}" alt="QR Meeting" class="w-28 h-28 rounded-xl border-2 border-navy p-1 bg-white">
-                                                <div class="text-xs space-y-1 max-w-[180px]">
-                                                    <p class="font-black text-navy">QR Check-in Rapat</p>
-                                                    <p class="text-[11px] text-slate-500">Panitia membuka menu Meeting di HP lalu klik <b>Buka Kamera HP & Scan QR</b> ke layar ini.</p>
-                                                </div>
-                                            </div>
-                                        `
-                                            : ""
-                                        }
-                                    </div>
-
-                                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                                        <p class="text-xs font-extrabold uppercase text-navy">👥 Daftar Peserta Hadir Meeting (${m.attendees.length} Orang):</p>
-                                        <div class="flex flex-wrap gap-2">
-                                            ${
-                                              m.attendees
-                                                .map(
-                                                  (a) => `
-                                                <span class="px-3 py-1 rounded-xl bg-white border border-emerald-300 text-xs font-bold text-slate-800">
-                                                    ✓ ${a.name} <span class="text-[10px] text-emerald-700">(${a.time})</span>
-                                                </span>
-                                            `,
-                                                )
-                                                .join("") ||
-                                              `<span class="text-xs text-slate-400 italic">Belum ada peserta yang scan check-in.</span>`
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <div class="space-y-2">
-                                        <label class="block text-xs font-extrabold uppercase text-navy">📝 Notulensi & Hasil Keputusan Meeting:</label>
-                                        <textarea id="notulensiText_${m.id}" rows="4" class="w-full p-4 rounded-2xl border border-slate-300 text-xs font-semibold leading-relaxed bg-white" placeholder="Tulis hasil pembahasan dan keputusan rapat di sini...">${m.notulensi || ""}</textarea>
-                                        <div class="flex justify-end">
-                                            <button onclick="saveMeetingNotulensi('${m.id}')" class="px-5 py-2 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow">Simpan Notulensi Meeting</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                            })
-                            .join("") ||
-                          `<div class="bg-white p-8 rounded-3xl border text-center text-xs text-slate-400">Belum ada jadwal meeting yang dibuat.</div>`
-                        }
-                    </div>
-                </div>
-            `;
-      }
-
-      function toggleMtgCustomTempat() {
-        const sel = document.getElementById("mtgTempatSelect");
-        const inp = document.getElementById("mtgTempatCustom");
-        if (sel.value === "__custom__") inp.classList.remove("hidden");
-        else inp.classList.add("hidden");
-      }
-
-      function createNewMeetingSchedule(e) {
-        e.preventDefault();
-        const sel = document.getElementById("mtgTempatSelect");
-        const cust = document.getElementById("mtgTempatCustom");
-        const tempat =
-          sel.value === "__custom__" ? cust.value.trim() : sel.value;
-
-        const ev = getActiveEvent();
-        const code = "MTG-" + Math.floor(100 + Math.random() * 900);
-        ev.meetings.unshift({
-          id: "mtg_" + Date.now(),
-          code: code,
-          agenda: document.getElementById("mtgAgenda").value.trim(),
-          tanggal: document.getElementById("mtgTanggal").value,
-          waktu: document.getElementById("mtgWaktu").value,
-          tempat: tempat || "Ruang Rapat STIT",
-          isOpen: true,
-          attendees: [
-            {
-              name: currentUser.name,
-              time: new Date().toTimeString().slice(0, 5) + " WIB",
-            },
-          ],
-          notulensi: "",
-        });
-        syncToCloud();
-        renderAll();
-        showToast(`Schedule Meeting & QR Code (${code}) berhasil dibuka!`);
-      }
-
-      function checkInMeetingByUser(mtgId) {
-        const ev = getActiveEvent();
-        const mtg = ev.meetings.find((m) => m.id === mtgId);
-        if (!mtg) return;
-        if (!mtg.attendees.some((a) => a.name === currentUser.name)) {
-          mtg.attendees.push({
-            name: currentUser.name,
-            time: new Date().toTimeString().slice(0, 5) + " WIB",
-          });
-          syncToCloud();
-          renderAll();
-          showToast(
-            `Kehadiran rapat Anda (${currentUser.name}) berhasil tercatat!`,
-          );
-        }
-      }
-
-      function toggleMeetingOpenStatus(mtgId) {
-        const ev = getActiveEvent();
-        const mtg = ev.meetings.find((m) => m.id === mtgId);
-        if (mtg) {
-          mtg.isOpen = !mtg.isOpen;
-          syncToCloud();
-          renderAll();
-        }
-      }
-
-      function saveMeetingNotulensi(mtgId) {
-        const ev = getActiveEvent();
-        const mtg = ev.meetings.find((m) => m.id === mtgId);
-        const txt = document.getElementById(`notulensiText_${mtgId}`);
-        if (mtg && txt) {
-          mtg.notulensi = txt.value;
-          syncToCloud();
-          showToast("Notulensi meeting berhasil disimpan!");
-        }
-      }
-
-      // ==========================================
-      // TAB 8: ARSIP DOKUMEN & SK
-      // ==========================================
-      function renderDokumenTab(ev) {
-        const isVip = currentUser.role === "vip_anggota";
-        const container = document.getElementById("dashContentDokumen");
-
-        container.innerHTML = `
-                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
-                    <div class="border-b border-slate-200 pb-4">
-                        <h3 class="text-xl font-black text-navy">📂 Arsip Dokumen, SK, Proposal & Booklet</h3>
-                        <p class="text-xs text-slate-500">Pusat penyimpanan tautan dokumen resmi kepanitiaan.</p>
-                    </div>
-
-                    ${
-                      !isVip
-                        ? `
-                        <form onsubmit="addDocumentItem(event)" class="p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3.5">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Dokumen *</label>
-                                <input type="text" id="docTitle" placeholder="Contoh: SK Kepanitiaan Resmi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Kategori Dokumen *</label>
-                                <select id="docCategorySelect" onchange="toggleDocCustomCategory()" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                    <option value="SK Kepanitiaan">SK Kepanitiaan</option>
-                                    <option value="Proposal & TOR">Proposal & TOR</option>
-                                    <option value="Booklet / Materi">Booklet / Materi</option>
-                                    <option value="Surat Menyurat">Surat Menyurat</option>
-                                    <option value="LPJ & Dokumentasi">LPJ & Dokumentasi</option>
-                                    <option value="__custom__">+ Tulis Kategori Sendiri...</option>
-                                </select>
-                                <input type="text" id="docCategoryCustom" placeholder="Ketik kategori..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold bg-white">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Diunggah Oleh (Dikelompokkan) *</label>
-                                <select id="docUploader" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                                    ${buildGroupedSdmOptionsHtml(currentUser.name, false)}
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Link Google Drive / Cloud *</label>
-                                <div class="flex gap-2">
-                                    <input type="url" id="docUrl" placeholder="https://drive.google.com/..." class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                                    <button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs">+ Arsip</button>
-                                </div>
-                            </div>
-                        </form>
-                    `
-                        : ""
-                    }
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${
-                          (ev.documents || [])
-                            .map(
-                              (d) => `
-                            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
-                                <div class="space-y-1">
-                                    <span class="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-extrabold text-[10px] uppercase">${d.category}</span>
-                                    <h4 class="text-sm font-extrabold text-navy">${d.title}</h4>
-                                    <p class="text-[11px] text-slate-500">Diunggah oleh: <b>${d.uploader}</b></p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <a href="${d.url}" target="_blank" class="px-3.5 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">Buka File</a>
-                                    ${
-                                      !isVip
-                                        ? `
-                                        <button onclick="deleteDocItem('${d.id}')" title="Hapus Dokumen" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                        </button>
-                                    `
-                                        : ""
-                                    }
-                                </div>
-                            </div>
-                        `,
-                            )
-                            .join("") ||
-                          `<p class="text-xs text-slate-400 italic">Belum ada dokumen diunggah.</p>`
-                        }
-                    </div>
-                </div>
-            `;
-      }
-
-      function toggleDocCustomCategory() {
-        const sel = document.getElementById("docCategorySelect");
-        const inp = document.getElementById("docCategoryCustom");
-        if (sel.value === "__custom__") inp.classList.remove("hidden");
-        else inp.classList.add("hidden");
-      }
-
-      function addDocumentItem(e) {
-        e.preventDefault();
-        const sel = document.getElementById("docCategorySelect");
-        const cust = document.getElementById("docCategoryCustom");
-        const cat = sel.value === "__custom__" ? cust.value.trim() : sel.value;
-
-        const ev = getActiveEvent();
-        ev.documents.unshift({
-          id: "doc_" + Date.now(),
-          title: document.getElementById("docTitle").value.trim(),
-          category: cat || "Dokumen",
-          uploader: document.getElementById("docUploader").value,
-          url: document.getElementById("docUrl").value.trim(),
-        });
-        syncToCloud();
-        renderAll();
-        showToast("Dokumen berhasil diarsipkan!");
-      }
-
-      function deleteDocItem(id) {
-        const ev = getActiveEvent();
-        ev.documents = ev.documents.filter((d) => d.id !== id);
-        syncToCloud();
-        renderAll();
-      }
-
-      // ==========================================
-      // WIZARD BUAT & EDIT EVENT BARU
-      // ==========================================
-      function openEventModal(mode) {
-        wizardMode = mode;
-        const modal = document.getElementById("eventWizardModal");
-        document.getElementById("wizardModalTitle").textContent =
-          mode === "edit"
-            ? "Edit & Kelola Konfigurasi Event"
-            : "Buat Event Baru";
-
-        if (mode === "edit") {
-          const ev = getActiveEvent();
-          document.getElementById("wizDivisi").value = ev.divisi;
-          document.getElementById("wizKategori").value = ev.kategori;
-          document.getElementById("wizNamaEvent").value = ev.nama;
-          document.getElementById("wizTema").value = ev.tema;
-          document.getElementById("wizDeskripsi").value = ev.deskripsi;
-          document.getElementById("wizTanggal").value = ev.tanggal;
-          document.getElementById("wizJamMulai").value = ev.jamMulai;
-          document.getElementById("wizJamSelesai").value = ev.jamSelesai;
-
-          const locSel = document.getElementById("wizLokasiSelect");
-          const presetLocs = [
-            "Aula Utama Lt. 2 Kampus STIT",
-            "Ruang Auditorium Terpadu STIT",
-            "Hall Serbaguna / Zoom Hybrid STIT",
-          ];
-          if (presetLocs.includes(ev.lokasi)) {
-            locSel.value = ev.lokasi;
-            document.getElementById("wizLokasiCustom").classList.add("hidden");
-          } else {
-            locSel.value = "__custom__";
-            const locCust = document.getElementById("wizLokasiCustom");
-            locCust.classList.remove("hidden");
-            locCust.value = ev.lokasi;
-          }
-
-          document.getElementById("wizTargetPeserta").value = ev.targetPeserta;
-          document.getElementById("wizSubsidi").value = ev.subsidiKampus;
-          document.getElementById("wizHtm").value = ev.htmPeserta;
-
-          wizardTempSpeakers = JSON.parse(
-            JSON.stringify(
-              ev.speakers || [{ name: DUMMY_SPEAKERS[0], topic: "" }],
-            ),
-          );
-          wizardTempDivisions = JSON.parse(JSON.stringify(ev.divisions || []));
-        } else {
-          document.getElementById("wizNamaEvent").value = "";
-          document.getElementById("wizTema").value = "";
-          document.getElementById("wizDeskripsi").value = "";
-          document.getElementById("wizTanggal").value = "2026-11-20";
-          document.getElementById("wizJamMulai").value = "08:00";
-          document.getElementById("wizJamSelesai").value = "15:00";
-          document.getElementById("wizTargetPeserta").value = 60;
-          document.getElementById("wizSubsidi").value = 2000000;
-          document.getElementById("wizHtm").value = 75000;
-
-          wizardTempSpeakers = [
-            { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
-          ];
-          wizardTempDivisions = [
-            {
-              id: "wdiv_1",
-              name: "Seksi Acara",
-              pic: "Yusuf Abdullah, M.Pd.",
-              members: [],
-              tasks: getDefault10Tasks("Seksi Acara", "Yusuf Abdullah, M.Pd."),
-            },
-            {
-              id: "wdiv_2",
-              name: "Seksi Konsumsi",
-              pic: "Sumarni, S.Ag., M.Pd.",
-              members: [],
-              tasks: getDefault10Tasks(
-                "Seksi Konsumsi",
-                "Sumarni, S.Ag., M.Pd.",
-              ),
-            },
-            {
-              id: "wdiv_3",
-              name: "Seksi Logistik / Perlengkapan",
-              pic: "Muhamad Zacky Haidar, B.A.",
-              members: [],
-              tasks: getDefault10Tasks(
-                "Seksi Logistik / Perlengkapan",
-                "Muhamad Zacky Haidar, B.A.",
-              ),
-            },
-            {
-              id: "wdiv_4",
-              name: "Seksi Humas & Sponsorship",
-              pic: "Said Imanullah, S.Ag.",
-              members: [],
-              tasks: getDefault10Tasks(
-                "Seksi Humas & Sponsorship",
-                "Said Imanullah, S.Ag.",
-              ),
-            },
-            {
-              id: "wdiv_5",
-              name: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Kom.",
-              members: [],
-              tasks: getDefault10Tasks(
-                "Seksi Dokumentasi & Publikasi",
-                "Afghani, S.Kom.",
-              ),
-            },
-          ];
-        }
-
-        renderWizardSpeakers();
-        renderWizardDivisions();
-
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-      }
-
-      function closeEventModal() {
-        const modal = document.getElementById("eventWizardModal");
-        modal.classList.add("hidden");
-        modal.classList.remove("flex");
-      }
-
-      function toggleWizCustomLokasi() {
-        const sel = document.getElementById("wizLokasiSelect");
-        const cust = document.getElementById("wizLokasiCustom");
-        if (sel.value === "__custom__") cust.classList.remove("hidden");
-        else cust.classList.add("hidden");
-      }
-
-      function renderWizardSpeakers() {
-        const container = document.getElementById("wizSpeakersContainer");
-        container.innerHTML = wizardTempSpeakers
-          .map((s, idx) => {
-            const isCustom = s.name && !DUMMY_SPEAKERS.includes(s.name);
-            return `
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-white p-3 rounded-xl border border-slate-200">
-                        <div class="sm:col-span-5">
-                            <label class="block text-[10px] font-bold text-slate-500">Pemateri ${idx + 1} (5 Opsi + Tulis Baru)</label>
-                            <select onchange="handleWizSpeakerSelect(${idx}, this.value)" class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
-                                ${DUMMY_SPEAKERS.map((ds) => `<option value="${ds}" ${s.name === ds ? "selected" : ""}>${ds}</option>`).join("")}
-                                <option value="__custom__" ${isCustom ? "selected" : ""}>+ Tulis Nama Pemateri Baru...</option>
-                            </select>
-                            <input type="text" id="wizSpkCustom_${idx}" value="${isCustom ? s.name : ""}" oninput="wizardTempSpeakers[${idx}].name = this.value" placeholder="Ketik nama pemateri baru..." class="${isCustom ? "" : "hidden"} mt-1.5 w-full px-3 py-1.5 rounded-lg border border-amber-400 text-xs font-semibold">
-                        </div>
-                        <div class="sm:col-span-6">
-                            <label class="block text-[10px] font-bold text-slate-500">Topik Pembahasan (Materi ${idx + 1})</label>
-                            <input type="text" value="${s.topic || ""}" oninput="wizardTempSpeakers[${idx}].topic = this.value" placeholder="Masukkan topik bahasan..." class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
-                        </div>
-                        <div class="sm:col-span-1 flex justify-end pt-3">
-                            ${
-                              wizardTempSpeakers.length > 1
-                                ? `
-                                <button type="button" onclick="removeSpeakerRowInWizard(${idx})" class="p-2 rounded-lg bg-rose-100 text-rose-700">✕</button>
-                            `
-                                : ""
-                            }
-                        </div>
-                    </div>
-                `;
-          })
-          .join("");
-      }
-
-      function handleWizSpeakerSelect(idx, val) {
-        const cust = document.getElementById(`wizSpkCustom_${idx}`);
-        if (val === "__custom__") {
-          cust.classList.remove("hidden");
-          wizardTempSpeakers[idx].name = cust.value;
-        } else {
-          cust.classList.add("hidden");
-          wizardTempSpeakers[idx].name = val;
-        }
-      }
-
-      function addSpeakerRowInWizard() {
-        wizardTempSpeakers.push({ name: DUMMY_SPEAKERS[0], topic: "" });
-        renderWizardSpeakers();
-      }
-
-      function removeSpeakerRowInWizard(idx) {
-        wizardTempSpeakers.splice(idx, 1);
-        renderWizardSpeakers();
-      }
-
-      function renderWizardDivisions() {
-        const container = document.getElementById("wizDivisionsContainer");
-        const picCandidates = [...SDM_STIT, ...SDM_SUPPORT];
-
-        container.innerHTML = wizardTempDivisions
-          .map((d, idx) => {
-            const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
-
-            const usedInOtherSections = new Set();
-            wizardTempDivisions.forEach((otherDiv, oIdx) => {
-              if (oIdx !== idx) {
-                (otherDiv.members || []).forEach((m) =>
-                  usedInOtherSections.add(m),
-                );
-              }
-            });
-
-            const avail2025 = SDM_MHS_2025.filter(
-              (m) => !usedInOtherSections.has(m),
-            );
-            const avail2026 = SDM_MHS_2026.filter(
-              (m) => !usedInOtherSections.has(m),
-            );
-            const isCustomPic = d.pic && !picCandidates.includes(d.pic);
-
-            return `
-                    <div class="p-5 rounded-3xl border-2 ${theme.bg} ${theme.border} space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-3">
-                            <div class="flex items-center gap-2 flex-1 min-w-[220px]">
-                                <span class="px-3 py-1 rounded-full text-xs font-black ${theme.badge}">Seksi ${idx + 1}</span>
-                                <input type="text" value="${d.name}" oninput="wizardTempDivisions[${idx}].name = this.value" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-extrabold text-navy bg-white flex-1">
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs font-bold text-navy">PIC Koordinator:</label>
-                                <select onchange="handleWizDivPicChange(${idx}, this.value)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
-                                    ${picCandidates.map((p) => `<option value="${p}" ${d.pic === p ? "selected" : ""}>${p}</option>`).join("")}
-                                    <option value="__custom__" ${isCustomPic ? "selected" : ""}>+ Tulis Sendiri...</option>
-                                </select>
-                                <input type="text" id="wizDivPicCustom_${idx}" value="${isCustomPic ? d.pic : ""}" oninput="wizardTempDivisions[${idx}].pic = this.value" placeholder="Nama PIC..." class="${isCustomPic ? "" : "hidden"} px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold bg-white">
-                                <button type="button" onclick="removeWizardDivisionCard(${idx})" title="Hapus Seksi Ini" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <p class="text-[11px] font-extrabold uppercase text-slate-600">Pilih Anggota Mahasiswa Angkatan 2025 (Klik Tombol):</p>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${avail2025
-                                  .map((m) => {
-                                    const active = d.members.includes(m);
-                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-navy text-amber-400 shadow" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
-                                  })
-                                  .join("")}
-                            </div>
-                        </div>
-
-                        <div class="space-y-1.5">
-                            <p class="text-[11px] font-extrabold uppercase text-slate-600">Pilih Anggota Mahasiswa Angkatan 2026 (Klik Tombol):</p>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${avail2026
-                                  .map((m) => {
-                                    const active = d.members.includes(m);
-                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-navy text-amber-400 shadow" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
-                                  })
-                                  .join("")}
-                            </div>
-                        </div>
-
-                        <div class="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
-                            <div class="text-xs font-bold text-navy">Terpilih (${d.members.length}): <span class="font-normal text-slate-700">${d.members.join(", ") || "Belum ada"}</span></div>
-                            <div class="flex items-center gap-2">
-                                <input type="text" id="wizCustomMember_${idx}" placeholder="Tambah Personil Baru..." class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
-                                <button type="button" onclick="addWizCustomMember(${idx})" class="px-3 py-1.5 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah Personil Baru</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-          })
-          .join("");
-      }
-
-      function handleWizDivPicChange(idx, val) {
-        const cust = document.getElementById(`wizDivPicCustom_${idx}`);
-        if (val === "__custom__") {
-          cust.classList.remove("hidden");
-          wizardTempDivisions[idx].pic = cust.value;
-        } else {
-          cust.classList.add("hidden");
-          wizardTempDivisions[idx].pic = val;
-        }
-      }
-
-      function toggleWizMember(divIdx, memberName) {
-        const arr = wizardTempDivisions[divIdx].members;
-        const pos = arr.indexOf(memberName);
-        if (pos >= 0) arr.splice(pos, 1);
-        else arr.push(memberName);
-        renderWizardDivisions();
-      }
-
-      function addWizCustomMember(divIdx) {
-        const inp = document.getElementById(`wizCustomMember_${divIdx}`);
-        const val = inp ? inp.value.trim() : "";
-        if (!val) return;
-        if (!wizardTempDivisions[divIdx].members.includes(val)) {
-          wizardTempDivisions[divIdx].members.push(val);
-        }
-        inp.value = "";
-        renderWizardDivisions();
-      }
-
-      function addWizardDivisionCard() {
-        const newName = `Seksi Tambahan ${wizardTempDivisions.length + 1}`;
-        wizardTempDivisions.push({
-          id: "wdiv_" + Date.now(),
-          name: newName,
-          pic: SDM_STIT[0],
-          members: [],
-          tasks: getDefault10Tasks(newName, SDM_STIT[0]),
-        });
-        renderWizardDivisions();
-      }
-
-      function removeWizardDivisionCard(idx) {
-        wizardTempDivisions.splice(idx, 1);
-        renderWizardDivisions();
-      }
-
-      function saveEventFromWizard() {
-        const nama = document.getElementById("wizNamaEvent").value.trim();
-        if (!nama) {
-          showToast("Nama Event wajib diisi!", "error");
-          return;
-        }
-        const locSel = document.getElementById("wizLokasiSelect").value;
-        const lokasi =
-          locSel === "__custom__"
-            ? document.getElementById("wizLokasiCustom").value.trim()
-            : locSel;
-
-        if (wizardMode === "edit") {
-          const ev = getActiveEvent();
-          ev.divisi = document.getElementById("wizDivisi").value;
-          ev.kategori = document.getElementById("wizKategori").value;
-          ev.nama = nama;
-          ev.tema = document.getElementById("wizTema").value.trim();
-          ev.deskripsi = document.getElementById("wizDeskripsi").value.trim();
-          ev.tanggal = document.getElementById("wizTanggal").value;
-          ev.jamMulai = document.getElementById("wizJamMulai").value;
-          ev.jamSelesai = document.getElementById("wizJamSelesai").value;
-          ev.lokasi = lokasi || "Kampus STIT";
-          ev.speakers = JSON.parse(JSON.stringify(wizardTempSpeakers));
-          ev.targetPeserta =
-            Number(document.getElementById("wizTargetPeserta").value) || 50;
-          ev.subsidiKampus =
-            Number(document.getElementById("wizSubsidi").value) || 0;
-          ev.htmPeserta = Number(document.getElementById("wizHtm").value) || 0;
-          ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
-        } else {
-          const newId = "evt_" + Date.now();
-          const htm = Number(document.getElementById("wizHtm").value) || 75000;
-          eventsData.push({
-            id: newId,
-            divisi: document.getElementById("wizDivisi").value,
-            kategori: document.getElementById("wizKategori").value,
-            nama: nama,
-            tema:
-              document.getElementById("wizTema").value.trim() ||
-              "Tema Kegiatan STIT",
-            deskripsi:
-              document.getElementById("wizDeskripsi").value.trim() ||
-              "Kegiatan resmi STIT.",
-            tanggal: document.getElementById("wizTanggal").value,
-            jamMulai: document.getElementById("wizJamMulai").value,
-            jamSelesai: document.getElementById("wizJamSelesai").value,
-            lokasi: lokasi || "Kampus STIT",
-            speakers: JSON.parse(JSON.stringify(wizardTempSpeakers)),
-            targetPeserta:
-              Number(document.getElementById("wizTargetPeserta").value) || 60,
-            subsidiKampus:
-              Number(document.getElementById("wizSubsidi").value) || 0,
-            htmPeserta: htm,
-            unitEconomics: [
-              {
-                id: "ue_" + Date.now() + "1",
-                item: "Makan Siang & Snack",
-                cost: 35000,
-              },
-              {
-                id: "ue_" + Date.now() + "2",
-                item: "Seminar Kit & Sertifikat",
-                cost: 20000,
-              },
-            ],
-            biayaOperasional: [
-              {
-                id: "bo_" + Date.now() + "1",
-                item: "Honorarium Pemateri & Dekorasi",
-                cost: 1500000,
-              },
-            ],
-            divisions: JSON.parse(JSON.stringify(wizardTempDivisions)),
-            kasTransactions: [],
-            participants: [],
-            rundown: [],
-            meetings: [],
-            documents: [],
-            formConfig: {
-              useGender: true,
-              useWa: true,
-              useEmail: true,
-              useDomisili: true,
-              useAfiliasi: true,
-              usePaket: true,
-              packages: [
-                { name: "Paket-A", price: htm },
-                { name: "Paket-B", price: htm + 25000 },
-              ],
-            },
-          });
-          activeEventId = newId;
-        }
-
-        closeEventModal();
-        syncToCloud();
-        renderAll();
-        showToast("Konfigurasi Event berhasil disimpan!");
-      }
-
-      // ==========================================
-      // KUSTOMISASI FORMAT & PAKET PENDAFTARAN PESERTA
-      // ==========================================
-      let tempPackagesConfig = [];
-
-      function openFormConfigModal() {
-        const ev = getActiveEvent();
-        const cfg = ev.formConfig;
-        document.getElementById("cfgUseGender").checked = cfg.useGender;
-        document.getElementById("cfgUseWa").checked = cfg.useWa;
-        document.getElementById("cfgUseEmail").checked = cfg.useEmail;
-        document.getElementById("cfgUseDomisili").checked = cfg.useDomisili;
-        document.getElementById("cfgUseAfiliasi").checked = cfg.useAfiliasi;
-        document.getElementById("cfgUsePaket").checked = cfg.usePaket;
-
-        tempPackagesConfig = JSON.parse(JSON.stringify(cfg.packages || []));
-        renderPackagesConfigRows();
-
-        const m = document.getElementById("formConfigModal");
-        m.classList.remove("hidden");
-        m.classList.add("flex");
-      }
-
-      function closeFormConfigModal() {
-        const m = document.getElementById("formConfigModal");
-        m.classList.add("hidden");
-        m.classList.remove("flex");
-      }
-
-      function renderPackagesConfigRows() {
-        const list = document.getElementById("cfgPackagesList");
-        list.innerHTML = tempPackagesConfig
-          .map(
-            (p, idx) => `
-                <div class="flex items-center gap-2">
-                    <input type="text" value="${p.name}" oninput="tempPackagesConfig[${idx}].name = this.value" placeholder="Nama Paket (Mis: Paket-A)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-bold">
-                    <input type="number" value="${p.price}" oninput="tempPackagesConfig[${idx}].price = Number(this.value)" placeholder="Harga (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-bold">
-                    ${
-                      tempPackagesConfig.length > 1
-                        ? `
-                        <button type="button" onclick="removePackageConfigRow(${idx})" class="p-2 rounded-xl bg-rose-100 text-rose-700 font-bold text-xs">✕</button>
-                    `
-                        : ""
-                    }
-                </div>
-            `,
-          )
-          .join("");
-      }
-
-      function addPackageConfigRow() {
-        const nextChar = String.fromCharCode(65 + tempPackagesConfig.length);
-        tempPackagesConfig.push({ name: `Paket-${nextChar}`, price: 75000 });
-        renderPackagesConfigRows();
-      }
-
-      function removePackageConfigRow(idx) {
-        tempPackagesConfig.splice(idx, 1);
-        renderPackagesConfigRows();
-      }
-
-      function saveFormConfigModal() {
-        const ev = getActiveEvent();
-        ev.formConfig = {
-          useGender: document.getElementById("cfgUseGender").checked,
-          useWa: document.getElementById("cfgUseWa").checked,
-          useEmail: document.getElementById("cfgUseEmail").checked,
-          useDomisili: document.getElementById("cfgUseDomisili").checked,
-          useAfiliasi: document.getElementById("cfgUseAfiliasi").checked,
-          usePaket: document.getElementById("cfgUsePaket").checked,
-          packages: JSON.parse(JSON.stringify(tempPackagesConfig)),
-        };
-        closeFormConfigModal();
-        syncToCloud();
-        showToast("Format & Paket Link Pendaftaran Peserta diperbarui!");
-      }
-
-      // ==========================================
-      // LANDING PAGE PUBLIK & E-TIKET QR GENERATOR
-      // ==========================================
-      function openPublicLanding() {
-        const ev = getActiveEvent();
-        document.getElementById("pubDivisiBadge").textContent = ev.divisi;
-        document.getElementById("pubKategoriBadge").textContent = ev.kategori;
-        document.getElementById("pubEventTitle").textContent = ev.nama;
-        document.getElementById("pubEventTheme").textContent = `"${ev.tema}"`;
-        document.getElementById("pubEventDesc").textContent = ev.deskripsi;
-        document.getElementById("pubEventDate").textContent = ev.tanggal;
-        document.getElementById("pubEventTime").textContent =
-          `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
-        document.getElementById("pubEventLocation").textContent = ev.lokasi;
-
-        const cfg = ev.formConfig;
-        document
-          .getElementById("fieldWrapGender")
-          .classList.toggle("hidden", !cfg.useGender);
-        document
-          .getElementById("fieldWrapWa")
-          .classList.toggle("hidden", !cfg.useWa);
-        document
-          .getElementById("fieldWrapEmail")
-          .classList.toggle("hidden", !cfg.useEmail);
-        document
-          .getElementById("fieldWrapDomisili")
-          .classList.toggle("hidden", !cfg.useDomisili);
-        document
-          .getElementById("pubGroupAfiliasi")
-          .classList.toggle("hidden", !cfg.useAfiliasi);
-        document
-          .getElementById("pubGroupPaket")
-          .classList.toggle("hidden", !cfg.usePaket);
-
-        const provSel = document.getElementById("pubProvinsi");
-        provSel.innerHTML = Object.keys(PROVINSI_KOTA)
-          .map((p) => `<option value="${p}">${p}</option>`)
-          .join("");
-        populatePublicKota();
-
-        const pkgContainer = document.getElementById("pubPackagesContainer");
-        const pkgs = cfg.packages || [
-          { name: "Paket-A", price: ev.htmPeserta },
-        ];
-        document.getElementById("pubSelectedPackage").value = pkgs[0]
-          ? pkgs[0].name
-          : "Paket-A";
-
-        pkgContainer.innerHTML = pkgs
-          .map(
-            (p, idx) => `
-                <button type="button" onclick="selectPubPackage('${p.name}')" class="pub-pkg-btn p-4 rounded-2xl border-2 text-left transition ${idx === 0 ? "border-navy bg-navy text-amber-400 shadow-md" : "border-slate-300 bg-white text-slate-800"}">
-                    <div class="text-xs font-black">${p.name}</div>
-                    <div class="text-sm font-extrabold mt-1">${formatRp(p.price)}</div>
-                </button>
-            `,
-          )
-          .join("");
-
-        document.getElementById("pubTicketResult").classList.add("hidden");
-        document.getElementById("viewPublicLanding").classList.remove("hidden");
-      }
-
-      function closePublicLanding() {
-        document.getElementById("viewPublicLanding").classList.add("hidden");
-        renderAll();
-      }
-
-      function populatePublicKota() {
-        const prov = document.getElementById("pubProvinsi").value;
-        const kotaSel = document.getElementById("pubKota");
-        const list = PROVINSI_KOTA[prov] || [];
-        kotaSel.innerHTML = list
-          .map((k) => `<option value="${k}">${k}</option>`)
-          .join("");
-      }
-
-      function selectPubAfiliasi(val) {
-        document.getElementById("pubSelectedAfiliasi").value = val;
-        document.querySelectorAll(".pub-afil-btn").forEach((btn) => {
-          if (btn.textContent.trim() === val) {
-            btn.className =
-              "pub-afil-btn px-3 py-2.5 rounded-xl border-2 border-navy bg-navy text-amber-400 font-extrabold text-xs transition";
-          } else {
-            btn.className =
-              "pub-afil-btn px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs transition";
-          }
-        });
-      }
-
-      function selectPubPackage(pkgName) {
-        document.getElementById("pubSelectedPackage").value = pkgName;
-        document.querySelectorAll(".pub-pkg-btn").forEach((btn) => {
-          if (btn.innerText.includes(pkgName)) {
-            btn.className =
-              "pub-pkg-btn p-4 rounded-2xl border-2 text-left transition border-navy bg-navy text-amber-400 shadow-md";
-          } else {
-            btn.className =
-              "pub-pkg-btn p-4 rounded-2xl border-2 text-left transition border-slate-300 bg-white text-slate-800";
-          }
-        });
-      }
-
-      function submitPublicRegistration(e) {
-        e.preventDefault();
-        const ev = getActiveEvent();
-        const nama = document.getElementById("pubNama").value.trim();
-        const genderEl = document.querySelector(
-          "input[name='pubGender']:checked",
-        );
-        const gender = genderEl ? genderEl.value : "Laki-laki";
-        const wa = document.getElementById("pubWa").value.trim();
-        const email = document.getElementById("pubEmail").value.trim();
-        const provinsi = document.getElementById("pubProvinsi").value;
-        const kota = document.getElementById("pubKota").value;
-        const afiliasi = document.getElementById("pubSelectedAfiliasi").value;
-        const instansi = document.getElementById("pubInstansi").value.trim();
-        const paketName = document.getElementById("pubSelectedPackage").value;
-
-        const pkgObj = (ev.formConfig.packages || []).find(
-          (p) => p.name === paketName,
-        );
-        const pricePaid = pkgObj ? Number(pkgObj.price) : Number(ev.htmPeserta);
-
-        const ticketCode = "SEO-2026-" + Math.floor(100 + Math.random() * 900);
-
-        ev.participants.unshift({
-          id: "p_" + Date.now(),
-          ticketCode: ticketCode,
-          nama: nama,
-          gender: gender,
-          wa: wa,
-          email: email,
-          provinsi: provinsi,
-          kota: kota,
-          afiliasi: afiliasi,
-          instansi: instansi,
-          paket: paketName,
-          htmPaid: pricePaid,
-          checkedIn: false,
-          checkInTime: "-",
-          statusAktif: true,
-        });
-
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(ticketCode + " | " + nama + " | " + paketName)}`;
-        document.getElementById("pubTicketQrImg").src = qrUrl;
-        document.getElementById("ticketCodeText").textContent = ticketCode;
-        document.getElementById("ticketNameText").textContent =
-          `${nama} (${gender})`;
-        document.getElementById("ticketInstansiText").textContent =
-          `${afiliasi} — ${instansi} (${kota}, ${provinsi})`;
-        document.getElementById("ticketPackageText").textContent =
-          `${paketName} (${formatRp(pricePaid)})`;
-
-        document.getElementById("pubTicketResult").classList.remove("hidden");
-        syncToCloud();
-        showToast(`Pendaftaran berhasil! Kode Tiket: ${ticketCode}`);
-      }
-
-      // INIT ON LOAD
-      document.addEventListener("DOMContentLoaded", () => {
-        initLoginDropdown();
-        initFirebaseConnection();
-      });
     </script>
   </body>
 </html>
