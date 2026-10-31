@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SEO — STIT Event Organizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script
       src="https://unpkg.com/html5-qrcode"
       type="text/javascript"
@@ -195,7 +196,11 @@
           <div
             class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-grad-navy text-amber-400 shadow-lg border border-amber-400/40 mb-3"
           >
-            <span class="text-2xl font-black tracking-tighter">SEO</span>
+            <img
+              src="logo-stit.png"
+              alt="Logo STIT"
+              class="w-12 h-12 object-contain"
+            />
           </div>
           <h1 class="text-2xl font-black text-navy tracking-tight">SEO</h1>
           <p
@@ -293,10 +298,12 @@
         >
           <!-- Brand -->
           <div class="flex items-center gap-3">
-            <div
-              class="w-11 h-11 rounded-2xl bg-grad-gold text-navy font-black flex items-center justify-center text-lg shadow-md"
-            >
-              SEO
+            <div class="w-12 h-12 flex items-center justify-center shrink-0">
+              <img
+                src="logo-stit.png"
+                alt="Logo STIT"
+                class="w-12 h-12 object-contain"
+              />
             </div>
             <div>
               <div class="flex items-center gap-2">
@@ -319,29 +326,8 @@
             </div>
           </div>
 
-          <!-- Right Controls: Public Landing (Super Admin Only), User Badge & Logout -->
+          <!-- Right Controls: User Badge & Logout -->
           <div class="flex flex-wrap items-center gap-3">
-            <button
-              id="btnOpenPublicLanding"
-              onclick="openPublicLanding()"
-              class="hidden px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-navy font-extrabold text-xs shadow-md transition items-center gap-2"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                />
-              </svg>
-              <span>🌐 Buka Form Pendaftaran Publik</span>
-            </button>
-
             <div
               class="flex items-center gap-3 bg-white/10 border border-white/15 px-3.5 py-2 rounded-2xl"
             >
@@ -876,13 +862,6 @@
       id="viewPublicLanding"
       class="hidden fixed inset-0 bg-slate-100 z-[95] overflow-y-auto"
     >
-      <button
-        onclick="closePublicLanding()"
-        class="fixed top-4 right-4 z-[100] px-4 py-2.5 rounded-2xl bg-navy text-amber-400 font-extrabold text-xs shadow-2xl border border-amber-400/40 flex items-center gap-2 hover:scale-105 transition"
-      >
-        <span>⬅️ Kembali ke Dashboard Super Admin</span>
-      </button>
-
       <div class="max-w-3xl mx-auto px-4 py-10">
         <!-- Header Event Publik -->
         <div
@@ -1203,6 +1182,13 @@
               ></strong>
             </div>
           </div>
+          <button
+            type="button"
+            onclick="downloadETicketPng()"
+            class="px-5 py-3 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-sm shadow-lg"
+          >
+            ⬇️ Simpan E-Tiket sebagai PNG
+          </button>
         </div>
       </div>
     </div>
@@ -1678,6 +1664,7 @@
 
       let db = null;
       let isFirebaseActive = false;
+      let cloudStateLoaded = false;
 
       function initFirebaseConnection() {
         try {
@@ -1738,6 +1725,7 @@
               const cloudData = doc.data();
               if (cloudData && cloudData.eventsData) {
                 eventsData = cloudData.eventsData;
+                cloudStateLoaded = true;
                 if (currentUser) {
                   const updatedRole = evaluateUserRoleForActiveEvent(
                     currentUser.name,
@@ -1747,9 +1735,12 @@
                   currentUser.coordDivisionId = updatedRole.coordDivisionId;
                   renderAll();
                 }
+                openPublicRouteIfRequested();
               }
             } else {
+              cloudStateLoaded = true;
               syncToCloud();
+              openPublicRouteIfRequested();
             }
           });
       }
@@ -2373,6 +2364,11 @@
       // STATE APLIKASI AKTIF
       let currentUser = null;
       let activeEventId = "evt_1";
+      const publicEventId = new URLSearchParams(window.location.search).get(
+        "event",
+      );
+      let publicRouteOpened = false;
+      let currentTicketQrDataUrl = "";
       let activeDashTab = "overview";
       let wizardMode = "create";
       let wizardTempDivisions = [];
@@ -2385,6 +2381,68 @@
 
       function getActiveEvent() {
         return eventsData.find((e) => e.id === activeEventId) || eventsData[0];
+      }
+
+      function getPublicRegistrationUrl(eventId) {
+        const url = new URL(window.location.href);
+        url.search = "";
+        url.hash = "";
+        url.searchParams.set("event", eventId);
+        return url.toString();
+      }
+
+      function openPublicRouteIfRequested() {
+        if (!publicEventId || publicRouteOpened) return;
+        if (isFirebaseActive && !cloudStateLoaded) return;
+        const event = eventsData.find((item) => item.id === publicEventId);
+        if (!event) return;
+        publicRouteOpened = true;
+        activeEventId = event.id;
+        if (event.formConfigSaved === false) {
+          document.getElementById("viewLogin").classList.add("hidden");
+          document.getElementById("viewPublicLanding").classList.add("hidden");
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            `<div class="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900 p-6 text-center text-white"><div><h1 class="text-2xl font-black">Pendaftaran belum dibuka</h1><p class="mt-2 text-sm">Panitia belum menyimpan format pendaftaran untuk event ini.</p></div></div>`,
+          );
+          return;
+        }
+        document.getElementById("viewLogin").classList.add("hidden");
+        document.getElementById("viewApp").classList.add("hidden");
+        openPublicLanding(event.id);
+      }
+
+      function openPublicRegistrationInNewTab(eventId) {
+        const event = eventsData.find((item) => item.id === eventId);
+        if (!event || event.formConfigSaved === false) {
+          showToast(
+            "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
+            "error",
+          );
+          return;
+        }
+        window.open(
+          getPublicRegistrationUrl(eventId),
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+
+      async function copyPublicRegistrationLink(eventId) {
+        const link = getPublicRegistrationUrl(eventId);
+        try {
+          await navigator.clipboard.writeText(link);
+        } catch (err) {
+          const temp = document.createElement("textarea");
+          temp.value = link;
+          temp.style.position = "fixed";
+          temp.style.opacity = "0";
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand("copy");
+          temp.remove();
+        }
+        showToast("Link pendaftaran berhasil disalin.");
       }
 
       function showToast(msg, type = "success") {
@@ -2403,6 +2461,8 @@
       function showCustomModal(title, text) {
         document.getElementById("customModalTitle").textContent = title;
         document.getElementById("customModalText").textContent = text;
+        document.getElementById("customModalActions").innerHTML =
+          `<button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Tutup</button>`;
         const ov = document.getElementById("customModalOverlay");
         ov.classList.remove("hidden");
         ov.classList.add("flex");
@@ -2412,6 +2472,48 @@
         const ov = document.getElementById("customModalOverlay");
         ov.classList.add("hidden");
         ov.classList.remove("flex");
+      }
+
+      function confirmDeleteEvent(eventId) {
+        const event = eventsData.find((item) => item.id === eventId);
+        if (!event) return;
+        document.getElementById("customModalTitle").textContent =
+          "Hapus Event?";
+        document.getElementById("customModalText").textContent =
+          `Event “${event.nama}” beserta data peserta, keuangan, dan kepanitiaannya akan dihapus. Tindakan ini tidak dapat dibatalkan.`;
+        document.getElementById("customModalActions").innerHTML = `
+          <button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Batal</button>
+          <button type="button" onclick="deleteEvent('${event.id}')" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition">Hapus Event</button>
+        `;
+        const overlay = document.getElementById("customModalOverlay");
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+      }
+
+      function deleteEvent(eventId) {
+        if (eventsData.length <= 1) {
+          closeCustomModal();
+          showToast("Minimal harus ada satu event.", "error");
+          return;
+        }
+        const removedEvent = eventsData.find((item) => item.id === eventId);
+        if (!removedEvent) return;
+        eventsData = eventsData.filter((item) => item.id !== eventId);
+        if (activeEventId === eventId) {
+          activeEventId = eventsData[0].id;
+          if (currentUser) {
+            const updatedRole = evaluateUserRoleForActiveEvent(
+              currentUser.name,
+            );
+            currentUser.role = updatedRole.role;
+            currentUser.roleLabel = updatedRole.roleLabel;
+            currentUser.coordDivisionId = updatedRole.coordDivisionId;
+          }
+        }
+        closeCustomModal();
+        syncToCloud();
+        renderAll();
+        showToast(`Event “${removedEvent.nama}” berhasil dihapus.`);
       }
 
       // ==========================================
@@ -2691,15 +2793,6 @@
         document.getElementById("headerUserRoleBadge").textContent =
           currentUser.roleLabel;
 
-        const btnLanding = document.getElementById("btnOpenPublicLanding");
-        if (currentUser.name === SUPER_ADMIN_NAME) {
-          btnLanding.classList.remove("hidden");
-          btnLanding.classList.add("inline-flex");
-        } else {
-          btnLanding.classList.add("hidden");
-          btnLanding.classList.remove("inline-flex");
-        }
-
         const btnCreateSidebar = document.getElementById(
           "btnCreateNewEventSidebar",
         );
@@ -2728,6 +2821,10 @@
                             <span class="text-[11px] font-bold ${dateClass}">📅 ${item.tanggal}</span>
                         </div>
                         <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
+                        <div class="flex flex-wrap gap-2 mt-3" onclick="event.stopPropagation()">
+                          ${item.formConfigSaved === false ? "" : `<button type="button" onclick="openPublicRegistrationInNewTab('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-400 text-navy text-[10px] font-extrabold">Form Pendaftaran</button><button type="button" onclick="copyPublicRegistrationLink('${item.id}')" title="Salin Link Pendaftaran" aria-label="Salin Link Pendaftaran" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-white/90 text-navy border border-slate-300 hover:bg-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" stroke-width="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" stroke-width="2"/></svg></button>`}
+                          ${currentUser.role === "sc" ? `<button type="button" onclick="confirmDeleteEvent('${item.id}')" title="Hapus event" aria-label="Hapus event ${item.nama}" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-rose-100 text-rose-700 border border-rose-200 hover:bg-rose-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 7h16"/></svg></button>` : ""}
+                        </div>
                     </div>
                 `;
           })
@@ -4948,6 +5045,7 @@
             rundown: [],
             meetings: [],
             documents: [],
+            formConfigSaved: false,
             formConfig: {
               useGender: true,
               useWa: true,
@@ -5042,16 +5140,26 @@
           usePaket: document.getElementById("cfgUsePaket").checked,
           packages: JSON.parse(JSON.stringify(tempPackagesConfig)),
         };
+        ev.formConfigSaved = true;
         closeFormConfigModal();
         syncToCloud();
         showToast("Format & Paket Link Pendaftaran Peserta diperbarui!");
+        renderAll();
       }
 
       // ==========================================
       // LANDING PAGE PUBLIK & E-TIKET QR GENERATOR
       // ==========================================
-      function openPublicLanding() {
+      function openPublicLanding(eventId = null) {
+        if (eventId) activeEventId = eventId;
         const ev = getActiveEvent();
+        if (ev.formConfigSaved === false) {
+          showToast(
+            "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
+            "error",
+          );
+          return;
+        }
         document.getElementById("pubDivisiBadge").textContent = ev.divisi;
         document.getElementById("pubKategoriBadge").textContent = ev.kategori;
         document.getElementById("pubEventTitle").textContent = ev.nama;
@@ -5113,6 +5221,10 @@
 
       function closePublicLanding() {
         document.getElementById("viewPublicLanding").classList.add("hidden");
+        if (!currentUser && publicEventId) {
+          document.getElementById("viewLogin").classList.remove("hidden");
+          return;
+        }
         renderAll();
       }
 
@@ -5151,7 +5263,7 @@
         });
       }
 
-      function submitPublicRegistration(e) {
+      async function submitPublicRegistration(e) {
         e.preventDefault();
         const ev = getActiveEvent();
         const nama = document.getElementById("pubNama").value.trim();
@@ -5192,8 +5304,23 @@
           statusAktif: true,
         });
 
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(ticketCode + " | " + nama + " | " + paketName)}`;
-        document.getElementById("pubTicketQrImg").src = qrUrl;
+        const qrValue = ticketCode + " | " + nama + " | " + paketName;
+        if (
+          typeof QRCode === "undefined" ||
+          typeof QRCode.toDataURL !== "function"
+        ) {
+          showToast(
+            "Generator QR belum tersedia. Periksa koneksi internet lalu coba lagi.",
+            "error",
+          );
+          return;
+        }
+        currentTicketQrDataUrl = await QRCode.toDataURL(qrValue, {
+          width: 480,
+          margin: 2,
+          errorCorrectionLevel: "H",
+        });
+        document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
         document.getElementById("ticketCodeText").textContent = ticketCode;
         document.getElementById("ticketNameText").textContent =
           `${nama} (${gender})`;
@@ -5207,10 +5334,73 @@
         showToast(`Pendaftaran berhasil! Kode Tiket: ${ticketCode}`);
       }
 
+      async function downloadETicketPng() {
+        if (!currentTicketQrDataUrl) return;
+        const ev = getActiveEvent();
+        const canvas = document.createElement("canvas");
+        canvas.width = 900;
+        canvas.height = 1120;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f8fafc";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0a192f";
+        ctx.fillRect(0, 0, canvas.width, 170);
+        ctx.fillStyle = "#fbbf24";
+        ctx.font = "bold 28px Inter, Arial";
+        ctx.fillText("STIT EVENT ORGANIZER", 60, 65);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 34px Inter, Arial";
+        ctx.fillText(ev.nama, 60, 125, 780);
+        ctx.fillStyle = "#0a192f";
+        ctx.font = "bold 30px Inter, Arial";
+        ctx.fillText("E-TIKET KEHADIRAN", 60, 235);
+        const qrImage = new Image();
+        qrImage.src = currentTicketQrDataUrl;
+        await new Promise((resolve, reject) => {
+          qrImage.onload = resolve;
+          qrImage.onerror = reject;
+        });
+        ctx.drawImage(qrImage, 210, 275, 480, 480);
+        ctx.fillStyle = "#0a192f";
+        ctx.font = "bold 34px Inter, Arial";
+        ctx.fillText(
+          document.getElementById("ticketNameText").textContent,
+          60,
+          825,
+          780,
+        );
+        ctx.font = "bold 27px Inter, Arial";
+        ctx.fillText(
+          "Kode Tiket: " +
+            document.getElementById("ticketCodeText").textContent,
+          60,
+          890,
+        );
+        ctx.font = "24px Inter, Arial";
+        ctx.fillText(
+          "Paket: " + document.getElementById("ticketPackageText").textContent,
+          60,
+          945,
+          780,
+        );
+        ctx.fillText(
+          ev.tanggal + " • " + ev.jamMulai + "–" + ev.jamSelesai + " WIB",
+          60,
+          1000,
+          780,
+        );
+        ctx.fillText(ev.lokasi, 60, 1050, 780);
+        const link = document.createElement("a");
+        link.download = `E-Tiket-${document.getElementById("ticketCodeText").textContent}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
       // INIT ON LOAD
       document.addEventListener("DOMContentLoaded", () => {
         initLoginDropdown();
         initFirebaseConnection();
+        openPublicRouteIfRequested();
       });
     </script>
   </body>
