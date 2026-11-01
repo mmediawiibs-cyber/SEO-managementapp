@@ -686,6 +686,7 @@
 
             <!-- TAB CONTENT 1: TASK & FINANCE (OVERVIEW) -->
             <div id="dashContentOverview" class="space-y-6">
+              <div id="calendarOverviewCard"></div>
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div
                   class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
@@ -913,6 +914,18 @@
               ><span id="pubEventLocation" class="font-bold text-white">-</span>
             </div>
           </div>
+        </div>
+
+        <div
+          id="pubHeroBannerWrap"
+          class="hidden mb-8 rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-lg"
+        >
+          <img
+            id="pubHeroBannerImg"
+            src=""
+            alt="Hero banner event"
+            class="w-full h-64 object-cover"
+          />
         </div>
 
         <!-- Form Pendaftaran 4 Kelompok -->
@@ -1398,13 +1411,34 @@
             </div>
 
             <div
+              class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+            >
+              <p
+                class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              >
+                Kelompok C — Hero Banner / Poster Event
+              </p>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1"
+                  >URL Poster / Hero Banner Event</label
+                >
+                <input
+                  type="url"
+                  id="wizHeroBanner"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  placeholder="https://example.com/poster-event.jpg"
+                />
+              </div>
+            </div>
+
+            <div
               class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3"
             >
               <div class="flex items-center justify-between">
                 <p
                   class="text-xs font-extrabold uppercase tracking-wider text-navy"
                 >
-                  Kelompok C — Daftar Pemateri & Topik Pembahasan
+                  Kelompok D — Daftar Pemateri & Topik Pembahasan
                 </p>
                 <button
                   type="button"
@@ -1987,7 +2021,7 @@
           id: "t_" + Math.random().toString(36).substring(2, 9) + "_" + idx,
           title: title,
           pic: defaultPic || "",
-          done: idx < 2,
+          done: false,
         }));
       }
 
@@ -2150,6 +2184,7 @@
               paket: "Paket-A (Reguler + Seminar Kit)",
               htmPaid: 85000,
               checkedIn: true,
+              lunas: true,
               checkInTime: "07:52 WIB",
               statusAktif: true,
             },
@@ -2167,6 +2202,7 @@
               paket: "Paket-B (VIP + Buku Prosiding)",
               htmPaid: 125000,
               checkedIn: false,
+              lunas: false,
               checkInTime: "-",
               statusAktif: true,
             },
@@ -2184,6 +2220,7 @@
               paket: "Paket-A (Reguler + Seminar Kit)",
               htmPaid: 85000,
               checkedIn: false,
+              lunas: false,
               checkInTime: "-",
               statusAktif: true,
             },
@@ -2260,6 +2297,8 @@
               url: "https://drive.google.com",
             },
           ],
+          heroBanner: "",
+          participantCheckinOpen: false,
           formConfig: {
             useGender: true,
             useWa: true,
@@ -2346,6 +2385,8 @@
           ],
           meetings: [],
           documents: [],
+          heroBanner: "",
+          participantCheckinOpen: false,
           formConfig: {
             useGender: true,
             useWa: true,
@@ -2377,6 +2418,21 @@
       // HELPER FORMAT RUPIAH
       function formatRp(num) {
         return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+      }
+
+      function getNationalHolidayList(year) {
+        const holidays = [
+          { date: `${year}-01-01`, label: "Tahun Baru" },
+          { date: `${year}-02-14`, label: "Maulid Nabi" },
+          { date: `${year}-03-21`, label: "Hari Raya Nyepi" },
+          { date: `${year}-04-01`, label: "Idul Fitri" },
+          { date: `${year}-05-01`, label: "Hari Buruh" },
+          { date: `${year}-05-20`, label: "Waisak" },
+          { date: `${year}-06-01`, label: "Hari Lahir Pancasila" },
+          { date: `${year}-08-17`, label: "Hari Kemerdekaan RI" },
+          { date: `${year}-12-25`, label: "Natal" },
+        ];
+        return holidays;
       }
 
       function getActiveEvent() {
@@ -3232,10 +3288,145 @@
         }
       }
 
+      function renderOverviewCalendar(ev) {
+        const monthTarget = ev.tanggal
+          ? new Date(ev.tanggal + "T00:00:00")
+          : new Date();
+        const year = monthTarget.getFullYear();
+        const month = monthTarget.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startWeek = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+        const monthNames = [
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
+        ];
+        const holidayMap = new Map(
+          getNationalHolidayList(year).map((h) => [h.date, h.label]),
+        );
+        const eventDates = new Map(
+          eventsData
+            .filter((item) => item.tanggal)
+            .map((item) => [item.tanggal, item.nama]),
+        );
+
+        const cells = [];
+        for (let i = 0; i < startWeek; i++) {
+          cells.push(
+            '<div class="h-20 rounded-xl bg-slate-50 border border-dashed border-slate-200"></div>',
+          );
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dateValue = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const holidayLabel = holidayMap.get(dateValue);
+          const eventLabel = eventDates.get(dateValue);
+          const isEvent = !!eventLabel;
+          const isHoliday = !!holidayLabel;
+          const isToday = dateValue === new Date().toISOString().slice(0, 10);
+
+          let className =
+            "h-20 rounded-xl border text-left p-2 flex flex-col justify-between ";
+          if (isEvent) {
+            className += "border-amber-400 bg-amber-50 text-navy";
+          } else if (isHoliday) {
+            className += "border-rose-300 bg-rose-50 text-rose-800";
+          } else if (isToday) {
+            className += "border-blue-300 bg-blue-50 text-navy";
+          } else {
+            className += "border-slate-200 bg-white text-slate-700";
+          }
+
+          cells.push(`
+            <div class="${className}">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-black">${day}</span>
+                ${isEvent ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-900">Event</span>' : isHoliday ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-200 text-rose-800">Libur</span>' : ""}
+              </div>
+              <div class="text-[9px] leading-tight font-semibold">
+                ${eventLabel ? eventLabel : holidayLabel ? holidayLabel : ""}
+              </div>
+            </div>
+          `);
+        }
+
+        const eventList = eventsData
+          .filter((item) => item.tanggal)
+          .slice(0, 6)
+          .map(
+            (item) => `
+              <div class="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-[11px]">
+                <div>
+                  <div class="font-black text-navy">${item.nama}</div>
+                  <div class="text-slate-500">${item.tanggal}</div>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[10px]">${item.kategori || "Event"}</span>
+              </div>
+            `,
+          )
+          .join("");
+
+        const holidayList = getNationalHolidayList(year)
+          .map(
+            (h) => `
+              <div class="flex items-center gap-2 text-[11px] text-slate-700">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span>${h.label}</span>
+                <span class="text-slate-400">${h.date}</span>
+              </div>
+            `,
+          )
+          .join("");
+
+        return `
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+              <div>
+                <h3 class="text-xl font-black text-navy">📅 Kalender Event & Tanggal Nasional</h3>
+                <p class="text-xs text-slate-500">Agenda event aktif dan tanggal penting hari libur nasional dirangkum pada satu tampilan.</p>
+              </div>
+              <span class="px-3 py-1.5 rounded-full bg-navy text-amber-400 font-black text-xs">${monthNames[month]} ${year}</span>
+            </div>
+
+            <div class="grid grid-cols-7 gap-2 text-[10px] font-black text-slate-500 uppercase">
+              <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+            </div>
+            <div class="grid grid-cols-7 gap-2">${cells.join("")}</div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-2 border-t border-slate-200 mt-2">
+              <div class="space-y-3">
+                <h4 class="text-xs font-extrabold uppercase text-navy">Agenda Event</h4>
+                <div class="space-y-2">${eventList || '<p class="text-xs text-slate-400 italic">Belum ada event.</p>'}</div>
+              </div>
+              <div class="space-y-3">
+                <h4 class="text-xs font-extrabold uppercase text-navy">Tanggal Nasional</h4>
+                <div class="space-y-2">${holidayList}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
       // ==========================================
       // TAB 1: TASK & FINANCE (OVERVIEW)
       // ==========================================
       function renderOverviewTab(ev) {
+        const calendarCard = document.getElementById("calendarOverviewCard");
+        if (calendarCard) {
+          calendarCard.innerHTML = renderOverviewCalendar(ev);
+        }
+
         const unitCostPerPerson = (ev.unitEconomics || []).reduce(
           (acc, u) => acc + (Number(u.cost) || 0),
           0,
@@ -4021,6 +4212,7 @@
         const isSc = currentUser.role === "sc";
         const container = document.getElementById("dashContentPeserta");
         const list = ev.participants || [];
+        const checkinOpen = !!ev.participantCheckinOpen;
 
         container.innerHTML = `
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
@@ -4038,10 +4230,13 @@
                         <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h4 class="text-xs font-extrabold uppercase text-navy">📲 Gate Scanner QR Kehadiran Peserta (Hari-H)</h4>
-                                <p class="text-[11px] text-slate-600">Gunakan kamera HP untuk scan QR E-Tiket peserta atau ketik kode tiket (Contoh: <b>SEO-2026-882</b>).</p>
+                                <p class="text-[11px] text-slate-600">Gunakan kamera HP untuk scan QR E-Tiket peserta atau ketik kode tiket (Contoh: <b>SEO-2026-882</b>). Tombol di bawah mengunci/membuka akses pencatatan hadir.</p>
                             </div>
-                            <div class="flex flex-wrap gap-2">
-                                <button type="button" onclick="openRealQRScanner('peserta')" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-navy font-extrabold text-xs shadow flex items-center gap-1.5">
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <button type="button" onclick="toggleParticipantCheckInGate()" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-emerald-600 text-white" : "bg-amber-400 hover:bg-amber-300 text-navy"} font-extrabold text-xs shadow flex items-center gap-1.5">
+                                    <span>${checkinOpen ? "🔒 Tutup Check-in Peserta" : "✅ Buka Check-in Peserta"}</span>
+                                </button>
+                                <button type="button" onclick="openRealQRScanner('peserta')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow flex items-center gap-1.5">
                                     <span>📷 Buka Kamera Scan QR</span>
                                 </button>
                                 <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
@@ -4061,7 +4256,7 @@
                                     <th class="p-3">Kontak & Domisili</th>
                                     <th class="p-3">Afiliasi & Instansi</th>
                                     <th class="p-3">Paket Dipilih</th>
-                                    <th class="p-3">Status Kehadiran</th>
+                                    <th class="p-3">Check-In</th>
                                     ${isSc ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
                                 </tr>
                             </thead>
@@ -4086,13 +4281,17 @@
                                         </td>
                                         <td class="p-3 font-bold text-amber-800">${p.paket}</td>
                                         <td class="p-3">
-                                            ${
-                                              p.statusAktif === false
-                                                ? `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 font-extrabold text-[10px]">Batal Mengikuti Event</span>`
-                                                : p.checkedIn
-                                                  ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">✓ Hadir (${p.checkInTime})</span>`
-                                                  : `<button ${isSc ? `onclick="toggleParticipantCheckIn('${p.id}')"` : "disabled"} class="px-2.5 py-1 rounded-full bg-slate-200 hover:bg-amber-200 text-slate-700 font-bold text-[10px]">📲 Klik Check-in</button>`
-                                            }
+                                            <div class="space-y-2">
+                                                <label class="inline-flex items-center gap-2 text-slate-700 font-bold">
+                                                    <input type="checkbox" ${p.checkedIn ? "checked" : ""} ${isSc && checkinOpen ? "" : "disabled"} onchange="toggleParticipantCheckIn('${p.id}')" class="w-4 h-4 rounded text-emerald-600">
+                                                    <span>Hadir</span>
+                                                </label>
+                                                <label class="inline-flex items-center gap-2 text-slate-700 font-bold">
+                                                    <input type="checkbox" ${p.lunas ? "checked" : ""} ${isSc ? "" : "disabled"} onchange="toggleParticipantLunas('${p.id}')" class="w-4 h-4 rounded text-amber-600">
+                                                    <span>Lunas</span>
+                                                </label>
+                                                ${p.checkedIn ? `<div class="text-[10px] text-emerald-700 font-extrabold">${p.checkInTime}</div>` : ""}
+                                            </div>
                                         </td>
                                         ${
                                           isSc
@@ -4124,10 +4323,14 @@
       }
 
       function scanParticipantQrTicket() {
+        const ev = getActiveEvent();
+        if (!ev.participantCheckinOpen) {
+          showToast("Panitia belum membuka akses check-in peserta.", "error");
+          return;
+        }
         const inp = document.getElementById("qrScanTicketInput");
         const code = inp ? inp.value.trim().toUpperCase() : "";
         if (!code) return;
-        const ev = getActiveEvent();
         const target = ev.participants.find(
           (p) => p.ticketCode.toUpperCase() === code,
         );
@@ -4144,8 +4347,24 @@
         showToast(`Check-in Berhasil: ${target.nama} (${target.ticketCode})`);
       }
 
+      function toggleParticipantCheckInGate() {
+        const ev = getActiveEvent();
+        ev.participantCheckinOpen = !ev.participantCheckinOpen;
+        syncToCloud();
+        renderAll();
+        showToast(
+          ev.participantCheckinOpen
+            ? "Check-in peserta berhasil dibuka."
+            : "Check-in peserta ditutup.",
+        );
+      }
+
       function toggleParticipantCheckIn(pId) {
         const ev = getActiveEvent();
+        if (!ev.participantCheckinOpen) {
+          showToast("Buka Check-in Peserta terlebih dahulu.", "error");
+          return;
+        }
         const target = ev.participants.find((p) => p.id === pId);
         if (!target) return;
         const now = new Date();
@@ -4156,6 +4375,20 @@
         syncToCloud();
         renderAll();
         showToast(`Status kehadiran ${target.nama} diperbarui.`);
+      }
+
+      function toggleParticipantLunas(pId) {
+        const ev = getActiveEvent();
+        const target = ev.participants.find((p) => p.id === pId);
+        if (!target) return;
+        target.lunas = !target.lunas;
+        syncToCloud();
+        renderAll();
+        showToast(
+          target.lunas
+            ? `${target.nama} ditandai lunas.`
+            : `${target.nama} dibatalkan status lunas.`,
+        );
       }
 
       function editParticipantPrompt(pId) {
@@ -4398,6 +4631,12 @@
                                                     <button onclick="toggleMeetingOpenStatus('${m.id}')" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700">
                                                         ${m.isOpen ? "Tutup Sesi QR" : "Buka Kembali QR"}
                                                     </button>
+                                                    <button onclick="editMeetingSchedule('${m.id}')" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-bold text-xs">
+                                                        Edit Meeting
+                                                    </button>
+                                                    <button onclick="deleteMeetingSchedule('${m.id}')" class="px-3.5 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs">
+                                                        Hapus Meeting
+                                                    </button>
                                                 `
                                                     : ""
                                                 }
@@ -4517,6 +4756,39 @@
           syncToCloud();
           renderAll();
         }
+      }
+
+      function editMeetingSchedule(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        const agenda = prompt("Edit agenda meeting:", mtg.agenda);
+        if (agenda !== null && agenda.trim()) mtg.agenda = agenda.trim();
+
+        const tanggal = prompt(
+          "Edit tanggal meeting (YYYY-MM-DD):",
+          mtg.tanggal,
+        );
+        if (tanggal !== null && tanggal.trim()) mtg.tanggal = tanggal.trim();
+
+        const waktu = prompt("Edit waktu meeting (HH:MM):", mtg.waktu);
+        if (waktu !== null && waktu.trim()) mtg.waktu = waktu.trim();
+
+        const tempat = prompt("Edit tempat meeting:", mtg.tempat);
+        if (tempat !== null && tempat.trim()) mtg.tempat = tempat.trim();
+
+        syncToCloud();
+        renderAll();
+        showToast("Data meeting berhasil diperbarui.");
+      }
+
+      function deleteMeetingSchedule(mtgId) {
+        const ev = getActiveEvent();
+        ev.meetings = ev.meetings.filter((m) => m.id !== mtgId);
+        syncToCloud();
+        renderAll();
+        showToast("Riwayat meeting berhasil dihapus.");
       }
 
       function saveMeetingNotulensi(mtgId) {
@@ -4690,6 +4962,7 @@
           document.getElementById("wizTargetPeserta").value = ev.targetPeserta;
           document.getElementById("wizSubsidi").value = ev.subsidiKampus;
           document.getElementById("wizHtm").value = ev.htmPeserta;
+          document.getElementById("wizHeroBanner").value = ev.heroBanner || "";
 
           wizardTempSpeakers = JSON.parse(
             JSON.stringify(
@@ -4707,6 +4980,7 @@
           document.getElementById("wizTargetPeserta").value = 60;
           document.getElementById("wizSubsidi").value = 2000000;
           document.getElementById("wizHtm").value = 75000;
+          document.getElementById("wizHeroBanner").value = "";
 
           wizardTempSpeakers = [
             { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
@@ -4989,6 +5263,8 @@
           ev.jamMulai = document.getElementById("wizJamMulai").value;
           ev.jamSelesai = document.getElementById("wizJamSelesai").value;
           ev.lokasi = lokasi || "Kampus STIT";
+          ev.heroBanner = document.getElementById("wizHeroBanner").value.trim();
+          ev.participantCheckinOpen = !!ev.participantCheckinOpen;
           ev.speakers = JSON.parse(JSON.stringify(wizardTempSpeakers));
           ev.targetPeserta =
             Number(document.getElementById("wizTargetPeserta").value) || 50;
@@ -5014,6 +5290,8 @@
             jamMulai: document.getElementById("wizJamMulai").value,
             jamSelesai: document.getElementById("wizJamSelesai").value,
             lokasi: lokasi || "Kampus STIT",
+            heroBanner: document.getElementById("wizHeroBanner").value.trim(),
+            participantCheckinOpen: false,
             speakers: JSON.parse(JSON.stringify(wizardTempSpeakers)),
             targetPeserta:
               Number(document.getElementById("wizTargetPeserta").value) || 60,
@@ -5170,6 +5448,16 @@
           `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
         document.getElementById("pubEventLocation").textContent = ev.lokasi;
 
+        const heroBannerImg = document.getElementById("pubHeroBannerImg");
+        const heroBannerWrap = document.getElementById("pubHeroBannerWrap");
+        if (ev.heroBanner) {
+          heroBannerImg.src = ev.heroBanner;
+          heroBannerWrap.classList.remove("hidden");
+        } else {
+          heroBannerWrap.classList.add("hidden");
+          heroBannerImg.src = "";
+        }
+
         const cfg = ev.formConfig;
         document
           .getElementById("fieldWrapGender")
@@ -5300,6 +5588,7 @@
           paket: paketName,
           htmPaid: pricePaid,
           checkedIn: false,
+          lunas: false,
           checkInTime: "-",
           statusAktif: true,
         });
