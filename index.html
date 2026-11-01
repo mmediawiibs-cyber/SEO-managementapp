@@ -5674,6 +5674,23 @@
         });
       }
 
+      async function generateTicketQrImage(value, size = 480) {
+        if (typeof QRCode !== "undefined" && typeof QRCode.toDataURL === "function") {
+          try {
+            return await QRCode.toDataURL(value, {
+              width: size,
+              margin: 2,
+              errorCorrectionLevel: "H",
+            });
+          } catch (error) {
+            console.warn("QR fallback aktif karena library utama gagal:", error);
+          }
+        }
+
+        const encodedValue = encodeURIComponent(value);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedValue}&ecc=H`;
+      }
+
       async function submitPublicRegistration(e) {
         e.preventDefault();
         const ev = getActiveEvent();
@@ -5717,33 +5734,27 @@
         });
 
         const qrValue = ticketCode + " | " + nama + " | " + paketName;
-        if (
-          typeof QRCode === "undefined" ||
-          typeof QRCode.toDataURL !== "function"
-        ) {
+        try {
+          currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
+          document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
+          document.getElementById("ticketCodeText").textContent = ticketCode;
+          document.getElementById("ticketNameText").textContent =
+            `${nama} (${gender})`;
+          document.getElementById("ticketInstansiText").textContent =
+            `${afiliasi} — ${instansi} (${kota}, ${provinsi})`;
+          document.getElementById("ticketPackageText").textContent =
+            `${paketName} (${formatRp(pricePaid)})`;
+
+          document.getElementById("pubTicketResult").classList.remove("hidden");
+          syncToCloud();
+          showToast(`Pendaftaran berhasil! Kode Tiket: ${ticketCode}`);
+        } catch (error) {
+          console.error("Gagal membuat QR tiket peserta:", error);
           showToast(
-            "Generator QR belum tersedia. Periksa koneksi internet lalu coba lagi.",
+            "QR tiket gagal dibuat. Silakan cek koneksi internet lalu coba lagi.",
             "error",
           );
-          return;
         }
-        currentTicketQrDataUrl = await QRCode.toDataURL(qrValue, {
-          width: 480,
-          margin: 2,
-          errorCorrectionLevel: "H",
-        });
-        document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
-        document.getElementById("ticketCodeText").textContent = ticketCode;
-        document.getElementById("ticketNameText").textContent =
-          `${nama} (${gender})`;
-        document.getElementById("ticketInstansiText").textContent =
-          `${afiliasi} — ${instansi} (${kota}, ${provinsi})`;
-        document.getElementById("ticketPackageText").textContent =
-          `${paketName} (${formatRp(pricePaid)})`;
-
-        document.getElementById("pubTicketResult").classList.remove("hidden");
-        syncToCloud();
-        showToast(`Pendaftaran berhasil! Kode Tiket: ${ticketCode}`);
       }
 
       async function downloadETicketPng() {
@@ -5766,8 +5777,21 @@
         ctx.fillStyle = "#0a192f";
         ctx.font = "bold 30px Inter, Arial";
         ctx.fillText("E-TIKET KEHADIRAN", 60, 235);
+
+        let qrSource = currentTicketQrDataUrl;
+        if (currentTicketQrDataUrl.startsWith("http://") || currentTicketQrDataUrl.startsWith("https://")) {
+          const response = await fetch(currentTicketQrDataUrl);
+          const blob = await response.blob();
+          qrSource = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error("Gagal membaca QR fallback."));
+            reader.readAsDataURL(blob);
+          });
+        }
+
         const qrImage = new Image();
-        qrImage.src = currentTicketQrDataUrl;
+        qrImage.src = qrSource;
         await new Promise((resolve, reject) => {
           qrImage.onload = resolve;
           qrImage.onerror = reject;
