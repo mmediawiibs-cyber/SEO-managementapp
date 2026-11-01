@@ -1499,26 +1499,52 @@
             </div>
             <div class="space-y-3">
               <div class="flex flex-wrap items-center gap-3">
-                <span class="text-[11px] font-extrabold uppercase tracking-wider text-navy">
+                <span
+                  class="text-[11px] font-extrabold uppercase tracking-wider text-navy"
+                >
                   Tipe Event
                 </span>
-                <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700">
-                  <input type="radio" name="eventProfitMode" value="profit" checked onchange="wizardDraftProfitMode=this.value; applyProfitModeState();" />
+                <label
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700"
+                >
+                  <input
+                    type="radio"
+                    name="eventProfitMode"
+                    value="profit"
+                    checked
+                    onchange="
+                      wizardDraftProfitMode = this.value;
+                      applyProfitModeState();
+                    "
+                  />
                   <span>Profit</span>
                 </label>
-                <label class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700">
-                  <input type="radio" name="eventProfitMode" value="nonprofit" onchange="wizardDraftProfitMode=this.value; applyProfitModeState();" />
+                <label
+                  class="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700"
+                >
+                  <input
+                    type="radio"
+                    name="eventProfitMode"
+                    value="nonprofit"
+                    onchange="
+                      wizardDraftProfitMode = this.value;
+                      applyProfitModeState();
+                    "
+                  />
                   <span>Non-Profit</span>
                 </label>
               </div>
-              <div id="financeSettingsLockedNote" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 font-bold">
+              <div
+                id="financeSettingsLockedNote"
+                class="hidden rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 font-bold"
+              >
                 Mode Non-Profit: parameter keuangan dinonaktifkan.
               </div>
             </div>
             <div
               class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200"
             >
-              <div>
+              <div id="wizTargetPesertaField">
                 <label class="block text-xs font-bold text-slate-700 mb-1"
                   >Target Jumlah Peserta (Orang)</label
                 >
@@ -1529,7 +1555,7 @@
                   value="60"
                 />
               </div>
-              <div>
+              <div id="wizSubsidiField">
                 <label class="block text-xs font-bold text-slate-700 mb-1"
                   >Subsidi / Dana Awal Kampus (Rp)</label
                 >
@@ -1540,7 +1566,7 @@
                   value="2000000"
                 />
               </div>
-              <div>
+              <div id="wizHtmField">
                 <label class="block text-xs font-bold text-slate-700 mb-1"
                   >Harga Tiket / HTM Peserta Default (Rp)</label
                 >
@@ -4010,7 +4036,7 @@
         const totalVar = unitSum * (Number(ev.targetPeserta) || 0);
         const totalNeed = totalVar + opSum;
         const bep =
-          ev.targetPeserta > 0
+          isProfitEvent && ev.targetPeserta > 0
             ? Math.max(
                 0,
                 Math.ceil((totalNeed - ev.subsidiKampus) / ev.targetPeserta),
@@ -4027,26 +4053,41 @@
                         ${isReadOnly ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
                     </div>
 
-                    ${!isProfitEvent ? `
+                    ${
+                      !isProfitEvent
+                        ? `
                         <div class="p-4 rounded-2xl border border-slate-200 bg-slate-100 text-sm text-slate-600 font-bold">
-                            Mode Non-Profit: parameter keuangan dinonaktifkan untuk event ini.
+                            Mode Non-Profit: HTM dinonaktifkan, dan dana subsidi kampus dipindahkan ke kolom uang masuk di bawah ini.
                         </div>
-                    ` : ""}
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    `
+                        : ""
+                    }
+                    <div class="grid grid-cols-1 sm:grid-cols-${isProfitEvent ? 4 : 3} gap-4">
                         <div class="p-4 rounded-2xl bg-slate-50 border">
                             <label class="text-[11px] font-bold text-slate-500 block">Target Peserta</label>
                             <input type="number" value="${ev.targetPeserta}" ${!isProfitEvent || isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('targetPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white ${!isProfitEvent ? "opacity-50 cursor-not-allowed" : ""}">
                         </div>
-                        <div class="p-4 rounded-2xl bg-slate-50 border">
-                            <label class="text-[11px] font-bold text-slate-500 block">Subsidi Kampus (Rp)</label>
-                            <input type="number" value="${ev.subsidiKampus}" ${!isProfitEvent || isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('subsidiKampus', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white ${!isProfitEvent ? "opacity-50 cursor-not-allowed" : ""}">
-                        </div>
-                        <div class="p-4 rounded-2xl bg-slate-50 border">
-                            <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
-                            <input type="number" value="${ev.htmPeserta}" ${!isProfitEvent || isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white ${!isProfitEvent ? "opacity-50 cursor-not-allowed" : ""}">
-                        </div>
+                        ${
+                          isProfitEvent
+                            ? `
+                            <div class="p-4 rounded-2xl bg-slate-50 border">
+                                <label class="text-[11px] font-bold text-slate-500 block">Subsidi Kampus (Rp)</label>
+                                <input type="number" value="${ev.subsidiKampus}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('subsidiKampus', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                            </div>
+                            <div class="p-4 rounded-2xl bg-slate-50 border">
+                                <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
+                                <input type="number" value="${ev.htmPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                            </div>
+                        `
+                            : `
+                            <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
+                                <label class="text-[11px] font-bold text-emerald-800 block">Dana Subsidi Kampus (Uang Masuk)</label>
+                                <input type="number" value="${ev.subsidiKampus}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('subsidiKampus', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border border-emerald-200 text-sm font-black text-emerald-900 bg-white">
+                            </div>
+                        `
+                        }
                         <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300">
-                            <span class="text-[11px] font-bold text-amber-800 block">Rekomendasi BEP HTM Minimal</span>
+                            <span class="text-[11px] font-bold text-amber-800 block">${isProfitEvent ? "Rekomendasi BEP HTM Minimal" : "Status BEP"}</span>
                             <strong class="text-lg font-black text-navy mt-1 block">${formatRp(bep)} / org</strong>
                         </div>
                     </div>
@@ -4180,20 +4221,30 @@
 
       function updateBasicFinanceParam(field, val) {
         const ev = getActiveEvent();
-        if (ev.isProfitEvent === false) {
-          showToast("Mode non-profit menonaktifkan parameter keuangan.", "error");
+        if (ev.isProfitEvent === false && field !== "subsidiKampus") {
+          showToast(
+            "Mode non-profit menonaktifkan parameter keuangan selain dana subsidi kampus.",
+            "error",
+          );
           return;
         }
         ev[field] = Number(val) || 0;
         syncToCloud();
         renderAll();
-        showToast("Parameter dasar keuangan diperbarui.");
+        showToast(
+          field === "subsidiKampus"
+            ? "Dana subsidi kampus diperbarui."
+            : "Parameter dasar keuangan diperbarui.",
+        );
       }
 
       function saveUnitEconomicItem() {
         const ev = getActiveEvent();
         if (ev.isProfitEvent === false) {
-          showToast("Mode non-profit menonaktifkan parameter keuangan.", "error");
+          showToast(
+            "Mode non-profit menonaktifkan parameter keuangan.",
+            "error",
+          );
           return;
         }
         const itemEl = document.getElementById("ueItemInput");
@@ -4238,7 +4289,10 @@
       function saveBiayaOperasionalItem() {
         const ev = getActiveEvent();
         if (ev.isProfitEvent === false) {
-          showToast("Mode non-profit menonaktifkan parameter keuangan.", "error");
+          showToast(
+            "Mode non-profit menonaktifkan parameter keuangan.",
+            "error",
+          );
           return;
         }
         const itemEl = document.getElementById("boItemInput");
@@ -4542,12 +4596,16 @@
                                                     <input type="checkbox" ${p.checkedIn ? "checked" : ""} ${isSc && checkinOpen ? "" : "disabled"} onchange="toggleParticipantCheckIn('${p.id}')" class="w-4 h-4 rounded text-emerald-600">
                                                     <span>Hadir</span>
                                                 </label>
-                                                ${ev.registrationMode === "umum" ? `
+                                                ${
+                                                  ev.registrationMode === "umum"
+                                                    ? `
                                                 <label class="inline-flex items-center gap-2 text-slate-700 font-bold">
                                                     <input type="checkbox" ${p.lunas ? "checked" : ""} ${isSc ? "" : "disabled"} onchange="toggleParticipantLunas('${p.id}')" class="w-4 h-4 rounded text-amber-600">
                                                     <span>Lunas</span>
                                                 </label>
-                                                ` : ""}
+                                                `
+                                                    : ""
+                                                }
                                                 ${p.checkedIn ? `<div class="text-[10px] text-emerald-700 font-extrabold">${p.checkInTime}</div>` : ""}
                                             </div>
                                         </td>
@@ -5685,6 +5743,8 @@
 
         const profitMode = applyProfitModeState();
         const isProfitEvent = profitMode !== "nonprofit";
+        const subsidyInput = document.getElementById("wizSubsidi");
+        const htmInput = document.getElementById("wizHtm");
 
         if (wizardMode === "edit") {
           const ev = getActiveEvent();
@@ -5702,9 +5762,10 @@
           ev.speakers = JSON.parse(JSON.stringify(wizardTempSpeakers));
           ev.targetPeserta =
             Number(document.getElementById("wizTargetPeserta").value) || 50;
-          ev.subsidiKampus =
-            Number(document.getElementById("wizSubsidi").value) || 0;
-          ev.htmPeserta = Number(document.getElementById("wizHtm").value) || 0;
+          ev.subsidiKampus = isProfitEvent
+            ? Number(subsidyInput?.value || ev.subsidiKampus || 0)
+            : Number(ev.subsidiKampus || 0);
+          ev.htmPeserta = isProfitEvent ? Number(htmInput?.value || 0) : 0;
           ev.isProfitEvent = isProfitEvent;
           ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
           if (ev.registrationMode === "mahasiswa") {
@@ -5742,9 +5803,10 @@
             speakers: JSON.parse(JSON.stringify(wizardTempSpeakers)),
             targetPeserta:
               Number(document.getElementById("wizTargetPeserta").value) || 60,
-            subsidiKampus:
-              Number(document.getElementById("wizSubsidi").value) || 0,
-            htmPeserta: htm,
+            subsidiKampus: isProfitEvent
+              ? Number(subsidyInput?.value || 0)
+              : Number(0),
+            htmPeserta: isProfitEvent ? htm : 0,
             isProfitEvent: isProfitEvent,
             registrationMode: draftMode,
             studentYear: draftMode === "mahasiswa" ? studentYear : "",
@@ -5818,7 +5880,8 @@
 
       function applyProfitModeState() {
         const selected =
-          document.querySelector('input[name="eventProfitMode"]:checked')?.value ||
+          document.querySelector('input[name="eventProfitMode"]:checked')
+            ?.value ||
           wizardDraftProfitMode ||
           "profit";
         const isDisabled = selected === "nonprofit";
@@ -5828,6 +5891,11 @@
           el.disabled = isDisabled;
           el.classList.toggle("opacity-50", isDisabled);
           el.classList.toggle("cursor-not-allowed", isDisabled);
+        });
+        ["wizSubsidiField", "wizHtmField"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.style.display = isDisabled ? "none" : "block";
         });
         const note = document.getElementById("financeSettingsLockedNote");
         if (note) note.classList.toggle("hidden", !isDisabled);
