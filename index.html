@@ -2501,6 +2501,7 @@
       let currentTicketQrDataUrl = "";
       let activeDashTab = "overview";
       let wizardMode = "create";
+      let wizardDraftRegistrationMode = "umum";
       let wizardTempDivisions = [];
       let wizardTempSpeakers = [];
 
@@ -5280,6 +5281,7 @@
 
         if (mode === "edit") {
           const ev = getActiveEvent();
+          wizardDraftRegistrationMode = getEventRegistrationMode(ev);
           document.getElementById("wizDivisi").value = ev.divisi;
           document.getElementById("wizKategori").value = ev.kategori;
           document.getElementById("wizNamaEvent").value = ev.nama;
@@ -5317,6 +5319,7 @@
           );
           wizardTempDivisions = JSON.parse(JSON.stringify(ev.divisions || []));
         } else {
+          wizardDraftRegistrationMode = "umum";
           document.getElementById("wizNamaEvent").value = "";
           document.getElementById("wizTema").value = "";
           document.getElementById("wizDeskripsi").value = "";
@@ -5586,6 +5589,37 @@
         renderWizardDivisions();
       }
 
+      function buildStudentParticipantsForEvent(
+        studentYear = "2025",
+        htm = 75000,
+      ) {
+        const source = studentYear === "2026" ? SDM_MHS_2026 : SDM_MHS_2025;
+        return source.map((fullName, idx) => {
+          const nama = fullName
+            .replace(/\s*\(2025\)|\s*\(2026\)\s*$/gi, "")
+            .trim();
+          const ticketCode = `MHS-${studentYear}-${String(idx + 1).padStart(3, "0")}`;
+          return {
+            id: `p_student_${studentYear}_${idx + 1}`,
+            ticketCode,
+            nama,
+            gender: "Mahasiswa",
+            wa: "-",
+            email: `${nama.toLowerCase().replace(/\s+/g, ".")}@student.stit.ac.id`,
+            provinsi: "Jawa Barat",
+            kota: "Kota Bekasi",
+            afiliasi: "Mahasiswa",
+            instansi: `Mahasiswa ${studentYear}`,
+            paket: `Mahasiswa ${studentYear}`,
+            htmPaid: Number(htm) || 0,
+            checkedIn: false,
+            lunas: true,
+            checkInTime: "-",
+            statusAktif: true,
+          };
+        });
+      }
+
       function saveEventFromWizard() {
         const nama = document.getElementById("wizNamaEvent").value.trim();
         if (!nama) {
@@ -5618,10 +5652,22 @@
             Number(document.getElementById("wizSubsidi").value) || 0;
           ev.htmPeserta = Number(document.getElementById("wizHtm").value) || 0;
           ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
+          if (ev.registrationMode === "mahasiswa") {
+            ev.studentYear = ev.studentYear || "2025";
+            ev.participants = buildStudentParticipantsForEvent(
+              ev.studentYear,
+              ev.htmPeserta,
+            );
+          }
         } else {
           const newId = "evt_" + Date.now();
           const htm = Number(document.getElementById("wizHtm").value) || 75000;
-          eventsData.push({
+          const draftMode = wizardDraftRegistrationMode || "umum";
+          const studentYear =
+            document.querySelector('input[name="studentYearChoice"]:checked')
+              ?.value || "2025";
+
+          const newEvent = {
             id: newId,
             divisi: document.getElementById("wizDivisi").value,
             kategori: document.getElementById("wizKategori").value,
@@ -5644,6 +5690,8 @@
             subsidiKampus:
               Number(document.getElementById("wizSubsidi").value) || 0,
             htmPeserta: htm,
+            registrationMode: draftMode,
+            studentYear: draftMode === "mahasiswa" ? studentYear : "",
             unitEconomics: [
               {
                 id: "ue_" + Date.now() + "1",
@@ -5665,7 +5713,10 @@
             ],
             divisions: JSON.parse(JSON.stringify(wizardTempDivisions)),
             kasTransactions: [],
-            participants: [],
+            participants:
+              draftMode === "mahasiswa"
+                ? buildStudentParticipantsForEvent(studentYear, htm)
+                : [],
             rundown: [],
             meetings: [],
             documents: [],
@@ -5682,7 +5733,9 @@
                 { name: "Paket-B", price: htm + 25000 },
               ],
             },
-          });
+          };
+
+          eventsData.push(newEvent);
           activeEventId = newId;
         }
 
@@ -5715,6 +5768,7 @@
       }
 
       function openRegistrationModeChooser(mode) {
+        wizardDraftRegistrationMode = mode;
         const modalTitle = document.getElementById("customModalTitle");
         const modalText = document.getElementById("customModalText");
         const modalActions = document.getElementById("customModalActions");
@@ -5773,30 +5827,36 @@
       }
 
       function applyRegistrationModeChoice(mode) {
+        wizardDraftRegistrationMode = mode;
         const ev = getActiveEvent();
-        if (!ev) return;
-        ev.registrationMode = mode;
-        if (!ev.formConfig) ev.formConfig = {};
-        ev.formConfig.registrationMode = mode;
-        const yearChoice = document.querySelector(
-          'input[name="studentYearChoice"]:checked',
-        );
-        if (mode === "mahasiswa" && yearChoice) {
-          ev.studentYear = yearChoice.value;
+        if (ev) {
+          ev.registrationMode = mode;
+          if (!ev.formConfig) ev.formConfig = {};
+          ev.formConfig.registrationMode = mode;
+          const yearChoice = document.querySelector(
+            'input[name="studentYearChoice"]:checked',
+          );
+          if (mode === "mahasiswa" && yearChoice) {
+            ev.studentYear = yearChoice.value;
+            ev.participants = buildStudentParticipantsForEvent(
+              yearChoice.value,
+              ev.htmPeserta || 75000,
+            );
+          }
+          if (mode === "internal") {
+            ev.internalEmployeeUploads = {
+              ikhwan:
+                document.getElementById("internalUploadIkhwan")?.files?.[0]
+                  ?.name || "",
+              akhwat:
+                document.getElementById("internalUploadAkhwat")?.files?.[0]
+                  ?.name || "",
+            };
+          }
+          syncToCloud();
+          renderAll();
         }
-        if (mode === "internal") {
-          ev.internalEmployeeUploads = {
-            ikhwan:
-              document.getElementById("internalUploadIkhwan")?.files?.[0]
-                ?.name || "",
-            akhwat:
-              document.getElementById("internalUploadAkhwat")?.files?.[0]
-                ?.name || "",
-          };
-        }
-        syncToCloud();
         closeCustomModal();
-        renderAll();
       }
 
       function openFormConfigModal() {
