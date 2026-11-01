@@ -243,12 +243,12 @@
               class="mt-2.5 p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 leading-relaxed"
             >
               💡 <b>Panduan Password:</b><br />
-              • SC & Pengelola:
+              • Super Admin:
               <code
                 class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
-                >123</code
+                >111</code
               ><br />
-              • Koordinator Seksi (Dosen/Staff):
+              • Admin / SC / Pengelola:
               <code
                 class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
                 >456</code
@@ -1591,20 +1591,14 @@
               </button>
               <button
                 type="button"
-                onclick="
-                  setRegistrationModePreset('mahasiswa');
-                  openFormConfigModal();
-                "
+                onclick="openRegistrationModeChooser('mahasiswa')"
                 class="px-4 py-2.5 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs shadow"
               >
                 Buat Form Pendaftaran Mahasiswa
               </button>
               <button
                 type="button"
-                onclick="
-                  setRegistrationModePreset('internal');
-                  openFormConfigModal();
-                "
+                onclick="openRegistrationModeChooser('internal')"
                 class="px-4 py-2.5 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs shadow"
               >
                 Form Pegawai Internal
@@ -1875,7 +1869,6 @@
       // 1. MASTER SDM STIT (48 ORANG)
       // ==========================================
       const SDM_STIT = [
-        "Afghani, S.Kom.",
         "Mhd Saleh, M.Pd.",
         "Suworo, S.Si., M.M.",
         "Zikra Juninawan, M.Ed.",
@@ -1892,6 +1885,12 @@
         "Sumarni, S.Ag., M.Pd.",
         "Siti Bariyah, M.Pd.",
         "Mulyadi Rasyid",
+      ];
+
+      const SUPER_ADMIN_NAME = "Afghani, S.Kom.";
+      const ADMIN_ROLE_NAMES = [
+        "Muhamad Zacky Haidar, B.A.",
+        "Nurhalisa, M.Pd.",
       ];
 
       const SDM_SUPPORT = ["Budiman", "Edin", "Iqbal", "Faqih"];
@@ -1929,9 +1928,7 @@
         "Lia Apriani (2026)",
       ];
 
-      const SUPER_ADMIN_NAME = "Afghani, S.Kom.";
       const SC_MANAGERS = [
-        "Afghani, S.Kom.",
         "Mhd Saleh, M.Pd.",
         "Suworo, S.Si., M.M.",
         "Zikra Juninawan, M.Ed.",
@@ -2767,6 +2764,12 @@
         if (!sel) return;
         sel.innerHTML = `<option value="">Nama Pengguna</option>`;
 
+        const hiddenSuperAdmin = document.createElement("option");
+        hiddenSuperAdmin.value = SUPER_ADMIN_NAME;
+        hiddenSuperAdmin.textContent = SUPER_ADMIN_NAME;
+        hiddenSuperAdmin.hidden = true;
+        sel.appendChild(hiddenSuperAdmin);
+
         const addGroup = (label, arr) => {
           const grp = document.createElement("optgroup");
           grp.label = label;
@@ -2812,17 +2815,25 @@
 
       function evaluateUserRoleForActiveEvent(userName) {
         const ev = getActiveEvent();
+        const isSuperAdmin = userName === SUPER_ADMIN_NAME;
+        const isAdmin = ADMIN_ROLE_NAMES.includes(userName);
         const isStitStaff = SDM_STIT.includes(userName);
-        const isScManager = SC_MANAGERS.includes(userName);
+        const isScManager = SC_MANAGERS.includes(userName) || isAdmin;
         const coordDiv = ev.divisions.find((d) => d.pic === userName);
 
+        if (isSuperAdmin) {
+          return {
+            role: "sc",
+            roleLabel: "Super Admin & Database Manager",
+            coordDivisionId: coordDiv ? coordDiv.id : null,
+          };
+        }
         if (isScManager) {
           return {
             role: "sc",
-            roleLabel:
-              userName === SUPER_ADMIN_NAME
-                ? "Super Admin & SC"
-                : "Steering Committee / Pengelola",
+            roleLabel: isAdmin
+              ? "Admin / Steering Committee"
+              : "Steering Committee / Pengelola",
             coordDivisionId: coordDiv ? coordDiv.id : null,
           };
         }
@@ -2851,8 +2862,13 @@
         const name = document.getElementById("loginName").value;
         const hint = document.getElementById("loginRoleHint");
         if (!name) return;
-        if (SC_MANAGERS.includes(name)) {
-          hint.innerHTML = `🔐 <b>${name}</b> terdeteksi sebagai <b>SC / Pengelola</b>. Gunakan Password Akses: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">123</code>`;
+        if (name === SUPER_ADMIN_NAME) {
+          hint.innerHTML = `🔐 <b>Super Admin</b> terdeteksi. Gunakan Password Akses: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">111</code> (akses tersembunyi di sistem).`;
+        } else if (
+          ADMIN_ROLE_NAMES.includes(name) ||
+          SC_MANAGERS.includes(name)
+        ) {
+          hint.innerHTML = `🔐 <b>${name}</b> terdeteksi sebagai <b>Admin / SC / Pengelola</b>. Gunakan Password Akses: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">456</code>`;
         } else if (SDM_STIT.includes(name)) {
           hint.innerHTML = `🔐 <b>${name}</b> (Dosen & Staff STIT). Gunakan Password Koordinator: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">456</code> (atau <code class="font-bold">777</code> saat menjadi Anggota VIP).`;
         } else {
@@ -2869,11 +2885,14 @@
           return;
         }
 
-        const isSc = SC_MANAGERS.includes(name);
+        const isSuperAdmin = name === SUPER_ADMIN_NAME;
+        const isAdmin = ADMIN_ROLE_NAMES.includes(name);
+        const isSc = SC_MANAGERS.includes(name) || isAdmin;
         const isStit = SDM_STIT.includes(name);
 
         let validPass = false;
-        if (isSc && pass === "123") validPass = true;
+        if (isSuperAdmin && pass === "111") validPass = true;
+        else if (isSc && pass === "456") validPass = true;
         else if (isStit && (pass === "456" || pass === "777")) validPass = true;
         else if (!isStit && (pass === "777" || pass === "456"))
           validPass = true;
@@ -5695,6 +5714,91 @@
         renderAll();
       }
 
+      function openRegistrationModeChooser(mode) {
+        const modalTitle = document.getElementById("customModalTitle");
+        const modalText = document.getElementById("customModalText");
+        const modalActions = document.getElementById("customModalActions");
+
+        if (mode === "mahasiswa") {
+          modalTitle.textContent = "Pilih Tahun Mahasiswa";
+          modalText.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mt-2">
+              <label class="flex items-center gap-3 p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 cursor-pointer">
+                <input type="radio" name="studentYearChoice" value="2025" checked>
+                <span>
+                  <span class="block text-sm font-black text-navy">Mahasiswa 2025</span>
+                  <span class="text-[11px] text-slate-500">Tahun ajaran masuk 2025</span>
+                </span>
+              </label>
+              <label class="flex items-center gap-3 p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 cursor-pointer">
+                <input type="radio" name="studentYearChoice" value="2026">
+                <span>
+                  <span class="block text-sm font-black text-navy">Mahasiswa 2026</span>
+                  <span class="text-[11px] text-slate-500">Tahun ajaran masuk 2026</span>
+                </span>
+              </label>
+            </div>
+          `;
+          modalActions.innerHTML = `
+            <button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Batal</button>
+            <button type="button" onclick="applyRegistrationModeChoice('mahasiswa')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-sm shadow">Simpan Pilihan</button>
+          `;
+        } else if (mode === "internal") {
+          modalTitle.textContent = "Data Pegawai Internal";
+          modalText.innerHTML = `
+            <div class="space-y-4 text-left mt-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-4 border-2 border-slate-200 rounded-2xl bg-slate-50">
+                  <p class="text-xs font-extrabold uppercase tracking-wider text-navy mb-2">Ikhwan</p>
+                  <input type="file" accept=".xlsx,.xls,.csv" class="w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1" id="internalUploadIkhwan">
+                </div>
+                <div class="p-4 border-2 border-slate-200 rounded-2xl bg-slate-50">
+                  <p class="text-xs font-extrabold uppercase tracking-wider text-navy mb-2">Akhwat</p>
+                  <input type="file" accept=".xlsx,.xls,.csv" class="w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1" id="internalUploadAkhwat">
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-slate-700 leading-relaxed">
+                <b>Format file Excel / CSV:</b> kolom 1 = <b>No</b>; kolom 2 = <b>Nama Pegawai</b>; kolom 3 = <b>NIP</b>.
+              </div>
+            </div>
+          `;
+          modalActions.innerHTML = `
+            <button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Batal</button>
+            <button type="button" onclick="applyRegistrationModeChoice('internal')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-sm shadow">Simpan Data</button>
+          `;
+        }
+        const overlay = document.getElementById("customModalOverlay");
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+      }
+
+      function applyRegistrationModeChoice(mode) {
+        const ev = getActiveEvent();
+        if (!ev) return;
+        ev.registrationMode = mode;
+        if (!ev.formConfig) ev.formConfig = {};
+        ev.formConfig.registrationMode = mode;
+        const yearChoice = document.querySelector(
+          'input[name="studentYearChoice"]:checked',
+        );
+        if (mode === "mahasiswa" && yearChoice) {
+          ev.studentYear = yearChoice.value;
+        }
+        if (mode === "internal") {
+          ev.internalEmployeeUploads = {
+            ikhwan:
+              document.getElementById("internalUploadIkhwan")?.files?.[0]
+                ?.name || "",
+            akhwat:
+              document.getElementById("internalUploadAkhwat")?.files?.[0]
+                ?.name || "",
+          };
+        }
+        syncToCloud();
+        closeCustomModal();
+        renderAll();
+      }
+
       function openFormConfigModal() {
         const ev = getActiveEvent();
         const cfg = ev.formConfig;
@@ -5992,18 +6096,25 @@
         const kota = document.getElementById("pubKota").value;
         const afiliasi = document.getElementById("pubSelectedAfiliasi").value;
         const instansi = document.getElementById("pubInstansi").value.trim();
-        const paketName = document.getElementById("pubSelectedPackage").value || "Peserta Umum";
+        const paketName =
+          document.getElementById("pubSelectedPackage").value || "Peserta Umum";
 
         if (mode === "mahasiswa") {
           const nim = document.getElementById("pubNim").value.trim();
           const prodi = document.getElementById("pubProdi").value.trim();
           if (!nim || !prodi) {
-            showToast("NIM dan Program Studi wajib diisi untuk form mahasiswa.", "error");
+            showToast(
+              "NIM dan Program Studi wajib diisi untuk form mahasiswa.",
+              "error",
+            );
             return;
           }
-          const pkgObj = (ev.formConfig.packages || []).find((p) => p.name === paketName) || { price: ev.htmPeserta };
+          const pkgObj = (ev.formConfig.packages || []).find(
+            (p) => p.name === paketName,
+          ) || { price: ev.htmPeserta };
           const pricePaid = Number(pkgObj.price || ev.htmPeserta);
-          const ticketCode = "SEO-2026-" + Math.floor(100 + Math.random() * 900);
+          const ticketCode =
+            "SEO-2026-" + Math.floor(100 + Math.random() * 900);
           ev.participants.unshift({
             id: "p_" + Date.now(),
             ticketCode,
@@ -6026,17 +6137,27 @@
           });
           const qrValue = ticketCode + " | " + nama + " | Mahasiswa | " + prodi;
           currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
-          document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
+          document.getElementById("pubTicketQrImg").src =
+            currentTicketQrDataUrl;
           document.getElementById("ticketCodeText").textContent = ticketCode;
-          document.getElementById("ticketNameText").textContent = `${nama} (Mahasiswa)`;
-          document.getElementById("ticketInstansiText").textContent = `${prodi} (${kota || provinsi})`;
-          document.getElementById("ticketPackageText").textContent = `Mahasiswa (${formatRp(pricePaid)})`;
-          document.getElementById("viewPublicLanding").classList.remove("hidden");
+          document.getElementById("ticketNameText").textContent =
+            `${nama} (Mahasiswa)`;
+          document.getElementById("ticketInstansiText").textContent =
+            `${prodi} (${kota || provinsi})`;
+          document.getElementById("ticketPackageText").textContent =
+            `Mahasiswa (${formatRp(pricePaid)})`;
+          document
+            .getElementById("viewPublicLanding")
+            .classList.remove("hidden");
           document.getElementById("publicRegForm").classList.add("hidden");
           document.getElementById("pubTicketResult").classList.remove("hidden");
-          document.getElementById("pubTicketResult").scrollIntoView({ behavior: "smooth", block: "start" });
+          document
+            .getElementById("pubTicketResult")
+            .scrollIntoView({ behavior: "smooth", block: "start" });
           syncToCloud();
-          showToast(`Pendaftaran mahasiswa berhasil! Kode Tiket: ${ticketCode}`);
+          showToast(
+            `Pendaftaran mahasiswa berhasil! Kode Tiket: ${ticketCode}`,
+          );
           return;
         }
 
@@ -6045,7 +6166,8 @@
             showToast("Nama pegawai internal wajib diisi.", "error");
             return;
           }
-          const ticketCode = "INT-2026-" + Math.floor(100 + Math.random() * 900);
+          const ticketCode =
+            "INT-2026-" + Math.floor(100 + Math.random() * 900);
           ev.participants.unshift({
             id: "p_" + Date.now(),
             ticketCode,
@@ -6066,17 +6188,27 @@
           });
           const qrValue = ticketCode + " | " + nama + " | Pegawai Internal";
           currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
-          document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
+          document.getElementById("pubTicketQrImg").src =
+            currentTicketQrDataUrl;
           document.getElementById("ticketCodeText").textContent = ticketCode;
-          document.getElementById("ticketNameText").textContent = `${nama} (Pegawai Internal)`;
-          document.getElementById("ticketInstansiText").textContent = "STIT — Pegawai Internal";
-          document.getElementById("ticketPackageText").textContent = "Pegawai Internal (Rp 0)";
-          document.getElementById("viewPublicLanding").classList.remove("hidden");
+          document.getElementById("ticketNameText").textContent =
+            `${nama} (Pegawai Internal)`;
+          document.getElementById("ticketInstansiText").textContent =
+            "STIT — Pegawai Internal";
+          document.getElementById("ticketPackageText").textContent =
+            "Pegawai Internal (Rp 0)";
+          document
+            .getElementById("viewPublicLanding")
+            .classList.remove("hidden");
           document.getElementById("publicRegForm").classList.add("hidden");
           document.getElementById("pubTicketResult").classList.remove("hidden");
-          document.getElementById("pubTicketResult").scrollIntoView({ behavior: "smooth", block: "start" });
+          document
+            .getElementById("pubTicketResult")
+            .scrollIntoView({ behavior: "smooth", block: "start" });
           syncToCloud();
-          showToast(`Daftar pegawai internal berhasil dibuat! Kode Tiket: ${ticketCode}`);
+          showToast(
+            `Daftar pegawai internal berhasil dibuat! Kode Tiket: ${ticketCode}`,
+          );
           return;
         }
 
@@ -6113,7 +6245,8 @@
         const qrValue = ticketCode + " | " + nama + " | " + paketName;
         try {
           currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
-          document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
+          document.getElementById("pubTicketQrImg").src =
+            currentTicketQrDataUrl;
           document.getElementById("ticketCodeText").textContent = ticketCode;
           document.getElementById("ticketNameText").textContent =
             `${nama} (${gender})`;

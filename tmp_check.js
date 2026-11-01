@@ -1,0 +1,4626 @@
+
+
+
+
+
+
+
+
+
+
+
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "sans-serif"] },
+            colors: {
+              navy: {
+                DEFAULT: "#0A192F",
+                light: "#172A45",
+                dark: "#050D1A",
+                accent: "#1E3A8A",
+              },
+              gold: {
+                DEFAULT: "#D4AF37",
+                light: "#F3E5AB",
+                dark: "#AA8010",
+              },
+            },
+          },
+        },
+      };
+    
+
+
+      // ==========================================
+      // 0. KONFIGURASI FIREBASE FIRESTORE CLOUD SYNC
+      // ==========================================
+      // Ganti nilai di bawah ini dengan firebaseConfig asli dari Firebase Console Anda:
+      const firebaseConfig = {
+        apiKey: "AIzaSyANv_7KsZzB6mD2IJgw8IVdO8eT2hVm0Mc",
+        authDomain: "seo-db-fe9c4.firebaseapp.com",
+        projectId: "seo-db-fe9c4",
+        storageBucket: "seo-db-fe9c4.firebasestorage.app",
+        messagingSenderId: "530084249965",
+        appId: "1:530084249965:web:b73ebbc55289fe060ada64",
+      };
+
+      let db = null;
+      let isFirebaseActive = false;
+      let cloudStateLoaded = false;
+
+      function initFirebaseConnection() {
+        try {
+          if (
+            typeof firebase !== "undefined" &&
+            firebaseConfig.apiKey &&
+            !firebaseConfig.apiKey.includes("YourApiKeyHere")
+          ) {
+            if (!firebase.apps.length) {
+              firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            isFirebaseActive = true;
+            const badge = document.getElementById("cloudSyncBadge");
+            if (badge) badge.textContent = "☁️ Cloud Sync Aktif";
+            listenFromCloud();
+          } else {
+            // Fallback penyimpanan lokal browser jika apiKey belum diganti
+            const savedLocal = localStorage.getItem("seo_stit_events_backup");
+            if (savedLocal) {
+              eventsData = JSON.parse(savedLocal);
+            }
+          }
+        } catch (err) {
+          console.warn(
+            "Firebase belum dikonfigurasi penuh, menggunakan LocalStorage:",
+            err,
+          );
+        }
+      }
+
+      async function syncToCloud() {
+        // Simpan cadangan ke LocalStorage juga agar selalu aman
+        try {
+          localStorage.setItem(
+            "seo_stit_events_backup",
+            JSON.stringify(eventsData),
+          );
+        } catch (e) {}
+
+        if (!isFirebaseActive || !db) return;
+        try {
+          await db.collection("seo_app_state").doc("main_data").set({
+            eventsData: eventsData,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (err) {
+          console.error("Gagal menyimpan ke Firebase:", err);
+        }
+      }
+
+      function listenFromCloud() {
+        if (!isFirebaseActive || !db) return;
+        db.collection("seo_app_state")
+          .doc("main_data")
+          .onSnapshot((doc) => {
+            if (doc.exists) {
+              const cloudData = doc.data();
+              if (cloudData && cloudData.eventsData) {
+                eventsData = cloudData.eventsData;
+                cloudStateLoaded = true;
+                if (currentUser) {
+                  const updatedRole = evaluateUserRoleForActiveEvent(
+                    currentUser.name,
+                  );
+                  currentUser.role = updatedRole.role;
+                  currentUser.roleLabel = updatedRole.roleLabel;
+                  currentUser.coordDivisionId = updatedRole.coordDivisionId;
+                  renderAll();
+                }
+                openPublicRouteIfRequested();
+              }
+            } else {
+              cloudStateLoaded = true;
+              syncToCloud();
+              openPublicRouteIfRequested();
+            }
+          });
+      }
+
+      // ==========================================
+      // 1. MASTER SDM STIT (48 ORANG)
+      // ==========================================
+      const SDM_STIT = [
+        "Mhd Saleh, M.Pd.",
+        "Suworo, S.Si., M.M.",
+        "Zikra Juninawan, M.Ed.",
+        "Muhammad Bakri Rahimin, Lc., M.E.",
+        "M. Zuhriansah, M.Pd.",
+        "Nurhalisa, M.Pd.",
+        "Muhamad Zacky Haidar, B.A.",
+        "Yusuf Abdullah, M.Pd.",
+        "Fortin Sri Haryani, S.Si., M.Pd.",
+        "Jaya Wiharja, M.Pd.",
+        "Siti Salwa, M.Pd.",
+        "Sandi Sanry, M.Pd.",
+        "Said Imanullah, S.Ag.",
+        "Sumarni, S.Ag., M.Pd.",
+        "Siti Bariyah, M.Pd.",
+        "Mulyadi Rasyid",
+      ];
+
+      const SUPER_ADMIN_NAME = "Afghani, S.Kom.";
+      const ADMIN_ROLE_NAMES = [
+        "Muhamad Zacky Haidar, B.A.",
+        "Nurhalisa, M.Pd.",
+      ];
+
+      const SDM_SUPPORT = ["Budiman", "Edin", "Iqbal", "Faqih"];
+
+      const SDM_MHS_2025 = [
+        "Abdullah Ibnul Mubarak (2025)",
+        "Nadzmina Al Khalifi Humaira (2025)",
+        "Alya Lutfia Mumtaz (2025)",
+        "Winarnoko (2025)",
+        "Farrelino Achmad Darief (2025)",
+        "Abdul Qowi Fawwaz Al-Atsari (2025)",
+        "Khonsa Abdurrochman (2025)",
+        "Octavia Zulkarnaen (2025)",
+        "Muthia Nabila Husna (2025)",
+        "Siti Namira Uqba Hasanah (2025)",
+        "Muhammad Lutfir Amin Rahman (2025)",
+        "Indah (2025)",
+        "Ahmad Zaid (2025)",
+        "Balqis Zerlinda Ciputri (2025)",
+        "Rayya Rifkah Falihah (2025)",
+        "Anisaul Karimah (2025)",
+      ];
+
+      const SDM_MHS_2026 = [
+        "Irsyad (2026)",
+        "Muhamad Ihsan (2026)",
+        "Rafif Muafa (2026)",
+        "Izhar (2026)",
+        "Talita (2026)",
+        "Syahidah (2026)",
+        "Yuli Eka Oktafiani (2026)",
+        "Aisyah (2026)",
+        "Shafa (2026)",
+        "Haliza (2026)",
+        "Lia Apriani (2026)",
+      ];
+
+      const SC_MANAGERS = [
+        "Mhd Saleh, M.Pd.",
+        "Suworo, S.Si., M.M.",
+        "Zikra Juninawan, M.Ed.",
+        "Muhammad Bakri Rahimin, Lc., M.E.",
+      ];
+
+      const DUMMY_SPEAKERS = [
+        "Dr. Ali Saman Hasan, Lc., M.A.",
+        "Yusuf Utsman Baisa, Lc.",
+        "Prof. Taufik Kasturi, P.Si., M.Si, Ph.D.",
+        "Ustadz Kartiko Adi Pramono, Dipl. Ing. HTL., ACMC., M.Pd.",
+        "Dr. Mhd Saleh, M.Pd.",
+        "Suworo, S.Si., M.M.",
+        "Zikra Juninawan, M.Ed.",
+        "Muhammad Bakri Rahimin, Lc., M.E.",
+      ];
+
+      const PROVINSI_KOTA = {
+        "Jawa Barat": [
+          "Kab. Bekasi",
+          "Kota Bekasi",
+          "Kota Depok",
+          "Kab. Bogor",
+          "Kota Bandung",
+          "Kab. Karawang",
+        ],
+        "DKI Jakarta": [
+          "Jakarta Selatan",
+          "Jakarta Timur",
+          "Jakarta Pusat",
+          "Jakarta Barat",
+          "Jakarta Utara",
+        ],
+        Banten: [
+          "Kota Tangerang",
+          "Kota Tangerang Selatan",
+          "Kab. Tangerang",
+          "Kota Serang",
+        ],
+        "Jawa Tengah": [
+          "Kota Semarang",
+          "Kota Surakarta",
+          "Kab. Banyumas",
+          "Kota Magelang",
+        ],
+        "Jawa Timur": [
+          "Kota Surabaya",
+          "Kota Malang",
+          "Kab. Sidoarjo",
+          "Kab. Gresik",
+        ],
+        "Luar Pulau Jawa": [
+          "Kota Medan",
+          "Kota Padang",
+          "Kota Makassar",
+          "Kota Balikpapan",
+          "Kota Banjarmasin",
+        ],
+      };
+
+      const SECTION_CARD_THEMES = [
+        {
+          bg: "bg-blue-50/70",
+          border: "border-blue-300",
+          badge: "bg-blue-600 text-white",
+          bar: "bg-blue-600",
+        },
+        {
+          bg: "bg-amber-50/70",
+          border: "border-amber-300",
+          badge: "bg-amber-600 text-white",
+          bar: "bg-amber-500",
+        },
+        {
+          bg: "bg-emerald-50/70",
+          border: "border-emerald-300",
+          badge: "bg-emerald-600 text-white",
+          bar: "bg-emerald-600",
+        },
+        {
+          bg: "bg-purple-50/70",
+          border: "border-purple-300",
+          badge: "bg-purple-600 text-white",
+          bar: "bg-purple-600",
+        },
+        {
+          bg: "bg-rose-50/70",
+          border: "border-rose-300",
+          badge: "bg-rose-600 text-white",
+          bar: "bg-rose-600",
+        },
+        {
+          bg: "bg-cyan-50/70",
+          border: "border-cyan-300",
+          badge: "bg-cyan-600 text-white",
+          bar: "bg-cyan-600",
+        },
+      ];
+
+      // 2. 10 TUGAS DEFAULT PER SEKSI
+      function getDefault10Tasks(sectionName, defaultPic) {
+        const templates = {
+          "Seksi Acara": [
+            "Menyusun Term of Reference (TOR) kegiatan secara lengkap",
+            "Menghubungi dan konfirmasi kesediaan pemateri/narasumber",
+            "Menyusun rundown acara detail menit ke menit",
+            "Menentukan dan melatih MC serta moderator acara",
+            "Menyiapkan qori pembaca ayat suci Al-Quran dan pembaca doa",
+            "Mengumpulkan materi presentasi (PPT/Makalah) dari narasumber",
+            "Menyiapkan lembar penilaian/evaluasi acara untuk peserta",
+            "Memimpin pelaksanaan gladi kotor dan gladi bersih H-1",
+            "Mengatur ketepatan durasi waktu (time keeping) saat hari H",
+            "Menyusun laporan evaluasi pelaksanaan acara pasca kegiatan",
+          ],
+          "Seksi Konsumsi": [
+            "Melakukan survei minimal 3 vendor katering dan snack",
+            "Menyesuaikan menu konsumsi dengan pagu Unit Economics",
+            "Menentukan menu jamuan khusus VIP / Pemateri dan SC",
+            "Mendata kuota porsi makan siang peserta dan panitia",
+            "Melakukan pemesanan (booking) dan pembayaran DP katering",
+            "Menyiapkan air mineral botol/gelas untuk meja pemateri & peserta",
+            "Mengatur meja prasmanan/distribusi konsumsi di lokasi acara",
+            "Mendistribusikan snack box saat registrasi / coffee break",
+            "Mendistribusikan paket makan siang tepat waktu saat ISHOMA",
+            "Memastikan kebersihan area konsumsi dan rekap nota konsumsi",
+          ],
+          "Seksi Logistik / Perlengkapan": [
+            "Mengurus peminjaman dan perizinan penggunaan Aula / Ruangan",
+            "Menata layout kursi peserta, meja pemateri, dan meja registrasi",
+            "Memeriksa fungsi mikrofon, speaker, dan sound system utama",
+            "Menyiapkan proyektor, layar LCD, dan kabel konektor HDMI",
+            "Memasang banner backdrop panggung dan spanduk selamat datang",
+            "Menyiapkan pengadaan paket seminar kit (totebag, notebook, pulpen)",
+            "Memastikan ketersediaan cadangan listrik dan kabel roll",
+            "Menyiapkan plakat/cindera mata dan map sertifikat pemateri",
+            "Mengawasi keamanan perlengkapan selama acara berlangsung",
+            "Mengembalikan seluruh inventaris kampus ke kondisi semula",
+          ],
+          "Seksi Humas & Sponsorship": [
+            "Menyusun daftar undangan resmi internal dan instansi eksternal",
+            "Mendistribusikan surat undangan ke pimpinan, dosen, dan tamu VIP",
+            "Menyebarkan informasi dan poster pendaftaran ke grup WhatsApp",
+            "Melakukan follow-up calon peserta yang mendaftar di Landing Page",
+            "Memverifikasi bukti pembayaran HTM peserta yang masuk",
+            "Menyiapkan meja registrasi dan daftar hadir QR Code di Hari H",
+            "Menyambut kedatangan narasumber dan tamu VIP di lokasi",
+            "Menyusun proposal penawaran kerja sama / sponsorship",
+            "Menjaga komunikasi dengan mitra pendukung acara",
+            "Mengirimkan ucapan terima kasih resmi kepada pemateri & mitra",
+          ],
+          "Seksi Dokumentasi & Publikasi": [
+            "Membuat desain poster utama dan flyer digital kegiatan",
+            "Membuat desain banner backdrop panggung dan photobooth",
+            "Membuat desain template E-Sertifikat pemateri, peserta, dan panitia",
+            "Membuat konten teaser dan hitung mundur (countdown) media sosial",
+            "Menyiapkan kamera, baterai cadangan, dan memori penyimpanan",
+            "Mengambil dokumentasi foto dan video seluruh sesi pada Hari H",
+            "Menyiapkan perangkat live streaming / rekaman jika hybrid",
+            "Melakukan seleksi dan editing foto/video highlight kegiatan",
+            "Mengunggah seluruh file dokumentasi ke Google Drive Arsip STIT",
+            "Mempublikasikan rilis berita pasca-acara di kanal resmi kampus",
+          ],
+        };
+
+        const list = templates[sectionName] || [
+          "Menyusun rencana kerja operasional seksi",
+          "Melakukan koordinasi kebutuhan anggaran seksi dengan bendahara",
+          "Menyiapkan daftar perlengkapan kerja seksi",
+          "Membagi penugasan teknis harian kepada anggota seksi",
+          "Melakukan pengecekan kesiapan H-7 pelaksanaan",
+          "Melakukan pengecekan kesiapan H-3 pelaksanaan",
+          "Melakukan pengecekan kesiapan H-1 pelaksanaan",
+          "Menjalankan tugas operasional seksi pada Hari H",
+          "Melakukan evaluasi kendala lapangan bersama koordinator",
+          "Menyusun laporan pertanggungjawaban seksi",
+        ];
+
+        return list.map((title, idx) => ({
+          id: "t_" + Math.random().toString(36).substring(2, 9) + "_" + idx,
+          title: title,
+          pic: defaultPic || "",
+          done: false,
+        }));
+      }
+
+      // 3. INITIAL EVENTS DATABASE (2 EVENT AWAL)
+      let eventsData = [
+        {
+          id: "evt_1",
+          divisi: "LP2M",
+          kategori: "Workshop",
+          nama: "Workshop Nasional Metodologi Penelitian & Publikasi Ilmiah 2026",
+          tema: "Membangun Ekosistem Riset Dosen & Mahasiswa STIT yang Bereputasi",
+          deskripsi:
+            "Program kerja unggulan LP2M STIT untuk membekali civitas akademika dan peserta umum dalam penulisan karya ilmiah terindeks.",
+          tanggal: "2026-11-15",
+          jamMulai: "08:00",
+          jamSelesai: "15:30",
+          lokasi: "Aula Utama Lt. 2 Kampus STIT",
+          speakers: [
+            {
+              name: "Prof. Dr. H. Mahmud Yunus, M.A.",
+              topic:
+                "Strategi Tembus Jurnal Bereputasi Nasional & Internasional",
+            },
+            {
+              name: "Dr. Mhd Saleh, M.Pd.",
+              topic: "Metodologi Riset Pendidikan Islam Kontemporer",
+            },
+          ],
+          targetPeserta: 60,
+          subsidiKampus: 2500000,
+          htmPeserta: 85000,
+          unitEconomics: [
+            { id: "ue1", item: "Makan Siang Box", cost: 25000 },
+            { id: "ue2", item: "Snack Coffee Break", cost: 10000 },
+            {
+              id: "ue3",
+              item: "Seminar Kit (Totebag & Notebook)",
+              cost: 20000,
+            },
+            { id: "ue4", item: "E-Sertifikat & Modul Materi", cost: 10000 },
+          ],
+          biayaOperasional: [
+            { id: "bo1", item: "Honorarium 2 Pemateri Utama", cost: 2000000 },
+            {
+              id: "bo2",
+              item: "Cetak Backdrop & Dekorasi Panggung",
+              cost: 450000,
+            },
+            { id: "bo3", item: "Kebersihan & Operasional Sound", cost: 350000 },
+          ],
+          divisions: [
+            {
+              id: "div_1",
+              name: "Seksi Acara",
+              pic: "Yusuf Abdullah, M.Pd.",
+              members: [
+                "Rizky Pratama (2025)",
+                "Aisyah Putri (2025)",
+                "Aufa Zaki (2026)",
+              ],
+              tasks: getDefault10Tasks("Seksi Acara", "Rizky Pratama (2025)"),
+            },
+            {
+              id: "div_2",
+              name: "Seksi Konsumsi",
+              pic: "Sumarni, S.Ag., M.Pd.",
+              members: [
+                "Muhammad Ilham (2025)",
+                "Siti Nurhaliza (2025)",
+                "Zahra Amalia (2026)",
+              ],
+              tasks: getDefault10Tasks(
+                "Seksi Konsumsi",
+                "Siti Nurhaliza (2025)",
+              ),
+            },
+            {
+              id: "div_3",
+              name: "Seksi Logistik / Perlengkapan",
+              pic: "Muhamad Zacky Haidar, B.A.",
+              members: [
+                "Fajar Ramadhan (2025)",
+                "Luthfi Halim (2026)",
+                "Budiman",
+              ],
+              tasks: getDefault10Tasks(
+                "Seksi Logistik / Perlengkapan",
+                "Fajar Ramadhan (2025)",
+              ),
+            },
+            {
+              id: "div_4",
+              name: "Seksi Humas & Sponsorship",
+              pic: "Said Imanullah, S.Ag.",
+              members: ["Dewi Sartika (2025)", "Khansa Humaira (2026)"],
+              tasks: getDefault10Tasks(
+                "Seksi Humas & Sponsorship",
+                "Dewi Sartika (2025)",
+              ),
+            },
+            {
+              id: "div_5",
+              name: "Seksi Dokumentasi & Publikasi",
+              pic: "Afghani, S.Kom.",
+              members: [
+                "Reza Pahlevi (2025)",
+                "Salman Alfarisi (2026)",
+                "Iqbal",
+              ],
+              tasks: getDefault10Tasks(
+                "Seksi Dokumentasi & Publikasi",
+                "Reza Pahlevi (2025)",
+              ),
+            },
+          ],
+          kasTransactions: [
+            {
+              id: "k1",
+              tanggal: "2026-10-25",
+              tipe: "masuk",
+              uraian: "Pencairan Dana Subsidi Awal Kampus STIT",
+              nominal: 2500000,
+              seksi: "Pengelola Inti",
+              pic: "Nurhalisa, M.Pd.",
+              notaUrl: "https://drive.google.com",
+            },
+            {
+              id: "k2",
+              tanggal: "2026-10-28",
+              tipe: "keluar",
+              uraian: "DP Katering Makan Siang & Snack Peserta",
+              nominal: 1000000,
+              seksi: "Seksi Konsumsi",
+              pic: "Sumarni, S.Ag., M.Pd.",
+              notaUrl: "https://drive.google.com",
+            },
+            {
+              id: "k3",
+              tanggal: "2026-10-29",
+              tipe: "keluar",
+              uraian: "Cetak Banner Backdrop & Spanduk",
+              nominal: 450000,
+              seksi: "Seksi Dokumentasi & Publikasi",
+              pic: "Afghani, S.Kom.",
+              notaUrl: "https://drive.google.com",
+            },
+          ],
+          participants: [
+            {
+              id: "p1",
+              ticketCode: "SEO-2026-881",
+              nama: "Ahmad Fauzi, S.Pd.",
+              gender: "Laki-laki",
+              wa: "081288990011",
+              email: "ahmad@stit.ac.id",
+              provinsi: "Jawa Barat",
+              kota: "Kab. Bekasi",
+              afiliasi: "Mahasiswa",
+              instansi: "STIT Hidayatunnajah - Bekasi",
+              paket: "Paket-A (Reguler + Seminar Kit)",
+              htmPaid: 85000,
+              checkedIn: true,
+              lunas: true,
+              checkInTime: "07:52 WIB",
+              statusAktif: true,
+            },
+            {
+              id: "p2",
+              ticketCode: "SEO-2026-882",
+              nama: "Dr. Siti Rahmah, M.Ag.",
+              gender: "Perempuan",
+              wa: "081377665544",
+              email: "rahmah@kampus.ac.id",
+              provinsi: "DKI Jakarta",
+              kota: "Jakarta Selatan",
+              afiliasi: "Dosen",
+              instansi: "UIN Syarif Hidayatullah - Jakarta",
+              paket: "Paket-B (VIP + Buku Prosiding)",
+              htmPaid: 125000,
+              checkedIn: false,
+              lunas: false,
+              checkInTime: "-",
+              statusAktif: true,
+            },
+            {
+              id: "p3",
+              ticketCode: "SEO-2026-883",
+              nama: "Budi Santoso",
+              gender: "Laki-laki",
+              wa: "085711223344",
+              email: "budi@umum.com",
+              provinsi: "Jawa Barat",
+              kota: "Kota Depok",
+              afiliasi: "Peserta Umum",
+              instansi: "Yayasan Pendidikan Islam - Depok",
+              paket: "Paket-A (Reguler + Seminar Kit)",
+              htmPaid: 85000,
+              checkedIn: false,
+              lunas: false,
+              checkInTime: "-",
+              statusAktif: true,
+            },
+          ],
+          rundown: [
+            {
+              id: "r1",
+              start: "07:30",
+              end: "08:15",
+              durasi: "45 Menit",
+              kegiatan: "Registrasi Peserta & Scan QR E-Tiket",
+              pic: "Seksi Humas & Sponsorship",
+              ruangan: "Lobby Aula Lt. 2",
+            },
+            {
+              id: "r2",
+              start: "08:15",
+              end: "08:45",
+              durasi: "30 Menit",
+              kegiatan: "Pembukaan, Tilawah Al-Quran & Sambutan Ketua STIT",
+              pic: "Seksi Acara",
+              ruangan: "Aula Utama Lt. 2",
+            },
+            {
+              id: "r3",
+              start: "08:45",
+              end: "11:30",
+              durasi: "165 Menit",
+              kegiatan: "Sesi Materi 1: Strategi Publikasi Jurnal Bereputasi",
+              pic: "Yusuf Abdullah, M.Pd.",
+              ruangan: "Aula Utama Lt. 2",
+            },
+            {
+              id: "r4",
+              start: "11:30",
+              end: "13:00",
+              durasi: "90 Menit",
+              kegiatan: "ISHOMA & Pembagian Konsumsi Makan Siang",
+              pic: "Seksi Konsumsi",
+              ruangan: "Area Prasmanan",
+            },
+          ],
+          meetings: [
+            {
+              id: "m1",
+              code: "MTG-STIT-101",
+              agenda: "Rapat Pleno Fiksasi Persiapan H-7 Workshop LP2M",
+              tanggal: "2026-11-08",
+              waktu: "13:30",
+              tempat: "Ruang Rapat Utama STIT",
+              isOpen: true,
+              attendees: [
+                { name: "Afghani, S.Kom.", time: "13:25 WIB" },
+                { name: "Yusuf Abdullah, M.Pd.", time: "13:28 WIB" },
+                { name: "Sumarni, S.Ag., M.Pd.", time: "13:30 WIB" },
+              ],
+              notulensi:
+                "1. Seluruh seksi wajib menyelesaikan minimal 70% jobdesk pada H-3.\n2. Seksi Konsumsi memastikan kuota tambahan 10 box cadangan.\n3. Gladi bersih dilaksanakan sehari sebelum acara pukul 14.00 WIB.",
+            },
+          ],
+          documents: [
+            {
+              id: "d1",
+              title: "SK Kepanitiaan Resmi Workshop LP2M 2026",
+              category: "SK Kepanitiaan",
+              uploader: "Afghani, S.Kom.",
+              url: "https://drive.google.com",
+            },
+            {
+              id: "d2",
+              title: "TOR & Proposal Anggaran Kegiatan",
+              category: "Proposal & TOR",
+              uploader: "Yusuf Abdullah, M.Pd.",
+              url: "https://drive.google.com",
+            },
+          ],
+          heroBanner: "",
+          participantCheckinOpen: false,
+          formConfig: {
+            useGender: true,
+            useWa: true,
+            useEmail: true,
+            useDomisili: true,
+            useAfiliasi: true,
+            usePaket: true,
+            packages: [
+              { name: "Paket-A (Reguler + Seminar Kit)", price: 85000 },
+              { name: "Paket-B (VIP + Buku Prosiding)", price: 125000 },
+            ],
+          },
+        },
+        {
+          id: "evt_2",
+          divisi: "Kaprodi MPI",
+          kategori: "Orientasi Mahasiswa Baru",
+          nama: "Ta'aruf & Orientasi Akademik Mahasiswa Baru Prodi MPI 2026",
+          tema: "Membentuk Pemimpin Pendidikan Islam yang Unggul & Beradab",
+          deskripsi:
+            "Kegiatan pengenalan sistem akademik, budaya kampus, dan keprodian bagi seluruh mahasiswa baru angkatan 2026.",
+          tanggal: "2026-12-05",
+          jamMulai: "07:30",
+          jamSelesai: "16:00",
+          lokasi: "Ruang Auditorium Terpadu STIT",
+          speakers: [
+            {
+              name: "Suworo, S.Si., M.M.",
+              topic: "Visi Misi & Budaya Akademik Kampus STIT",
+            },
+          ],
+          targetPeserta: 100,
+          subsidiKampus: 3000000,
+          htmPeserta: 65000,
+          unitEconomics: [
+            { id: "ue21", item: "Makan Siang & Snack", cost: 30000 },
+            { id: "ue22", item: "Atribut & ID Card Ta'aruf", cost: 20000 },
+          ],
+          biayaOperasional: [
+            { id: "bo21", item: "Dekorasi & Spanduk Utama", cost: 600000 },
+          ],
+          divisions: [
+            {
+              id: "div2_1",
+              name: "Seksi Acara",
+              pic: "Siti Salwa, M.Pd.",
+              members: ["Dimas Anggara (2025)", "Putri Marino (2025)"],
+              tasks: getDefault10Tasks("Seksi Acara", "Dimas Anggara (2025)"),
+            },
+            {
+              id: "div2_2",
+              name: "Seksi Konsumsi",
+              pic: "Rahmawati, M.Pd.",
+              members: ["Nabila Syakieb (2025)"],
+              tasks: getDefault10Tasks(
+                "Seksi Konsumsi",
+                "Nabila Syakieb (2025)",
+              ),
+            },
+          ],
+          kasTransactions: [
+            {
+              id: "k21",
+              tanggal: "2026-11-01",
+              tipe: "masuk",
+              uraian: "Subsidi Prodi MPI",
+              nominal: 3000000,
+              seksi: "Pengelola Inti",
+              pic: "Mhd Saleh, M.Pd.",
+              notaUrl: "https://drive.google.com",
+            },
+          ],
+          participants: [],
+          rundown: [
+            {
+              id: "r21",
+              start: "07:30",
+              end: "08:30",
+              durasi: "60 Menit",
+              kegiatan: "Apel Pagi & Pengenalan Panitia",
+              pic: "Siti Salwa, M.Pd.",
+              ruangan: "Lapangan Utama",
+            },
+          ],
+          meetings: [],
+          documents: [],
+          heroBanner: "",
+          participantCheckinOpen: false,
+          formConfig: {
+            useGender: true,
+            useWa: true,
+            useEmail: true,
+            useDomisili: true,
+            useAfiliasi: true,
+            usePaket: true,
+            packages: [
+              { name: "Paket-A (Mahasiswa Baru)", price: 65000 },
+              { name: "Paket-B (Panitia/Pendamping)", price: 50000 },
+            ],
+          },
+        },
+      ];
+
+      // STATE APLIKASI AKTIF
+      let currentUser = null;
+      let activeEventId = "evt_1";
+      const publicEventId = new URLSearchParams(window.location.search).get(
+        "event",
+      );
+      let publicRouteOpened = false;
+      let currentTicketQrDataUrl = "";
+      let activeDashTab = "overview";
+      let wizardMode = "create";
+      let wizardTempDivisions = [];
+      let wizardTempSpeakers = [];
+
+      // HELPER FORMAT RUPIAH
+      function formatRp(num) {
+        return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+      }
+
+      function getNationalHolidayList(year) {
+        const holidays = [
+          { date: `${year}-01-01`, label: "Tahun Baru" },
+          { date: `${year}-02-14`, label: "Maulid Nabi" },
+          { date: `${year}-03-21`, label: "Hari Raya Nyepi" },
+          { date: `${year}-04-01`, label: "Idul Fitri" },
+          { date: `${year}-05-01`, label: "Hari Buruh" },
+          { date: `${year}-05-20`, label: "Waisak" },
+          { date: `${year}-06-01`, label: "Hari Lahir Pancasila" },
+          { date: `${year}-08-17`, label: "Hari Kemerdekaan RI" },
+          { date: `${year}-12-25`, label: "Natal" },
+        ];
+        return holidays;
+      }
+
+      function getActiveEvent() {
+        return eventsData.find((e) => e.id === activeEventId) || eventsData[0];
+      }
+
+      function getPublicRegistrationUrl(eventId) {
+        const url = new URL(window.location.href);
+        url.search = "";
+        url.hash = "";
+        url.searchParams.set("event", eventId);
+        return url.toString();
+      }
+
+      function openPublicRouteIfRequested() {
+        if (!publicEventId || publicRouteOpened) return;
+        if (isFirebaseActive && !cloudStateLoaded) return;
+        const event = eventsData.find((item) => item.id === publicEventId);
+        if (!event) return;
+        publicRouteOpened = true;
+        activeEventId = event.id;
+        if (event.formConfigSaved === false) {
+          document.getElementById("viewLogin").classList.add("hidden");
+          document.getElementById("viewPublicLanding").classList.add("hidden");
+          document.body.insertAdjacentHTML(
+            "beforeend",
+            `<div class="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900 p-6 text-center text-white"><div><h1 class="text-2xl font-black">Pendaftaran belum dibuka</h1><p class="mt-2 text-sm">Panitia belum menyimpan format pendaftaran untuk event ini.</p></div></div>`,
+          );
+          return;
+        }
+        document.getElementById("viewLogin").classList.add("hidden");
+        document.getElementById("viewApp").classList.add("hidden");
+        openPublicLanding(event.id);
+      }
+
+      function openPublicRegistrationInNewTab(eventId) {
+        const event = eventsData.find((item) => item.id === eventId);
+        if (!event || event.formConfigSaved === false) {
+          showToast(
+            "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
+            "error",
+          );
+          return;
+        }
+        window.open(
+          getPublicRegistrationUrl(eventId),
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }
+
+      async function copyPublicRegistrationLink(eventId) {
+        const link = getPublicRegistrationUrl(eventId);
+        try {
+          await navigator.clipboard.writeText(link);
+        } catch (err) {
+          const temp = document.createElement("textarea");
+          temp.value = link;
+          temp.style.position = "fixed";
+          temp.style.opacity = "0";
+          document.body.appendChild(temp);
+          temp.select();
+          document.execCommand("copy");
+          temp.remove();
+        }
+        showToast("Link pendaftaran berhasil disalin.");
+      }
+
+      function showToast(msg, type = "success") {
+        const container = document.getElementById("toastContainer");
+        if (!container) return;
+        const el = document.createElement("div");
+        const bg = type === "error" ? "bg-rose-600" : "bg-navy";
+        el.className = `${bg} text-white px-4 py-3 rounded-2xl shadow-xl border border-amber-400/40 text-xs font-bold flex items-center gap-2 pointer-events-auto transition-all`;
+        el.innerHTML = `<span class="text-amber-400">✨</span><span>${msg}</span>`;
+        container.appendChild(el);
+        setTimeout(() => {
+          el.remove();
+        }, 3200);
+      }
+
+      function showCustomModal(title, text) {
+        document.getElementById("customModalTitle").textContent = title;
+        document.getElementById("customModalText").textContent = text;
+        document.getElementById("customModalActions").innerHTML =
+          `<button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Tutup</button>`;
+        const ov = document.getElementById("customModalOverlay");
+        ov.classList.remove("hidden");
+        ov.classList.add("flex");
+      }
+
+      function closeCustomModal() {
+        const ov = document.getElementById("customModalOverlay");
+        ov.classList.add("hidden");
+        ov.classList.remove("flex");
+      }
+
+      function confirmDeleteEvent(eventId) {
+        const event = eventsData.find((item) => item.id === eventId);
+        if (!event) return;
+        document.getElementById("customModalTitle").textContent =
+          "Hapus Event?";
+        document.getElementById("customModalText").textContent =
+          `Event “${event.nama}” beserta data peserta, keuangan, dan kepanitiaannya akan dihapus. Tindakan ini tidak dapat dibatalkan.`;
+        document.getElementById("customModalActions").innerHTML = `
+          <button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Batal</button>
+          <button type="button" onclick="deleteEvent('${event.id}')" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm transition">Hapus Event</button>
+        `;
+        const overlay = document.getElementById("customModalOverlay");
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+      }
+
+      function deleteEvent(eventId) {
+        if (eventsData.length <= 1) {
+          closeCustomModal();
+          showToast("Minimal harus ada satu event.", "error");
+          return;
+        }
+        const removedEvent = eventsData.find((item) => item.id === eventId);
+        if (!removedEvent) return;
+        eventsData = eventsData.filter((item) => item.id !== eventId);
+        if (activeEventId === eventId) {
+          activeEventId = eventsData[0].id;
+          if (currentUser) {
+            const updatedRole = evaluateUserRoleForActiveEvent(
+              currentUser.name,
+            );
+            currentUser.role = updatedRole.role;
+            currentUser.roleLabel = updatedRole.roleLabel;
+            currentUser.coordDivisionId = updatedRole.coordDivisionId;
+          }
+        }
+        closeCustomModal();
+        syncToCloud();
+        renderAll();
+        showToast(`Event “${removedEvent.nama}” berhasil dihapus.`);
+      }
+
+      // ==========================================
+      // KAMERA SCANNER QR ASLI (HTML5-QRCODE)
+      // ==========================================
+      let html5QrCodeInstance = null;
+
+      function openRealQRScanner(mode, targetMeetingId = null) {
+        if (mode === "peserta") {
+          const ev = getActiveEvent();
+          if (!ev.participantCheckinOpen) {
+            showToast(
+              "Buka Check-in Peserta terlebih dahulu sebelum scan QR.",
+              "error",
+            );
+            return;
+          }
+        }
+
+        const modal = document.getElementById("qrScannerModal");
+        const titleEl = document.getElementById("qrScannerTitle");
+        const fallbackBox = document.getElementById("qrManualFallbackBox");
+        const fallbackBtn = document.getElementById("qrManualFallbackBtn");
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        if (mode === "meeting") {
+          titleEl.textContent = "📷 Scan QR Kehadiran Rapat";
+          fallbackBox.classList.remove("hidden");
+          fallbackBtn.onclick = () => {
+            stopRealQRScanner();
+            checkInMeetingByUser(targetMeetingId);
+          };
+        } else {
+          titleEl.textContent = "📷 Scan QR E-Tiket Peserta";
+          fallbackBox.classList.add("hidden");
+        }
+
+        if (typeof Html5Qrcode === "undefined") {
+          showToast("Library kamera belum termuat.", "error");
+          return;
+        }
+
+        html5QrCodeInstance = new Html5Qrcode("qrReaderBox");
+        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+        html5QrCodeInstance
+          .start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+              stopRealQRScanner();
+              if (mode === "meeting") {
+                checkInMeetingByUser(targetMeetingId);
+                showToast(`Berhasil Scan QR Rapat: ${decodedText}`);
+              } else if (mode === "peserta") {
+                // Ekstrak kode tiket jika formatnya "SEO-2026-881 | Nama | Paket"
+                const rawCode = decodedText.split("|")[0].trim();
+                const inp = document.getElementById("qrScanTicketInput");
+                if (inp) inp.value = rawCode;
+                scanParticipantQrTicket();
+              }
+            },
+            () => {
+              // Abaikan frame yang belum fokus membaca QR
+            },
+          )
+          .catch((err) => {
+            console.warn("Kamera tidak dapat diakses:", err);
+            showToast(
+              "Kamera tidak dapat dibuka. Gunakan tombol Konfirmasi Hadir di bawahnya atau pastikan buka via link HTTPS.",
+              "error",
+            );
+          });
+      }
+
+      function stopRealQRScanner() {
+        const modal = document.getElementById("qrScannerModal");
+        if (html5QrCodeInstance) {
+          html5QrCodeInstance
+            .stop()
+            .then(() => {
+              html5QrCodeInstance.clear();
+              html5QrCodeInstance = null;
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            })
+            .catch(() => {
+              html5QrCodeInstance = null;
+              modal.classList.add("hidden");
+              modal.classList.remove("flex");
+            });
+        } else {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+        }
+      }
+
+      // 4. INISIALISASI DROPDOWN LOGIN (48 SDM STIT)
+      function initLoginDropdown() {
+        const sel = document.getElementById("loginName");
+        if (!sel) return;
+        sel.innerHTML = `<option value="">Nama Pengguna</option>`;
+
+        const hiddenSuperAdmin = document.createElement("option");
+        hiddenSuperAdmin.value = SUPER_ADMIN_NAME;
+        hiddenSuperAdmin.textContent = SUPER_ADMIN_NAME;
+        hiddenSuperAdmin.hidden = true;
+        sel.appendChild(hiddenSuperAdmin);
+
+        const addGroup = (label, arr) => {
+          const grp = document.createElement("optgroup");
+          grp.label = label;
+          arr.forEach((name) => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            grp.appendChild(opt);
+          });
+          sel.appendChild(grp);
+        };
+
+        addGroup("1. Kelompok Dosen & Staff STIT (17 Orang)", SDM_STIT);
+        addGroup("2. Kelompok Support (4 Orang)", SDM_SUPPORT);
+        addGroup("3. Mahasiswa Angkatan 2025 (16 Orang)", SDM_MHS_2025);
+        addGroup("4. Mahasiswa Angkatan 2026 (11 Orang)", SDM_MHS_2026);
+      }
+
+      function buildGroupedSdmOptionsHtml(
+        selectedValue = "",
+        includeCustom = false,
+      ) {
+        let html = `<option value="">-- Pilih Nama Personil --</option>`;
+        const groups = [
+          { label: "Kelompok Dosen & Staff STIT", list: SDM_STIT },
+          { label: "Kelompok Support", list: SDM_SUPPORT },
+          { label: "Mahasiswa Angkatan 2025", list: SDM_MHS_2025 },
+          { label: "Mahasiswa Angkatan 2026", list: SDM_MHS_2026 },
+        ];
+        groups.forEach((g) => {
+          html += `<optgroup label="${g.label}">`;
+          g.list.forEach((n) => {
+            const sel = n === selectedValue ? "selected" : "";
+            html += `<option value="${n}" ${sel}>${n}</option>`;
+          });
+          html += `</optgroup>`;
+        });
+        if (includeCustom) {
+          html += `<option value="__custom__">+ Tulis Nama Sendiri...</option>`;
+        }
+        return html;
+      }
+
+      function evaluateUserRoleForActiveEvent(userName) {
+        const ev = getActiveEvent();
+        const isSuperAdmin = userName === SUPER_ADMIN_NAME;
+        const isAdmin = ADMIN_ROLE_NAMES.includes(userName);
+        const isStitStaff = SDM_STIT.includes(userName);
+        const isScManager = SC_MANAGERS.includes(userName) || isAdmin;
+        const coordDiv = ev.divisions.find((d) => d.pic === userName);
+
+        if (isSuperAdmin) {
+          return {
+            role: "sc",
+            roleLabel: "Super Admin & Database Manager",
+            coordDivisionId: coordDiv ? coordDiv.id : null,
+          };
+        }
+        if (isScManager) {
+          return {
+            role: "sc",
+            roleLabel: isAdmin
+              ? "Admin / Steering Committee"
+              : "Steering Committee / Pengelola",
+            coordDivisionId: coordDiv ? coordDiv.id : null,
+          };
+        }
+        if (coordDiv) {
+          return {
+            role: "koordinator",
+            roleLabel: `Koordinator ${coordDiv.name}`,
+            coordDivisionId: coordDiv.id,
+          };
+        }
+        if (isStitStaff) {
+          return {
+            role: "vip_anggota",
+            roleLabel: "Anggota VIP (Dosen & Staff - View Only)",
+            coordDivisionId: null,
+          };
+        }
+        return {
+          role: "anggota",
+          roleLabel: "Anggota Pelaksana Panitia",
+          coordDivisionId: null,
+        };
+      }
+
+      function updateLoginRoleHint() {
+        const name = document.getElementById("loginName").value;
+        const hint = document.getElementById("loginRoleHint");
+        if (!name) return;
+        if (name === SUPER_ADMIN_NAME) {
+          hint.innerHTML = `🔐 <b>Super Admin</b> terdeteksi. Gunakan Password Akses: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">111</code> (akses tersembunyi di sistem).`;
+        } else if (
+          ADMIN_ROLE_NAMES.includes(name) ||
+          SC_MANAGERS.includes(name)
+        ) {
+          hint.innerHTML = `🔐 <b>${name}</b> terdeteksi sebagai <b>Admin / SC / Pengelola</b>. Gunakan Password Akses: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">456</code>`;
+        } else if (SDM_STIT.includes(name)) {
+          hint.innerHTML = `🔐 <b>${name}</b> (Dosen & Staff STIT). Gunakan Password Koordinator: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">456</code> (atau <code class="font-bold">777</code> saat menjadi Anggota VIP).`;
+        } else {
+          hint.innerHTML = `🔐 <b>${name}</b> (Mahasiswa / Support). Gunakan Password Anggota: <code class="font-black text-navy bg-amber-200 px-2 py-0.5 rounded">777</code> (atau <code class="font-bold">456</code> jika ditunjuk sebagai Koordinator).`;
+        }
+      }
+
+      function handleLogin(e) {
+        e.preventDefault();
+        const name = document.getElementById("loginName").value;
+        const pass = document.getElementById("loginPassword").value.trim();
+        if (!name) {
+          showToast("Pilih Nama Pengguna terlebih dahulu!", "error");
+          return;
+        }
+
+        const isSuperAdmin = name === SUPER_ADMIN_NAME;
+        const isAdmin = ADMIN_ROLE_NAMES.includes(name);
+        const isSc = SC_MANAGERS.includes(name) || isAdmin;
+        const isStit = SDM_STIT.includes(name);
+
+        let validPass = false;
+        if (isSuperAdmin && pass === "111") validPass = true;
+        else if (isSc && pass === "456") validPass = true;
+        else if (isStit && (pass === "456" || pass === "777")) validPass = true;
+        else if (!isStit && (pass === "777" || pass === "456"))
+          validPass = true;
+
+        if (!validPass) {
+          showToast(
+            "Password Akses tidak sesuai! Cek petunjuk password di bawah kolom.",
+            "error",
+          );
+          return;
+        }
+
+        const roleInfo = evaluateUserRoleForActiveEvent(name);
+        currentUser = {
+          name: name,
+          ...roleInfo,
+        };
+
+        document.getElementById("viewLogin").classList.add("hidden");
+        document.getElementById("viewApp").classList.remove("hidden");
+
+        if (currentUser.role === "koordinator") {
+          activeDashTab = "coord_section";
+        } else {
+          activeDashTab = "overview";
+        }
+
+        renderAll();
+        showToast(
+          `Selamat datang, ${currentUser.name} (${currentUser.roleLabel})`,
+        );
+      }
+
+      function handleLogout() {
+        currentUser = null;
+        document.getElementById("loginPassword").value = "";
+        document.getElementById("viewApp").classList.add("hidden");
+        document.getElementById("viewLogin").classList.remove("hidden");
+      }
+
+      function selectEventFromSidebar(eventId) {
+        activeEventId = eventId;
+        if (currentUser) {
+          const updatedRole = evaluateUserRoleForActiveEvent(currentUser.name);
+          currentUser.role = updatedRole.role;
+          currentUser.roleLabel = updatedRole.roleLabel;
+          currentUser.coordDivisionId = updatedRole.coordDivisionId;
+
+          if (currentUser.role === "koordinator") {
+            activeDashTab = "coord_section";
+          } else if (activeDashTab === "coord_section") {
+            activeDashTab = "overview";
+          }
+        }
+        renderAll();
+        const ev = getActiveEvent();
+        showToast(
+          `Beralih ke: ${ev.nama} — Akses: ${currentUser ? currentUser.roleLabel : ""}`,
+        );
+      }
+
+      function switchDashTab(tabKey) {
+        activeDashTab = tabKey;
+        renderDashboardTabsAndContent();
+      }
+
+      // ==========================================
+      // MASTER RENDER FUNCTION
+      // ==========================================
+      function renderAll() {
+        if (!currentUser) return;
+        const ev = getActiveEvent();
+
+        document.getElementById("headerUserName").textContent =
+          currentUser.name;
+        document.getElementById("headerUserRoleBadge").textContent =
+          currentUser.roleLabel;
+
+        const btnCreateSidebar = document.getElementById(
+          "btnCreateNewEventSidebar",
+        );
+        if (currentUser.role === "sc") {
+          btnCreateSidebar.classList.remove("hidden");
+        } else {
+          btnCreateSidebar.classList.add("hidden");
+        }
+
+        const cardList = document.getElementById("sidebarEventCardList");
+        cardList.innerHTML = eventsData
+          .map((item) => {
+            const isActive = item.id === activeEventId;
+            const cardClass = isActive
+              ? "bg-grad-card-active text-white border-amber-400 shadow-lg scale-[1.01]"
+              : "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200";
+            const divBadgeClass = isActive
+              ? "bg-amber-400 text-navy"
+              : "bg-slate-200 text-slate-700";
+            const dateClass = isActive ? "text-amber-200" : "text-slate-500";
+
+            return `
+                    <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer rounded-2xl p-4 border-2 transition-all ${cardClass}">
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${divBadgeClass}">${item.divisi}</span>
+                            <span class="text-[11px] font-bold ${dateClass}">📅 ${item.tanggal}</span>
+                        </div>
+                        <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
+                        <div class="flex flex-wrap gap-2 mt-3" onclick="event.stopPropagation()">
+                          ${item.formConfigSaved === false ? "" : `<button type="button" onclick="openPublicRegistrationInNewTab('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-400 text-navy text-[10px] font-extrabold">Form Pendaftaran</button><button type="button" onclick="copyPublicRegistrationLink('${item.id}')" title="Salin Link Pendaftaran" aria-label="Salin Link Pendaftaran" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-white/90 text-navy border border-slate-300 hover:bg-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" stroke-width="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" stroke-width="2"/></svg></button>`}
+                          ${currentUser.role === "sc" ? `<button type="button" onclick="confirmDeleteEvent('${item.id}')" title="Hapus event" aria-label="Hapus event ${item.nama}" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-rose-100 text-rose-700 border border-rose-200 hover:bg-rose-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 7h16"/></svg></button>` : ""}
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+
+        document.getElementById("sidebarRoleTitle").textContent =
+          currentUser.roleLabel;
+        const roleDescriptions = {
+          sc: "Anda memiliki otoritas penuh membuat/mengedit event, mengelola seksi, keuangan, dan membuka QR Meeting.",
+          koordinator:
+            "Anda dapat mengelola anggota & jobdesk di seksi Anda, menginput kas seksi Anda, dan melihat menu lainnya secara View-Only.",
+          vip_anggota:
+            "Sebagai Dosen/Staff di event ini, Anda memiliki akses Anggota VIP untuk memantau seluruh menu secara View-Only.",
+          anggota:
+            "Anda fokus pada eksekusi daftar tugas pribadi Anda, melihat rundown, dan melakukan QR Check-in rapat.",
+        };
+        document.getElementById("sidebarRoleDesc").textContent =
+          roleDescriptions[currentUser.role] || "";
+
+        const sidebarMiniCalendar = document.getElementById(
+          "sidebarMiniCalendar",
+        );
+        if (sidebarMiniCalendar) {
+          sidebarMiniCalendar.innerHTML = renderSidebarMiniCalendar(ev);
+        }
+
+        document.getElementById("headlineDivisiBadge").textContent =
+          `Divisi: ${ev.divisi}`;
+        document.getElementById("headlineKategoriBadge").textContent =
+          ev.kategori;
+        document.getElementById("headlineEventTitle").textContent = ev.nama;
+        document.getElementById("headlineEventTheme").textContent =
+          `"${ev.tema}"`;
+        document.getElementById("headlineEventDesc").textContent = ev.deskripsi;
+        document.getElementById("headlineDate").textContent = ev.tanggal;
+        document.getElementById("headlineTime").textContent =
+          `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
+        document.getElementById("headlineLocation").textContent = ev.lokasi;
+
+        const spkBox = document.getElementById("headlineSpeakersBox");
+        spkBox.innerHTML = (ev.speakers || [])
+          .map(
+            (s, idx) => `
+                <div class="bg-white/10 border border-amber-400/30 px-3 py-1.5 rounded-xl text-xs">
+                    <span class="text-amber-300 font-extrabold">🎤 Pemateri ${idx + 1}:</span>
+                    <span class="font-bold text-white">${s.name}</span>
+                    <span class="text-slate-300 italic">(${s.topic})</span>
+                </div>
+            `,
+          )
+          .join("");
+
+        const adminAct = document.getElementById("headlineAdminActions");
+        if (currentUser.role === "sc") {
+          adminAct.classList.remove("hidden");
+          adminAct.classList.add("flex");
+        } else {
+          adminAct.classList.add("hidden");
+          adminAct.classList.remove("flex");
+        }
+
+        const memberSec = document.getElementById("memberWorkspaceSection");
+        const dashSec = document.getElementById("dashboardWorkspaceSection");
+
+        if (currentUser.role === "anggota") {
+          memberSec.classList.remove("hidden");
+          dashSec.classList.add("hidden");
+          renderMemberWorkspace(ev);
+        } else {
+          memberSec.classList.add("hidden");
+          dashSec.classList.remove("hidden");
+          renderDashboardTabsAndContent();
+        }
+      }
+
+      // Alias agar kompatibel jika dipanggil oleh listener Firebase
+      function renderAllViews() {
+        renderAll();
+      }
+
+      // ==========================================
+      // RENDER RUANG KERJA ANGGOTA (MAHASISWA / SUPPORT)
+      // ==========================================
+      function renderMemberWorkspace(ev) {
+        const openMtg = (ev.meetings || []).find((m) => m.isOpen);
+        const banner = document.getElementById("memberMeetingCheckInBanner");
+        if (openMtg) {
+          const alreadyIn = openMtg.attendees.some(
+            (a) => a.name === currentUser.name,
+          );
+          banner.classList.remove("hidden");
+          banner.innerHTML = `
+                    <div>
+                        <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-navy font-black text-[10px] uppercase">Rapat Sedang Berlangsung</span>
+                        <h4 class="text-sm font-black text-navy mt-1">${openMtg.agenda} (${openMtg.code})</h4>
+                        <p class="text-xs text-slate-600">📅 ${openMtg.tanggal} | ⏰ ${openMtg.waktu} | 📍 ${openMtg.tempat}</p>
+                    </div>
+                    ${
+                      alreadyIn
+                        ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Check-in Hadir</span>`
+                        : `<div class="flex flex-wrap gap-2">
+                             <button onclick="openRealQRScanner('meeting', '${openMtg.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">📷 Buka Kamera Scan QR Rapat</button>
+                             <button onclick="checkInMeetingByUser('${openMtg.id}')" class="px-4 py-2.5 rounded-xl bg-amber-200 hover:bg-amber-300 text-navy font-extrabold text-xs">✓ Check-in Cepat</button>
+                           </div>`
+                    }
+                `;
+        } else {
+          banner.classList.add("hidden");
+        }
+
+        let myDivName = "Belum Terplot di Seksi";
+        let myTasks = [];
+        ev.divisions.forEach((d) => {
+          if (
+            d.members.includes(currentUser.name) ||
+            d.pic === currentUser.name
+          ) {
+            myDivName = d.name;
+          }
+          d.tasks.forEach((t) => {
+            if (t.pic === currentUser.name) {
+              myTasks.push({ ...t, divId: d.id, divName: d.name });
+            }
+          });
+        });
+
+        document.getElementById("memberDivisionBadge").textContent = myDivName;
+        const doneCount = myTasks.filter((t) => t.done).length;
+        document.getElementById("memberTaskCounter").textContent =
+          `${doneCount} / ${myTasks.length} Selesai`;
+
+        const listEl = document.getElementById("memberTasksListContainer");
+        if (myTasks.length === 0) {
+          listEl.innerHTML = `<div class="p-6 rounded-2xl bg-slate-50 text-center text-xs text-slate-500">Belum ada tugas spesifik yang di-plot atas nama <b>${currentUser.name}</b> pada event ini.</div>`;
+        } else {
+          listEl.innerHTML = myTasks
+            .map(
+              (t) => `
+                    <label class="flex items-center justify-between gap-3 p-3.5 rounded-2xl border ${t.done ? "bg-emerald-50/60 border-emerald-300" : "bg-slate-50 border-slate-200"} cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTaskDone('${t.divId}', '${t.id}')" class="w-5 h-5 rounded text-navy">
+                            <div>
+                                <p class="text-xs sm:text-sm font-bold ${t.done ? "line-through text-slate-400" : "text-slate-800"}">${t.title}</p>
+                                <span class="text-[10px] font-semibold text-slate-500">${t.divName}</span>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold ${t.done ? "bg-emerald-600 text-white" : "bg-slate-200 text-slate-700"}">${t.done ? "Selesai" : "Proses"}</span>
+                    </label>
+                `,
+            )
+            .join("");
+        }
+
+        const rdEl = document.getElementById("memberRundownPreview");
+        rdEl.innerHTML =
+          (ev.rundown || [])
+            .map(
+              (r) => `
+                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between gap-2">
+                    <div><strong class="text-navy">${r.start}-${r.end}</strong> — ${r.kegiatan}</div>
+                    <span class="text-slate-500 font-semibold shrink-0">${r.pic}</span>
+                </div>
+            `,
+            )
+            .join("") ||
+          `<p class="text-slate-400 italic">Belum ada rundown.</p>`;
+
+        const mtgEl = document.getElementById("memberMeetingPreview");
+        mtgEl.innerHTML =
+          (ev.meetings || [])
+            .map(
+              (m) => `
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                    <div class="font-bold text-navy">${m.agenda}</div>
+                    <div class="text-[11px] text-slate-500">📅 ${m.tanggal} (${m.waktu}) — 📍 ${m.tempat}</div>
+                    <div class="text-[11px] text-slate-700 whitespace-pre-line bg-white p-2 rounded-lg border">${m.notulensi || "-"}</div>
+                </div>
+            `,
+            )
+            .join("") ||
+          `<p class="text-slate-400 italic">Belum ada jadwal rapat.</p>`;
+      }
+
+      // ==========================================
+      // RENDER DASHBOARD TABS & ACTIVE TAB CONTENT
+      // ==========================================
+      function renderDashboardTabsAndContent() {
+        const ev = getActiveEvent();
+        const isCoord = currentUser.role === "koordinator";
+        const isVip = currentUser.role === "vip_anggota";
+
+        const btnCoord = document.getElementById("tabBtnCoordMySection");
+        if (isCoord) {
+          btnCoord.classList.remove("hidden");
+        } else {
+          btnCoord.classList.add("hidden");
+        }
+
+        const vipBanner = document.getElementById("vipReadOnlyBanner");
+        if (isVip) vipBanner.classList.remove("hidden");
+        else vipBanner.classList.add("hidden");
+
+        const activeParticipants = (ev.participants || []).filter(
+          (p) => p.statusAktif !== false,
+        );
+        document.getElementById("tabPesertaCount").textContent =
+          activeParticipants.length;
+
+        const tabMap = {
+          coord_section: "tabBtnCoordMySection",
+          overview: "tabBtnOverview",
+          struktur: "tabBtnStruktur",
+          keuangan: "tabBtnKeuangan",
+          kas: "tabBtnKas",
+          peserta: "tabBtnPeserta",
+          rundown: "tabBtnRundown",
+          meeting: "tabBtnMeeting",
+          dokumen: "tabBtnDokumen",
+        };
+
+        Object.entries(tabMap).forEach(([key, btnId]) => {
+          const btn = document.getElementById(btnId);
+          if (!btn) return;
+          if (key === activeDashTab) {
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-grad-navy text-amber-400 shadow-lg scale-[1.02] border border-amber-400/50`;
+          } else {
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-white hover:bg-amber-50 text-slate-700 border border-slate-200/90 shadow-sm`;
+          }
+        });
+
+        const contentIds = [
+          "dashContentCoordSection",
+          "dashContentOverview",
+          "dashContentStruktur",
+          "dashContentKeuangan",
+          "dashContentKas",
+          "dashContentPeserta",
+          "dashContentRundown",
+          "dashContentMeeting",
+          "dashContentDokumen",
+        ];
+        contentIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add("hidden");
+        });
+
+        if (activeDashTab === "coord_section" && isCoord) {
+          document
+            .getElementById("dashContentCoordSection")
+            .classList.remove("hidden");
+          renderCoordMySectionTab(ev);
+        } else if (activeDashTab === "overview") {
+          document
+            .getElementById("dashContentOverview")
+            .classList.remove("hidden");
+          renderOverviewTab(ev);
+        } else if (activeDashTab === "struktur") {
+          document
+            .getElementById("dashContentStruktur")
+            .classList.remove("hidden");
+          renderStrukturTab(ev);
+        } else if (activeDashTab === "keuangan") {
+          document
+            .getElementById("dashContentKeuangan")
+            .classList.remove("hidden");
+          renderKeuanganTab(ev);
+        } else if (activeDashTab === "kas") {
+          document.getElementById("dashContentKas").classList.remove("hidden");
+          renderKasTab(ev);
+        } else if (activeDashTab === "peserta") {
+          document
+            .getElementById("dashContentPeserta")
+            .classList.remove("hidden");
+          renderPesertaTab(ev);
+        } else if (activeDashTab === "rundown") {
+          document
+            .getElementById("dashContentRundown")
+            .classList.remove("hidden");
+          renderRundownTab(ev);
+        } else if (activeDashTab === "meeting") {
+          document
+            .getElementById("dashContentMeeting")
+            .classList.remove("hidden");
+          renderMeetingTab(ev);
+        } else if (activeDashTab === "dokumen") {
+          document
+            .getElementById("dashContentDokumen")
+            .classList.remove("hidden");
+          renderDokumenTab(ev);
+        }
+      }
+
+      // ==========================================
+      // TAB 0: KELOLA SEKSI, JOBDESK & PROGRESS
+      // ==========================================
+      function renderCoordMySectionTab(ev) {
+        const container = document.getElementById("dashContentCoordSection");
+        const div =
+          ev.divisions.find((d) => d.id === currentUser.coordDivisionId) ||
+          ev.divisions.find((d) => d.pic === currentUser.name);
+
+        if (!div) {
+          container.innerHTML = `<div class="bg-white p-6 rounded-3xl border text-sm text-slate-600">Seksi koordinasi Anda tidak ditemukan pada event ini.</div>`;
+          return;
+        }
+
+        const doneCount = div.tasks.filter((t) => t.done).length;
+        const totalCount = div.tasks.length;
+        const pct =
+          totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+        const memberOptions = [div.pic, ...div.members]
+          .map((m) => `<option value="${m}">${m}</option>`)
+          .join("");
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border-2 border-amber-400 shadow-md space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <span class="px-3 py-1 rounded-full bg-amber-400 text-navy font-black text-xs uppercase">Ruang Kendali Koordinator</span>
+                            <h3 class="text-2xl font-black text-navy mt-1">${div.name}</h3>
+                            <p class="text-xs text-slate-500">PIC Koordinator: <b>${div.pic}</b> • Anggota: <b>${div.members.join(", ") || "Belum ada anggota"}</b></p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-black text-navy">${pct}%</span>
+                            <span class="block text-xs text-slate-500">${doneCount} / ${totalCount} Jobdesk Selesai</span>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                        <div class="text-xs font-bold text-navy">👥 Tambah Anggota Pelaksana ke ${div.name}:</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="text" id="coordNewMemberInput" placeholder="Ketik Nama Anggota Baru..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold">
+                            <button onclick="coordAddMember('${div.id}')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah Anggota</button>
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-300 flex flex-col sm:flex-row gap-2.5">
+                        <input type="text" id="coordNewTaskTitle" placeholder="Tulis jobdesk baru untuk ${div.name}..." class="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                        <select id="coordNewTaskPic" class="px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                            <option value="">-- Plot PIC Anggota --</option>
+                            ${memberOptions}
+                        </select>
+                        <button onclick="coordAddTask('${div.id}')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Tambah Jobdesk</button>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        ${div.tasks
+                          .map(
+                            (t) => `
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border ${t.done ? "bg-emerald-50/60 border-emerald-300" : "bg-white border-slate-200"}">
+                                <label class="flex items-center gap-3 cursor-pointer flex-1">
+                                    <input type="checkbox" ${t.done ? "checked" : ""} onchange="toggleTaskDone('${div.id}', '${t.id}')" class="w-5 h-5 rounded text-navy">
+                                    <span class="text-xs sm:text-sm font-bold ${t.done ? "line-through text-slate-400" : "text-slate-800"}">${t.title}</span>
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <select onchange="assignTaskPic('${div.id}', '${t.id}', this.value)" class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold bg-slate-50">
+                                        <option value="">-- Pilih PIC --</option>
+                                        ${[div.pic, ...div.members].map((m) => `<option value="${m}" ${t.pic === m ? "selected" : ""}>PIC: ${m}</option>`).join("")}
+                                    </select>
+                                    <button onclick="editTaskTitlePrompt('${div.id}', '${t.id}')" title="Edit Jobdesk" class="p-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 transition">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    </button>
+                                    <button onclick="deleteTaskFromDivision('${div.id}', '${t.id}')" title="Hapus Jobdesk" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                </div>
+            `;
+      }
+
+      function coordAddMember(divId) {
+        const inp = document.getElementById("coordNewMemberInput");
+        const val = inp ? inp.value.trim() : "";
+        if (!val) return;
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (div && !div.members.includes(val)) {
+          div.members.push(val);
+          syncToCloud();
+          renderAll();
+          showToast(`Anggota ${val} ditambahkan ke ${div.name}`);
+        }
+      }
+
+      function coordAddTask(divId) {
+        const titleEl = document.getElementById("coordNewTaskTitle");
+        const picEl = document.getElementById("coordNewTaskPic");
+        const title = titleEl ? titleEl.value.trim() : "";
+        const pic = picEl ? picEl.value : "";
+        if (!title) {
+          showToast("Isi nama jobdesk terlebih dahulu!", "error");
+          return;
+        }
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (div) {
+          div.tasks.push({
+            id: "t_" + Date.now(),
+            title: title,
+            pic: pic || div.pic,
+            done: false,
+          });
+          syncToCloud();
+          renderAll();
+          showToast("Jobdesk baru berhasil ditambahkan!");
+        }
+      }
+
+      function renderSidebarMiniCalendar(ev) {
+        const monthTarget = ev.tanggal
+          ? new Date(ev.tanggal + "T00:00:00")
+          : new Date();
+        const year = monthTarget.getFullYear();
+        const month = monthTarget.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startWeek = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "Mei",
+          "Jun",
+          "Jul",
+          "Ags",
+          "Sep",
+          "Okt",
+          "Nov",
+          "Des",
+        ];
+        const dayLabels = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+        const holidayMap = new Map(
+          getNationalHolidayList(year).map((h) => [h.date, h.label]),
+        );
+        const eventDates = new Map(
+          eventsData
+            .filter((item) => item.tanggal)
+            .map((item) => [item.tanggal, item.nama]),
+        );
+
+        const cells = [];
+        for (let i = 0; i < startWeek; i++) {
+          cells.push(
+            '<div class="h-8 rounded-lg bg-slate-50 border border-dashed border-slate-200"></div>',
+          );
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dateValue = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const eventLabel = eventDates.get(dateValue);
+          const holidayLabel = holidayMap.get(dateValue);
+          const isEvent = !!eventLabel;
+          const isHoliday = !!holidayLabel;
+          const isToday = dateValue === new Date().toISOString().slice(0, 10);
+
+          let className =
+            "h-8 rounded-lg border flex items-center justify-center text-[10px] font-bold relative ";
+          if (isEvent) {
+            className += "border-amber-300 bg-amber-50 text-navy";
+          } else if (isHoliday) {
+            className += "border-rose-200 bg-rose-50 text-rose-700";
+          } else if (isToday) {
+            className += "border-blue-300 bg-blue-50 text-blue-700";
+          } else {
+            className += "border-slate-200 bg-white text-slate-600";
+          }
+
+          const tooltip = isEvent
+            ? ` title="${eventLabel}"`
+            : isHoliday
+              ? ` title="${holidayLabel}"`
+              : "";
+
+          cells.push(`
+            <div class="${className}"${tooltip}>
+              <span>${day}</span>
+              ${isEvent ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-amber-500"></span>' : ""}
+            </div>
+          `);
+        }
+
+        return `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-2">
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-navy">Kalender Mini</h3>
+              <span class="px-2 py-1 rounded-full bg-slate-100 text-[10px] font-black text-slate-600">${monthNames[month]} ${year}</span>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-[9px] font-bold uppercase text-slate-500">
+              ${dayLabels.map((d) => `<div class="text-center">${d}</div>`).join("")}
+            </div>
+            <div class="grid grid-cols-7 gap-1">${cells.join("")}</div>
+          </div>
+        `;
+      }
+
+      function renderOverviewCalendar(ev) {
+        const monthTarget = ev.tanggal
+          ? new Date(ev.tanggal + "T00:00:00")
+          : new Date();
+        const year = monthTarget.getFullYear();
+        const month = monthTarget.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startWeek = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+        const monthNames = [
+          "Januari",
+          "Februari",
+          "Maret",
+          "April",
+          "Mei",
+          "Juni",
+          "Juli",
+          "Agustus",
+          "September",
+          "Oktober",
+          "November",
+          "Desember",
+        ];
+        const holidayMap = new Map(
+          getNationalHolidayList(year).map((h) => [h.date, h.label]),
+        );
+        const eventDates = new Map(
+          eventsData
+            .filter((item) => item.tanggal)
+            .map((item) => [item.tanggal, item.nama]),
+        );
+
+        const cells = [];
+        for (let i = 0; i < startWeek; i++) {
+          cells.push(
+            '<div class="h-20 rounded-xl bg-slate-50 border border-dashed border-slate-200"></div>',
+          );
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dateValue = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const holidayLabel = holidayMap.get(dateValue);
+          const eventLabel = eventDates.get(dateValue);
+          const isEvent = !!eventLabel;
+          const isHoliday = !!holidayLabel;
+          const isToday = dateValue === new Date().toISOString().slice(0, 10);
+
+          let className =
+            "h-20 rounded-xl border text-left p-2 flex flex-col justify-between ";
+          if (isEvent) {
+            className += "border-amber-400 bg-amber-50 text-navy";
+          } else if (isHoliday) {
+            className += "border-rose-300 bg-rose-50 text-rose-800";
+          } else if (isToday) {
+            className += "border-blue-300 bg-blue-50 text-navy";
+          } else {
+            className += "border-slate-200 bg-white text-slate-700";
+          }
+
+          cells.push(`
+            <div class="${className}">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-black">${day}</span>
+                ${isEvent ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-900">Event</span>' : isHoliday ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-200 text-rose-800">Libur</span>' : ""}
+              </div>
+              <div class="text-[9px] leading-tight font-semibold">
+                ${eventLabel ? eventLabel : holidayLabel ? holidayLabel : ""}
+              </div>
+            </div>
+          `);
+        }
+
+        const eventList = eventsData
+          .filter((item) => item.tanggal)
+          .slice(0, 6)
+          .map(
+            (item) => `
+              <div class="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-[11px]">
+                <div>
+                  <div class="font-black text-navy">${item.nama}</div>
+                  <div class="text-slate-500">${item.tanggal}</div>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[10px]">${item.kategori || "Event"}</span>
+              </div>
+            `,
+          )
+          .join("");
+
+        const holidayList = getNationalHolidayList(year)
+          .map(
+            (h) => `
+              <div class="flex items-center gap-2 text-[11px] text-slate-700">
+                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                <span>${h.label}</span>
+                <span class="text-slate-400">${h.date}</span>
+              </div>
+            `,
+          )
+          .join("");
+
+        return `
+          <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4">
+              <div>
+                <h3 class="text-xl font-black text-navy">📅 Kalender Event & Tanggal Nasional</h3>
+                <p class="text-xs text-slate-500">Agenda event aktif dan tanggal penting hari libur nasional dirangkum pada satu tampilan.</p>
+              </div>
+              <span class="px-3 py-1.5 rounded-full bg-navy text-amber-400 font-black text-xs">${monthNames[month]} ${year}</span>
+            </div>
+
+            <div class="grid grid-cols-7 gap-2 text-[10px] font-black text-slate-500 uppercase">
+              <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+            </div>
+            <div class="grid grid-cols-7 gap-2">${cells.join("")}</div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 pt-2 border-t border-slate-200 mt-2">
+              <div class="space-y-3">
+                <h4 class="text-xs font-extrabold uppercase text-navy">Agenda Event</h4>
+                <div class="space-y-2">${eventList || '<p class="text-xs text-slate-400 italic">Belum ada event.</p>'}</div>
+              </div>
+              <div class="space-y-3">
+                <h4 class="text-xs font-extrabold uppercase text-navy">Tanggal Nasional</h4>
+                <div class="space-y-2">${holidayList}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // ==========================================
+      // TAB 1: TASK & FINANCE (OVERVIEW)
+      // ==========================================
+      function renderOverviewTab(ev) {
+        const calendarCard = document.getElementById("calendarOverviewCard");
+        if (calendarCard) {
+          calendarCard.innerHTML = renderOverviewCalendar(ev);
+        }
+
+        const unitCostPerPerson = (ev.unitEconomics || []).reduce(
+          (acc, u) => acc + (Number(u.cost) || 0),
+          0,
+        );
+        const totalVariableCost =
+          unitCostPerPerson * (Number(ev.targetPeserta) || 0);
+        const totalFixedCost = (ev.biayaOperasional || []).reduce(
+          (acc, b) => acc + (Number(b.cost) || 0),
+          0,
+        );
+        const totalEstExpense = totalVariableCost + totalFixedCost;
+        const totalEstIncome =
+          (Number(ev.subsidiKampus) || 0) +
+          (Number(ev.htmPeserta) || 0) * (Number(ev.targetPeserta) || 0);
+        const estSurplus = totalEstIncome - totalEstExpense;
+        const bepHtm =
+          ev.targetPeserta > 0
+            ? Math.max(
+                0,
+                Math.ceil(
+                  (totalEstExpense - ev.subsidiKampus) / ev.targetPeserta,
+                ),
+              )
+            : 0;
+
+        const statusEl = document.getElementById("ovStatusAntiBoncos");
+        if (estSurplus >= 0) {
+          statusEl.textContent = `✅ AMAN (+${formatRp(estSurplus)})`;
+          statusEl.className = "text-lg font-black mt-1 text-emerald-600";
+        } else {
+          statusEl.textContent = `⚠️ RAWAN BONCOS (${formatRp(estSurplus)})`;
+          statusEl.className = "text-lg font-black mt-1 text-rose-600";
+        }
+        document.getElementById("ovBepInfo").textContent =
+          `BEP HTM Minimal: ${formatRp(bepHtm)} / peserta`;
+
+        const activePeserta = (ev.participants || []).filter(
+          (p) => p.statusAktif !== false,
+        );
+        const incomeFromPeserta = activePeserta.reduce(
+          (acc, p) => acc + (Number(p.htmPaid) || 0),
+          0,
+        );
+        const kasMasukManual = (ev.kasTransactions || [])
+          .filter((k) => k.tipe === "masuk")
+          .reduce((acc, k) => acc + (Number(k.nominal) || 0), 0);
+        const kasKeluarManual = (ev.kasTransactions || [])
+          .filter((k) => k.tipe === "keluar")
+          .reduce((acc, k) => acc + (Number(k.nominal) || 0), 0);
+
+        const totalRiilMasuk = kasMasukManual + incomeFromPeserta;
+        const sisaSaldo = totalRiilMasuk - kasKeluarManual;
+
+        document.getElementById("ovTotalMasuk").textContent =
+          formatRp(totalRiilMasuk);
+        document.getElementById("ovSubsidiAndPeserta").textContent =
+          `Kas Masuk: ${formatRp(kasMasukManual)} + Tiket Peserta: ${formatRp(incomeFromPeserta)}`;
+        document.getElementById("ovTotalKeluar").textContent =
+          formatRp(kasKeluarManual);
+        document.getElementById("ovSisaSaldo").textContent =
+          `Saldo Kas Riil: ${formatRp(sisaSaldo)}`;
+
+        let allTasks = 0;
+        let doneTasks = 0;
+        const barsHtml = ev.divisions
+          .map((d, idx) => {
+            const tCount = d.tasks.length;
+            const dCount = d.tasks.filter((t) => t.done).length;
+            allTasks += tCount;
+            doneTasks += dCount;
+            const pct = tCount > 0 ? Math.round((dCount / tCount) * 100) : 0;
+            const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+            return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-navy">${d.name} <span class="text-slate-400 font-normal">(${d.pic})</span></span>
+                            <span class="text-slate-700">${dCount}/${tCount} Tugas (${pct}%)</span>
+                        </div>
+                        <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
+                            <div class="h-full ${theme.bar} transition-all" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+
+        const totalPct =
+          allTasks > 0 ? Math.round((doneTasks / allTasks) * 100) : 0;
+        document.getElementById("ovTotalProgress").textContent = `${totalPct}%`;
+        document.getElementById("ovTotalTasksCount").textContent =
+          `${doneTasks} dari ${allTasks} poin tugas selesai`;
+        document.getElementById("ovSectionProgressBars").innerHTML = barsHtml;
+
+        document.getElementById("ovFinanceComparisonBox").innerHTML = `
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+                    <div class="flex justify-between"><span>Target Peserta:</span><strong>${ev.targetPeserta} Orang (Terdaftar Aktif: ${activePeserta.length} Orang)</strong></div>
+                    <div class="flex justify-between"><span>Unit Economics per Peserta:</span><strong>${formatRp(unitCostPerPerson)}</strong></div>
+                    <div class="flex justify-between"><span>Total Biaya Operasional:</span><strong>${formatRp(totalFixedCost)}</strong></div>
+                    <div class="flex justify-between border-t pt-2"><span>Total Estimasi Kebutuhan Anggaran:</span><strong class="text-navy">${formatRp(totalEstExpense)}</strong></div>
+                    <div class="flex justify-between"><span>Proyeksi Pendapatan Maksimal:</span><strong class="text-emerald-700">${formatRp(totalEstIncome)}</strong></div>
+                </div>
+            `;
+      }
+
+      // ==========================================
+      // TAB 2: PROGRES JOBDESK (STRUKTUR PANITIA & SEMUA TUGAS)
+      // ==========================================
+      function renderStrukturTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const addBar = document.getElementById("strukturAddSectionBar");
+        if (isSc) {
+          addBar.classList.remove("hidden");
+          const sel = document.getElementById("newSectionPicSelect");
+          sel.innerHTML = buildGroupedSdmOptionsHtml("", true);
+        } else {
+          addBar.classList.add("hidden");
+        }
+
+        const grid = document.getElementById("strukturDivisionsGrid");
+        grid.innerHTML = ev.divisions
+          .map((d, idx) => {
+            const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+            const doneCount = d.tasks.filter((t) => t.done).length;
+            const totalCount = d.tasks.length;
+            const pct =
+              totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+            const canModifyThisCard = isSc;
+
+            return `
+                    <div class="rounded-3xl p-6 border-2 ${theme.bg} ${theme.border} shadow-sm flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-start justify-between gap-2">
+                                <div>
+                                    <span class="px-3 py-1 rounded-full text-[11px] font-extrabold ${theme.badge}">${d.name}</span>
+                                    <p class="text-xs font-bold text-navy mt-2">PIC Koordinator: <span class="underline">${d.pic}</span></p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-black text-navy">${doneCount}/${totalCount} (${pct}%)</span>
+                                    ${
+                                      canModifyThisCard
+                                        ? `
+                                        <button onclick="deleteDivisionFromStruktur('${d.id}')" title="Hapus Seksi" class="p-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    `
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-1.5">
+                                ${(d.members || []).map((m) => `<span class="px-2.5 py-1 rounded-xl bg-white/90 border border-slate-200 text-[11px] font-semibold text-slate-700">👤 ${m}</span>`).join("") || `<span class="text-xs text-slate-400 italic">Belum ada anggota</span>`}
+                            </div>
+
+                            <div class="space-y-2 max-h-80 overflow-y-auto custom-scroll pr-1 pt-2 border-t border-slate-200/80">
+                                ${d.tasks
+                                  .map(
+                                    (t) => `
+                                    <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/95 border border-slate-200 text-xs">
+                                        <label class="flex items-center gap-2.5 flex-1 ${canModifyThisCard || t.pic === currentUser.name ? "cursor-pointer" : "cursor-default"}">
+                                            <input type="checkbox" ${t.done ? "checked" : ""} ${canModifyThisCard || t.pic === currentUser.name ? `onchange="toggleTaskDone('${d.id}', '${t.id}')"` : "disabled"} class="w-4 h-4 rounded text-navy">
+                                            <span class="font-semibold ${t.done ? "line-through text-slate-400" : "text-slate-800"}">${t.title}</span>
+                                        </label>
+                                        <div class="flex items-center gap-1.5 shrink-0">
+                                            ${
+                                              canModifyThisCard
+                                                ? `
+                                                <select onchange="assignTaskPic('${d.id}', '${t.id}', this.value)" class="px-2 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold bg-slate-50">
+                                                    <option value="">-- PIC --</option>
+                                                    ${[d.pic, ...d.members].map((m) => `<option value="${m}" ${t.pic === m ? "selected" : ""}>${m}</option>`).join("")}
+                                                </select>
+                                                <button onclick="editTaskTitlePrompt('${d.id}', '${t.id}')" title="Edit Tugas" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                </button>
+                                                <button onclick="deleteTaskFromDivision('${d.id}', '${t.id}')" title="Hapus Tugas" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            `
+                                                : `
+                                                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">${t.pic || "Belum diplot"}</span>
+                                            `
+                                            }
+                                        </div>
+                                    </div>
+                                `,
+                                  )
+                                  .join("")}
+                            </div>
+                        </div>
+
+                        ${
+                          canModifyThisCard
+                            ? `
+                            <div class="pt-3 border-t border-slate-200/80 flex gap-2">
+                                <input type="text" id="newTaskInput_${d.id}" placeholder="Tambah jobdesk baru ke ${d.name}..." class="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                                <button onclick="addTaskToDivision('${d.id}')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tugas</button>
+                            </div>
+                        `
+                            : ""
+                        }
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      function toggleNewSectionCustomPic() {
+        const sel = document.getElementById("newSectionPicSelect");
+        const inp = document.getElementById("newSectionCustomPicInput");
+        if (sel.value === "__custom__") inp.classList.remove("hidden");
+        else inp.classList.add("hidden");
+      }
+
+      function addNewDivisionFromStruktur() {
+        const nameInp = document.getElementById("newSectionNameInput");
+        const picSel = document.getElementById("newSectionPicSelect");
+        const picCustom = document.getElementById("newSectionCustomPicInput");
+
+        const name = nameInp.value.trim();
+        const pic =
+          picSel.value === "__custom__" ? picCustom.value.trim() : picSel.value;
+
+        if (!name || !pic) {
+          showToast("Nama Seksi dan PIC Koordinator wajib diisi!", "error");
+          return;
+        }
+
+        const ev = getActiveEvent();
+        ev.divisions.push({
+          id: "div_" + Date.now(),
+          name: name,
+          pic: pic,
+          members: [],
+          tasks: getDefault10Tasks(name, pic),
+        });
+
+        nameInp.value = "";
+        picCustom.value = "";
+        syncToCloud();
+        renderAll();
+        showToast(
+          `Seksi "${name}" beserta 10 tugas default berhasil ditambahkan!`,
+        );
+      }
+
+      function deleteDivisionFromStruktur(divId) {
+        const ev = getActiveEvent();
+        ev.divisions = ev.divisions.filter((d) => d.id !== divId);
+        syncToCloud();
+        renderAll();
+        showToast("Seksi berhasil dihapus.");
+      }
+
+      function toggleTaskDone(divId, taskId) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        const task = div.tasks.find((t) => t.id === taskId);
+        if (task) {
+          task.done = !task.done;
+          syncToCloud();
+          renderAll();
+        }
+      }
+
+      function assignTaskPic(divId, taskId, newPic) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        const task = div.tasks.find((t) => t.id === taskId);
+        if (task) {
+          task.pic = newPic;
+          syncToCloud();
+          renderAll();
+          showToast(`PIC tugas diplot ke ${newPic}`);
+        }
+      }
+
+      function addTaskToDivision(divId) {
+        const inp = document.getElementById(`newTaskInput_${divId}`);
+        if (!inp || !inp.value.trim()) return;
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (div) {
+          div.tasks.push({
+            id: "t_" + Date.now(),
+            title: inp.value.trim(),
+            pic: div.pic,
+            done: false,
+          });
+          inp.value = "";
+          syncToCloud();
+          renderAll();
+          showToast("Tugas baru ditambahkan!");
+        }
+      }
+
+      function editTaskTitlePrompt(divId, taskId) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        const task = div.tasks.find((t) => t.id === taskId);
+        if (!task) return;
+        const updated = prompt("Edit Deskripsi Jobdesk:", task.title);
+        if (updated !== null && updated.trim() !== "") {
+          task.title = updated.trim();
+          syncToCloud();
+          renderAll();
+          showToast("Jobdesk diperbarui.");
+        }
+      }
+
+      function deleteTaskFromDivision(divId, taskId) {
+        const ev = getActiveEvent();
+        const div = ev.divisions.find((d) => d.id === divId);
+        if (!div) return;
+        div.tasks = div.tasks.filter((t) => t.id !== taskId);
+        syncToCloud();
+        renderAll();
+        showToast("Jobdesk dihapus.");
+      }
+
+      // ==========================================
+      // TAB 3: KEUANGAN
+      // ==========================================
+      let editUeId = null;
+      let editBoId = null;
+
+      function renderKeuanganTab(ev) {
+        const isReadOnly = currentUser.role !== "sc";
+        const container = document.getElementById("dashContentKeuangan");
+
+        const unitSum = (ev.unitEconomics || []).reduce(
+          (a, b) => a + (Number(b.cost) || 0),
+          0,
+        );
+        const opSum = (ev.biayaOperasional || []).reduce(
+          (a, b) => a + (Number(b.cost) || 0),
+          0,
+        );
+        const totalVar = unitSum * (Number(ev.targetPeserta) || 0);
+        const totalNeed = totalVar + opSum;
+        const bep =
+          ev.targetPeserta > 0
+            ? Math.max(
+                0,
+                Math.ceil((totalNeed - ev.subsidiKampus) / ev.targetPeserta),
+              )
+            : 0;
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">Manajemen Keuangan & Parameter</h3>
+                            <p class="text-xs text-slate-500">Simulasi Unit Economics per peserta dan tabel Biaya Operasional kegiatan.</p>
+                        </div>
+                        ${isReadOnly ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div class="p-4 rounded-2xl bg-slate-50 border">
+                            <label class="text-[11px] font-bold text-slate-500 block">Target Peserta</label>
+                            <input type="number" value="${ev.targetPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('targetPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50 border">
+                            <label class="text-[11px] font-bold text-slate-500 block">Subsidi Kampus (Rp)</label>
+                            <input type="number" value="${ev.subsidiKampus}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('subsidiKampus', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                        </div>
+                        <div class="p-4 rounded-2xl bg-slate-50 border">
+                            <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
+                            <input type="number" value="${ev.htmPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                        </div>
+                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300">
+                            <span class="text-[11px] font-bold text-amber-800 block">Rekomendasi BEP HTM Minimal</span>
+                            <strong class="text-lg font-black text-navy mt-1 block">${formatRp(bep)} / org</strong>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-sm font-extrabold text-navy">1. Tabel Unit Economics (Per Peserta)</h4>
+                                    <p class="text-[11px] text-slate-500">Total per Peserta: <b>${formatRp(unitSum)}</b> (x ${ev.targetPeserta} = ${formatRp(totalVar)})</p>
+                                </div>
+                            </div>
+
+                            ${
+                              !isReadOnly
+                                ? `
+                                <div class="flex gap-2">
+                                    <input type="text" id="ueItemInput" placeholder="Nama Benefit (Mis: Makan Siang)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <input type="number" id="ueCostInput" placeholder="Harga Satuan (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <button onclick="saveUnitEconomicItem()" id="ueSubmitBtn" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah</button>
+                                </div>
+                            `
+                                : ""
+                            }
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-200/70 text-navy">
+                                            <th class="p-2.5 rounded-l-xl">Komponen Benefit Peserta</th>
+                                            <th class="p-2.5">Harga Satuan</th>
+                                            ${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y">
+                                        ${(ev.unitEconomics || [])
+                                          .map(
+                                            (u) => `
+                                            <tr class="bg-white">
+                                                <td class="p-2.5 font-semibold">${u.item}</td>
+                                                <td class="p-2.5 font-bold text-navy">${formatRp(u.cost)}</td>
+                                                ${
+                                                  !isReadOnly
+                                                    ? `
+                                                    <td class="p-2.5 text-right">
+                                                        <div class="inline-flex gap-1.5">
+                                                            <button onclick="startEditUe('${u.id}')" title="Edit Item" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                            </button>
+                                                            <button onclick="deleteUe('${u.id}')" title="Hapus Item" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                `
+                                                    : ""
+                                                }
+                                            </tr>
+                                        `,
+                                          )
+                                          .join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-sm font-extrabold text-navy">2. Tabel Biaya Operasional</h4>
+                                    <p class="text-[11px] text-slate-500">Total Biaya Operasional: <b>${formatRp(opSum)}</b></p>
+                                </div>
+                            </div>
+
+                            ${
+                              !isReadOnly
+                                ? `
+                                <div class="flex gap-2">
+                                    <input type="text" id="boItemInput" placeholder="Biaya Lain (Mis: Honor Pemateri)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <input type="number" id="boCostInput" placeholder="Nominal (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <button onclick="saveBiayaOperasionalItem()" id="boSubmitBtn" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Biaya Lain</button>
+                                </div>
+                            `
+                                : ""
+                            }
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border-collapse">
+                                    <thead>
+                                        <tr class="bg-slate-200/70 text-navy">
+                                            <th class="p-2.5 rounded-l-xl">Uraian Biaya Operasional</th>
+                                            <th class="p-2.5">Nominal</th>
+                                            ${!isReadOnly ? `<th class="p-2.5 rounded-r-xl text-right">Aksi</th>` : ""}
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y">
+                                        ${(ev.biayaOperasional || [])
+                                          .map(
+                                            (b) => `
+                                            <tr class="bg-white">
+                                                <td class="p-2.5 font-semibold">${b.item}</td>
+                                                <td class="p-2.5 font-bold text-navy">${formatRp(b.cost)}</td>
+                                                ${
+                                                  !isReadOnly
+                                                    ? `
+                                                    <td class="p-2.5 text-right">
+                                                        <div class="inline-flex gap-1.5">
+                                                            <button onclick="startEditBo('${b.id}')" title="Edit Biaya" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                            </button>
+                                                            <button onclick="deleteBo('${b.id}')" title="Hapus Biaya" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                `
+                                                    : ""
+                                                }
+                                            </tr>
+                                        `,
+                                          )
+                                          .join("")}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function updateBasicFinanceParam(field, val) {
+        const ev = getActiveEvent();
+        ev[field] = Number(val) || 0;
+        syncToCloud();
+        renderAll();
+        showToast("Parameter dasar keuangan diperbarui.");
+      }
+
+      function saveUnitEconomicItem() {
+        const itemEl = document.getElementById("ueItemInput");
+        const costEl = document.getElementById("ueCostInput");
+        if (!itemEl.value.trim()) return;
+        const ev = getActiveEvent();
+        if (editUeId) {
+          const target = ev.unitEconomics.find((u) => u.id === editUeId);
+          if (target) {
+            target.item = itemEl.value.trim();
+            target.cost = Number(costEl.value) || 0;
+          }
+          editUeId = null;
+        } else {
+          ev.unitEconomics.push({
+            id: "ue_" + Date.now(),
+            item: itemEl.value.trim(),
+            cost: Number(costEl.value) || 0,
+          });
+        }
+        syncToCloud();
+        renderAll();
+        showToast("Unit Economics disimpan.");
+      }
+
+      function startEditUe(id) {
+        const ev = getActiveEvent();
+        const target = ev.unitEconomics.find((u) => u.id === id);
+        if (!target) return;
+        editUeId = id;
+        document.getElementById("ueItemInput").value = target.item;
+        document.getElementById("ueCostInput").value = target.cost;
+        document.getElementById("ueSubmitBtn").textContent = "Update";
+      }
+
+      function deleteUe(id) {
+        const ev = getActiveEvent();
+        ev.unitEconomics = ev.unitEconomics.filter((u) => u.id !== id);
+        syncToCloud();
+        renderAll();
+      }
+
+      function saveBiayaOperasionalItem() {
+        const itemEl = document.getElementById("boItemInput");
+        const costEl = document.getElementById("boCostInput");
+        if (!itemEl.value.trim()) return;
+        const ev = getActiveEvent();
+        if (editBoId) {
+          const target = ev.biayaOperasional.find((b) => b.id === editBoId);
+          if (target) {
+            target.item = itemEl.value.trim();
+            target.cost = Number(costEl.value) || 0;
+          }
+          editBoId = null;
+        } else {
+          ev.biayaOperasional.push({
+            id: "bo_" + Date.now(),
+            item: itemEl.value.trim(),
+            cost: Number(costEl.value) || 0,
+          });
+        }
+        syncToCloud();
+        renderAll();
+        showToast("Biaya Operasional disimpan.");
+      }
+
+      function startEditBo(id) {
+        const ev = getActiveEvent();
+        const target = ev.biayaOperasional.find((b) => b.id === id);
+        if (!target) return;
+        editBoId = id;
+        document.getElementById("boItemInput").value = target.item;
+        document.getElementById("boCostInput").value = target.cost;
+        document.getElementById("boSubmitBtn").textContent = "Update";
+      }
+
+      function deleteBo(id) {
+        const ev = getActiveEvent();
+        ev.biayaOperasional = ev.biayaOperasional.filter((b) => b.id !== id);
+        syncToCloud();
+        renderAll();
+      }
+
+      // ==========================================
+      // TAB 4: BUKU KAS & BUKTI NOTA
+      // ==========================================
+      function renderKasTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const isCoord = currentUser.role === "koordinator";
+        const isVip = currentUser.role === "vip_anggota";
+
+        const coordDiv =
+          ev.divisions.find((d) => d.id === currentUser.coordDivisionId) ||
+          ev.divisions.find((d) => d.pic === currentUser.name);
+        const coordSectionName = coordDiv ? coordDiv.name : "Seksi Koordinator";
+
+        const transactions = isCoord
+          ? (ev.kasTransactions || []).filter(
+              (k) => k.seksi === coordSectionName || k.pic === currentUser.name,
+            )
+          : ev.kasTransactions || [];
+
+        const container = document.getElementById("dashContentKas");
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">Buku Kas & Bukti Nota</h3>
+                            <p class="text-xs text-slate-500">${isCoord ? `Mode Koordinator: Pencatatan & riwayat khusus untuk <b>${coordSectionName} (${currentUser.name})</b>` : "Pencatatan seluruh arus kas masuk/keluar beserta tautan bukti nota."}</p>
+                        </div>
+                    </div>
+
+                    ${
+                      !isVip
+                        ? `
+                        <form onsubmit="addKasTransaction(event)" class="p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Transaksi</label>
+                                <input type="date" id="kasTanggal" value="2026-10-31" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Jenis Arus Kas</label>
+                                <select id="kasTipe" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <option value="keluar">Pengeluaran (-)</option>
+                                    <option value="masuk">Pemasukan (+)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nominal (Rp)</label>
+                                <input type="number" id="kasNominal" placeholder="Contoh: 350000" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Uraian Keperluan</label>
+                                <input type="text" id="kasUraian" placeholder="Contoh: Pembelian Air Mineral" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+
+                            ${
+                              isSc
+                                ? `
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Seksi Terkait</label>
+                                    <select id="kasSeksi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                        <option value="Pengelola Inti">Pengelola Inti</option>
+                                        ${ev.divisions.map((d) => `<option value="${d.name}">${d.name}</option>`).join("")}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">PIC Panitia (Dikelompokkan)</label>
+                                    <select id="kasPic" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                        ${buildGroupedSdmOptionsHtml(currentUser.name, false)}
+                                    </select>
+                                </div>
+                            `
+                                : ""
+                            }
+
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Link Bukti Nota / Kwitansi</label>
+                                <input type="url" id="kasNotaUrl" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" class="w-full py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Catat Transaksi Kas</button>
+                            </div>
+                        </form>
+                    `
+                        : ""
+                    }
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-navy">
+                                    <th class="p-3 rounded-l-xl">Tanggal</th>
+                                    <th class="p-3">Tipe</th>
+                                    <th class="p-3">Uraian Transaksi</th>
+                                    <th class="p-3">Seksi & PIC</th>
+                                    <th class="p-3">Nominal</th>
+                                    <th class="p-3">Bukti Nota</th>
+                                    ${!isVip ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${
+                                  transactions
+                                    .map(
+                                      (k) => `
+                                    <tr>
+                                        <td class="p-3 font-semibold">${k.tanggal}</td>
+                                        <td class="p-3">
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${k.tipe === "masuk" ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}">
+                                                ${k.tipe === "masuk" ? "MASUK (+)" : "KELUAR (-)"}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 font-bold text-slate-800">${k.uraian}</td>
+                                        <td class="p-3 text-slate-600">${k.seksi} • <b>${k.pic}</b></td>
+                                        <td class="p-3 font-black ${k.tipe === "masuk" ? "text-emerald-700" : "text-rose-600"}">${formatRp(k.nominal)}</td>
+                                        <td class="p-3">
+                                            ${k.notaUrl ? `<a href="${k.notaUrl}" target="_blank" class="text-blue-600 underline font-bold">Lihat Nota</a>` : "-"}
+                                        </td>
+                                        ${
+                                          !isVip
+                                            ? `
+                                            <td class="p-3 text-right">
+                                                <button onclick="deleteKasItem('${k.id}')" title="Hapus Transaksi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </td>
+                                        `
+                                            : ""
+                                        }
+                                    </tr>
+                                `,
+                                    )
+                                    .join("") ||
+                                  `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada transaksi tercatat.</td></tr>`
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function addKasTransaction(e) {
+        e.preventDefault();
+        const ev = getActiveEvent();
+        const isCoord = currentUser.role === "koordinator";
+        const coordDiv =
+          ev.divisions.find((d) => d.id === currentUser.coordDivisionId) ||
+          ev.divisions.find((d) => d.pic === currentUser.name);
+
+        const seksiVal = isCoord
+          ? coordDiv
+            ? coordDiv.name
+            : "Seksi Koordinator"
+          : document.getElementById("kasSeksi").value;
+        const picVal = isCoord
+          ? currentUser.name
+          : document.getElementById("kasPic").value;
+
+        ev.kasTransactions.unshift({
+          id: "kas_" + Date.now(),
+          tanggal: document.getElementById("kasTanggal").value,
+          tipe: document.getElementById("kasTipe").value,
+          nominal: Number(document.getElementById("kasNominal").value) || 0,
+          uraian: document.getElementById("kasUraian").value.trim(),
+          seksi: seksiVal,
+          pic: picVal,
+          notaUrl: document.getElementById("kasNotaUrl").value.trim(),
+        });
+
+        syncToCloud();
+        renderAll();
+        showToast("Transaksi kas berhasil dicatat!");
+      }
+
+      function deleteKasItem(id) {
+        const ev = getActiveEvent();
+        ev.kasTransactions = ev.kasTransactions.filter((k) => k.id !== id);
+        syncToCloud();
+        renderAll();
+        showToast("Transaksi kas dihapus.");
+      }
+
+      // ==========================================
+      // TAB 5: DATABASE PESERTA & GATE QR CHECK-IN
+      // ==========================================
+      function renderPesertaTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const container = document.getElementById("dashContentPeserta");
+        const list = ev.participants || [];
+        const checkinOpen = !!ev.participantCheckinOpen;
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">Database Peserta & Gate Registrasi QR</h3>
+                            <p class="text-xs text-slate-500">Data pendaftar dari Landing Page beserta status QR Check-in Kehadiran.</p>
+                        </div>
+                        ${!isSc ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
+                    </div>
+
+                    ${
+                      isSc
+                        ? `
+                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-xs font-extrabold uppercase text-navy">📲 Gate Scanner QR Kehadiran Peserta (Hari-H)</h4>
+                                <p class="text-[11px] text-slate-600">Gunakan kamera HP untuk scan QR E-Tiket peserta atau ketik kode tiket (Contoh: <b>SEO-2026-882</b>). Tombol di bawah mengunci/membuka akses pencatatan hadir.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 items-center">
+                                <button type="button" onclick="toggleParticipantCheckInGate()" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-emerald-600 text-white" : "bg-amber-400 hover:bg-amber-300 text-navy"} font-extrabold text-xs shadow flex items-center gap-1.5">
+                                    <span>${checkinOpen ? "🔒 Tutup Check-in Peserta" : "✅ Buka Check-in Peserta"}</span>
+                                </button>
+                                <button type="button" onclick="${checkinOpen ? "openRealQRScanner('peserta')" : "return false;"}" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-navy text-amber-400" : "bg-slate-200 text-slate-500 cursor-not-allowed"} font-extrabold text-xs shadow flex items-center gap-1.5" ${checkinOpen ? "" : "disabled"}>
+                                    <span>📷 Buka Kamera Scan QR</span>
+                                </button>
+                                <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white" ${checkinOpen ? "" : "disabled"}>
+                                <button onclick="${checkinOpen ? "scanParticipantQrTicket()" : "return false;"}" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-grad-navy text-amber-400" : "bg-slate-200 text-slate-500 cursor-not-allowed"} font-extrabold text-xs shadow" ${checkinOpen ? "" : "disabled"}>Check-in Manual</button>
+                            </div>
+                        </div>
+                    `
+                        : ""
+                    }
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-navy">
+                                    <th class="p-3 rounded-l-xl">Kode QR</th>
+                                    <th class="p-3">Nama Lengkap & JK</th>
+                                    <th class="p-3">Kontak & Domisili</th>
+                                    <th class="p-3">Afiliasi & Instansi</th>
+                                    <th class="p-3">Paket Dipilih</th>
+                                    <th class="p-3">Check-In</th>
+                                    ${isSc ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${
+                                  list
+                                    .map(
+                                      (p) => `
+                                    <tr class="${p.statusAktif === false ? "opacity-50 bg-rose-50/40" : ""}">
+                                        <td class="p-3 font-black text-navy">${p.ticketCode}</td>
+                                        <td class="p-3">
+                                            <div class="font-bold text-slate-800">${p.nama}</div>
+                                            <div class="text-[11px] text-slate-500">${p.gender}</div>
+                                        </td>
+                                        <td class="p-3">
+                                            <div>${p.wa}</div>
+                                            <div class="text-[11px] text-slate-500">${p.kota}, ${p.provinsi}</div>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-bold text-[10px]">${p.afiliasi}</span>
+                                            <div class="font-semibold text-slate-700 mt-0.5">${p.instansi}</div>
+                                        </td>
+                                        <td class="p-3 font-bold text-amber-800">${p.paket}</td>
+                                        <td class="p-3">
+                                            <div class="space-y-2">
+                                                <label class="inline-flex items-center gap-2 text-slate-700 font-bold">
+                                                    <input type="checkbox" ${p.checkedIn ? "checked" : ""} ${isSc && checkinOpen ? "" : "disabled"} onchange="toggleParticipantCheckIn('${p.id}')" class="w-4 h-4 rounded text-emerald-600">
+                                                    <span>Hadir</span>
+                                                </label>
+                                                <label class="inline-flex items-center gap-2 text-slate-700 font-bold">
+                                                    <input type="checkbox" ${p.lunas ? "checked" : ""} ${isSc ? "" : "disabled"} onchange="toggleParticipantLunas('${p.id}')" class="w-4 h-4 rounded text-amber-600">
+                                                    <span>Lunas</span>
+                                                </label>
+                                                ${p.checkedIn ? `<div class="text-[10px] text-emerald-700 font-extrabold">${p.checkInTime}</div>` : ""}
+                                            </div>
+                                        </td>
+                                        ${
+                                          isSc
+                                            ? `
+                                            <td class="p-3 text-right">
+                                                <div class="inline-flex gap-1.5">
+                                                    <button onclick="editParticipantPrompt('${p.id}')" title="Edit Peserta" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                                    </button>
+                                                    <button onclick="cancelParticipantStatus('${p.id}')" title="Batal Mengikuti Event" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        `
+                                            : ""
+                                        }
+                                    </tr>
+                                `,
+                                    )
+                                    .join("") ||
+                                  `<tr><td colspan="7" class="p-6 text-center text-slate-400">Belum ada peserta terdaftar.</td></tr>`
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function scanParticipantQrTicket() {
+        const ev = getActiveEvent();
+        if (!ev.participantCheckinOpen) {
+          showToast("Panitia belum membuka akses check-in peserta.", "error");
+          return;
+        }
+        const inp = document.getElementById("qrScanTicketInput");
+        const code = inp ? inp.value.trim().toUpperCase() : "";
+        if (!code) return;
+        const target = ev.participants.find(
+          (p) => p.ticketCode.toUpperCase() === code,
+        );
+        if (!target) {
+          showToast("Nomor Tiket QR tidak ditemukan!", "error");
+          return;
+        }
+        const now = new Date();
+        target.checkedIn = true;
+        target.checkInTime = now.toTimeString().slice(0, 5) + " WIB";
+        if (inp) inp.value = "";
+        syncToCloud();
+        renderAll();
+        showToast(`Check-in Berhasil: ${target.nama} (${target.ticketCode})`);
+      }
+
+      function toggleParticipantCheckInGate() {
+        const ev = getActiveEvent();
+        ev.participantCheckinOpen = !ev.participantCheckinOpen;
+        syncToCloud();
+        renderAll();
+        showToast(
+          ev.participantCheckinOpen
+            ? "Check-in peserta berhasil dibuka."
+            : "Check-in peserta ditutup.",
+        );
+      }
+
+      function toggleParticipantCheckIn(pId) {
+        const ev = getActiveEvent();
+        if (!ev.participantCheckinOpen) {
+          showToast("Buka Check-in Peserta terlebih dahulu.", "error");
+          return;
+        }
+        const target = ev.participants.find((p) => p.id === pId);
+        if (!target) return;
+        const now = new Date();
+        target.checkedIn = !target.checkedIn;
+        target.checkInTime = target.checkedIn
+          ? now.toTimeString().slice(0, 5) + " WIB"
+          : "-";
+        syncToCloud();
+        renderAll();
+        showToast(`Status kehadiran ${target.nama} diperbarui.`);
+      }
+
+      function toggleParticipantLunas(pId) {
+        const ev = getActiveEvent();
+        const target = ev.participants.find((p) => p.id === pId);
+        if (!target) return;
+        target.lunas = !target.lunas;
+        syncToCloud();
+        renderAll();
+        showToast(
+          target.lunas
+            ? `${target.nama} ditandai lunas.`
+            : `${target.nama} dibatalkan status lunas.`,
+        );
+      }
+
+      function editParticipantPrompt(pId) {
+        const ev = getActiveEvent();
+        const target = ev.participants.find((p) => p.id === pId);
+        if (!target) return;
+        const newName = prompt("Edit Nama Peserta:", target.nama);
+        if (newName !== null && newName.trim() !== "") {
+          target.nama = newName.trim();
+          const newInst = prompt("Edit Asal Instansi & Kota:", target.instansi);
+          if (newInst !== null) target.instansi = newInst.trim();
+          syncToCloud();
+          renderAll();
+          showToast("Data peserta berhasil diperbarui.");
+        }
+      }
+
+      function cancelParticipantStatus(pId) {
+        const ev = getActiveEvent();
+        const target = ev.participants.find((p) => p.id === pId);
+        if (!target) return;
+        target.statusAktif = target.statusAktif === false ? true : false;
+        syncToCloud();
+        renderAll();
+        showToast(
+          target.statusAktif === false
+            ? `${target.nama} ditandai Batal Mengikuti Event.`
+            : `${target.nama} diaktifkan kembali.`,
+        );
+      }
+
+      // ==========================================
+      // TAB 6: RUNDOWN ACARA
+      // ==========================================
+      function renderRundownTab(ev) {
+        const canEdit =
+          currentUser.role === "sc" || currentUser.role === "koordinator";
+        const container = document.getElementById("dashContentRundown");
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                        <div>
+                            <h3 class="text-xl font-black text-navy">⏱️ Tabel Rundown Acara</h3>
+                            <p class="text-xs text-slate-500">Susunan waktu pelaksanaan acara dari awal hingga penutupan menggunakan Time Picker.</p>
+                        </div>
+                    </div>
+
+                    ${
+                      canEdit
+                        ? `
+                        <form onsubmit="addRundownRow(event)" class="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-5 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Mulai</label>
+                                <input type="time" id="rdStart" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Selesai</label>
+                                <input type="time" id="rdEnd" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Sesi / Kegiatan</label>
+                                <input type="text" id="rdKegiatan" placeholder="Contoh: Sesi Materi 1" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">PIC / Penanggung Jawab</label>
+                                <input type="text" id="rdPic" placeholder="Contoh: Seksi Acara" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div class="flex items-end gap-2">
+                                <input type="text" id="rdRuangan" placeholder="Ruangan..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                <button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shrink-0">+ Sesi</button>
+                            </div>
+                        </form>
+                    `
+                        : ""
+                    }
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-navy">
+                                    <th class="p-3 rounded-l-xl">Waktu</th>
+                                    <th class="p-3">Durasi</th>
+                                    <th class="p-3">Sesi Kegiatan</th>
+                                    <th class="p-3">PIC Lapangan</th>
+                                    <th class="p-3">Ruangan</th>
+                                    ${canEdit ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${(ev.rundown || [])
+                                  .map(
+                                    (r) => `
+                                    <tr>
+                                        <td class="p-3 font-black text-navy">${r.start} - ${r.end}</td>
+                                        <td class="p-3 text-slate-500 font-semibold">${r.durasi}</td>
+                                        <td class="p-3 font-bold text-slate-800">${r.kegiatan}</td>
+                                        <td class="p-3 font-semibold text-amber-800">${r.pic}</td>
+                                        <td class="p-3 text-slate-600">${r.ruangan || "-"}</td>
+                                        ${
+                                          canEdit
+                                            ? `
+                                            <td class="p-3 text-right">
+                                                <button onclick="deleteRundownRow('${r.id}')" title="Hapus Sesi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                                </button>
+                                            </td>
+                                        `
+                                            : ""
+                                        }
+                                    </tr>
+                                `,
+                                  )
+                                  .join("")}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+      }
+
+      function addRundownRow(e) {
+        e.preventDefault();
+        const s = document.getElementById("rdStart").value;
+        const en = document.getElementById("rdEnd").value;
+        const [sh, sm] = s.split(":").map(Number);
+        const [eh, em] = en.split(":").map(Number);
+        const diff = Math.max(0, eh * 60 + em - (sh * 60 + sm));
+
+        const ev = getActiveEvent();
+        ev.rundown.push({
+          id: "rd_" + Date.now(),
+          start: s,
+          end: en,
+          durasi: `${diff} Menit`,
+          kegiatan: document.getElementById("rdKegiatan").value.trim(),
+          pic: document.getElementById("rdPic").value.trim(),
+          ruangan: document.getElementById("rdRuangan").value.trim(),
+        });
+        syncToCloud();
+        renderAll();
+        showToast("Sesi rundown berhasil ditambahkan!");
+      }
+
+      function deleteRundownRow(id) {
+        const ev = getActiveEvent();
+        ev.rundown = ev.rundown.filter((r) => r.id !== id);
+        syncToCloud();
+        renderAll();
+      }
+
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result || "");
+          reader.onerror = () =>
+            reject(new Error("Gagal membaca file foto meeting."));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // ==========================================
+      // TAB 7: MEETING & NOTULENSI (DENGAN KAMERA QR SCANNER ASLI)
+      // ==========================================
+      function renderMeetingTab(ev) {
+        const isSc = currentUser.role === "sc";
+        const container = document.getElementById("dashContentMeeting");
+
+        container.innerHTML = `
+                <div class="space-y-6">
+                    ${
+                      isSc
+                        ? `
+                        <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+                            <h3 class="text-lg font-black text-navy">📅 Buat Schedule Meeting Baru</h3>
+                            <form onsubmit="createNewMeetingSchedule(event)" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3.5">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Agenda Rapat *</label>
+                                    <input type="text" id="mtgAgenda" placeholder="Contoh: Rapat Koordinasi H-3" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Rapat (Date Picker) *</label>
+                                    <input type="date" id="mtgTanggal" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Rapat (Time Picker) *</label>
+                                    <input type="time" id="mtgWaktu" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Tempat / Ruangan Meeting *</label>
+                                    <select id="mtgTempatSelect" onchange="toggleMtgCustomTempat()" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                        <option value="Ruang Rapat Utama STIT">Ruang Rapat Utama STIT</option>
+                                        <option value="Aula Lt. 2 Kampus STIT">Aula Lt. 2 Kampus STIT</option>
+                                        <option value="Online via Google Meet / Zoom">Online via Google Meet / Zoom</option>
+                                        <option value="__custom__">+ Tulis Tempat Baru...</option>
+                                    </select>
+                                    <input type="text" id="mtgTempatCustom" placeholder="Ketik tempat rapat..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Foto Meeting (Opsional)</label>
+                                    <input type="file" id="mtgPhotoInput" accept="image/*" class="w-full px-2.5 py-2 rounded-xl border text-[10px] font-semibold bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1">
+                                    <p class="mt-1 text-[10px] text-slate-500">Diunggah oleh: <span class="font-bold text-navy">${currentUser.name}</span></p>
+                                </div>
+                                <div class="sm:col-span-2 xl:col-span-5 flex justify-end">
+                                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Simpan Jadwal Meeting</button>
+                                </div>
+                            </form>
+                        </div>
+                    `
+                        : ""
+                    }
+
+                    <div class="space-y-6">
+                        ${
+                          (ev.meetings || [])
+                            .map((m) => {
+                              const currentMeetingStatus =
+                                m.status ||
+                                (m.isOpen ? "ongoing" : "scheduled");
+                              const isMeetingScheduled =
+                                currentMeetingStatus === "scheduled";
+                              const isMeetingOngoing =
+                                currentMeetingStatus === "ongoing";
+                              const isMeetingFinished =
+                                currentMeetingStatus === "finished";
+                              const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(m.code + " - " + m.agenda)}`;
+                              const alreadyCheckedIn = m.attendees.some(
+                                (a) => a.name === currentUser.name,
+                              );
+
+                              return `
+                                <div class="bg-white rounded-3xl p-6 border-2 ${isMeetingOngoing ? "border-amber-400" : isMeetingFinished ? "border-slate-300" : "border-slate-200"} shadow-sm space-y-5">
+                                    <div class="flex flex-col lg:flex-row justify-between gap-6 border-b border-slate-200 pb-5">
+                                        <div class="space-y-2">
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="px-3 py-1 rounded-full text-xs font-black ${isMeetingOngoing ? "bg-emerald-100 text-emerald-800" : isMeetingFinished ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}">
+                                                    ${isMeetingScheduled ? "🕒 Jadwal Meeting" : isMeetingOngoing ? "🟢 Meeting Berlangsung" : "🔒 Meeting Selesai"}
+                                                </span>
+                                                <span class="text-xs font-black text-navy bg-amber-100 px-2.5 py-1 rounded-lg">Kode: ${m.code}</span>
+                                            </div>
+                                            <h4 class="text-lg font-black text-navy">${m.agenda}</h4>
+                                            <div class="flex flex-wrap gap-4 text-xs text-slate-600 font-semibold">
+                                                <span>📅 Tanggal: <b>${m.tanggal}</b></span>
+                                                <span>⏰ Waktu: <b>${m.waktu} WIB</b></span>
+                                                <span>📍 Tempat: <b>${m.tempat}</b></span>
+                                            </div>
+
+                                            <div class="pt-2 flex flex-wrap gap-2">
+                                                ${
+                                                  alreadyCheckedIn
+                                                    ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Tercatat Hadir</span>`
+                                                    : isMeetingOngoing
+                                                      ? `<button onclick="openRealQRScanner('meeting', '${m.id}')" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow flex items-center gap-1.5">
+                                                           <span>📷 Buka Kamera HP & Scan QR Rapat</span>
+                                                         </button>
+                                                         <button onclick="checkInMeetingByUser('${m.id}')" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-bold text-xs">
+                                                           ✓ Check-in Cepat (${currentUser.name})
+                                                         </button>`
+                                                      : ""
+                                                }
+                                                ${
+                                                  isSc
+                                                    ? `
+                                                    <button onclick="${isMeetingScheduled ? `startMeeting('${m.id}')` : isMeetingOngoing ? `stopMeeting('${m.id}')` : `startMeeting('${m.id}')`}" class="px-3.5 py-2 rounded-xl ${isMeetingScheduled ? "bg-emerald-100 text-emerald-800" : isMeetingOngoing ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800"} font-bold text-xs">
+                                                        ${isMeetingScheduled ? "▶ Buka / Mulai Meeting" : isMeetingOngoing ? "⏹ Stop / Selesai Meeting" : "▶ Buka Kembali Meeting"}
+                                                    </button>
+                                                    <button onclick="editMeetingSchedule('${m.id}')" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-bold text-xs">
+                                                        Edit Meeting
+                                                    </button>
+                                                    <button onclick="deleteMeetingSchedule('${m.id}')" class="px-3.5 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold text-xs">
+                                                        Hapus Meeting
+                                                    </button>
+                                                `
+                                                    : ""
+                                                }
+                                            </div>
+                                        </div>
+
+                                        ${
+                                          isMeetingOngoing
+                                            ? `
+                                            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 shrink-0">
+                                                <img src="${qrUrl}" alt="QR Meeting" class="w-28 h-28 rounded-xl border-2 border-navy p-1 bg-white">
+                                                <div class="text-xs space-y-1 max-w-[180px]">
+                                                    <p class="font-black text-navy">QR Check-in Rapat</p>
+                                                    <p class="text-[11px] text-slate-500">Panitia membuka menu Meeting di HP lalu klik <b>Buka Kamera HP & Scan QR</b> ke layar ini.</p>
+                                                </div>
+                                            </div>
+                                        `
+                                            : ""
+                                        }
+                                    </div>
+
+                                    ${
+                                      isMeetingOngoing
+                                        ? `
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <p class="text-xs font-extrabold uppercase text-navy">📸 Upload Foto Meeting Saat Berlangsung</p>
+                                                <span class="text-[10px] text-slate-500">Diunggah oleh ${currentUser.name}</span>
+                                            </div>
+                                            <div class="flex flex-col sm:flex-row gap-2">
+                                                <input type="file" id="meetingPhoto_${m.id}" accept="image/*" class="flex-1 px-2.5 py-2 rounded-xl border text-[10px] font-semibold bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1">
+                                                <button onclick="uploadMeetingPhoto('${m.id}')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-extrabold text-xs">Upload Foto</button>
+                                            </div>
+                                        </div>
+                                        `
+                                        : ""
+                                    }
+
+                                    ${
+                                      m.photo
+                                        ? `
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <p class="text-xs font-extrabold uppercase text-navy">📸 Foto Meeting</p>
+                                                <span class="text-[10px] text-slate-500">Diunggah oleh ${m.uploadedBy || m.createdBy || currentUser.name}</span>
+                                            </div>
+                                            <img src="${m.photo}" alt="Foto Meeting ${m.agenda}" class="w-full max-h-72 object-cover rounded-2xl border border-slate-200 bg-white">
+                                        </div>
+                                        `
+                                        : ""
+                                    }
+
+                                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                                        <p class="text-xs font-extrabold uppercase text-navy">👥 Daftar Peserta Hadir Meeting (${m.attendees.length} Orang):</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            ${
+                                              m.attendees
+                                                .map(
+                                                  (a) => `
+                                                <span class="px-3 py-1 rounded-xl bg-white border border-emerald-300 text-xs font-bold text-slate-800">
+                                                    ✓ ${a.name} <span class="text-[10px] text-emerald-700">(${a.time})</span>
+                                                </span>
+                                            `,
+                                                )
+                                                .join("") ||
+                                              `<span class="text-xs text-slate-400 italic">Belum ada peserta yang scan check-in.</span>`
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <label class="block text-xs font-extrabold uppercase text-navy">📝 Notulensi & Hasil Keputusan Meeting:</label>
+                                        <textarea id="notulensiText_${m.id}" rows="4" class="w-full p-4 rounded-2xl border border-slate-300 text-xs font-semibold leading-relaxed bg-white" placeholder="Tulis hasil pembahasan dan keputusan rapat di sini...">${m.notulensi || ""}</textarea>
+                                        <div class="flex justify-end">
+                                            <button onclick="saveMeetingNotulensi('${m.id}')" class="px-5 py-2 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow">Simpan Notulensi Meeting</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            })
+                            .join("") ||
+                          `<div class="bg-white p-8 rounded-3xl border text-center text-xs text-slate-400">Belum ada jadwal meeting yang dibuat.</div>`
+                        }
+                    </div>
+                </div>
+            `;
+      }
+
+      function toggleMtgCustomTempat() {
+        const sel = document.getElementById("mtgTempatSelect");
+        const inp = document.getElementById("mtgTempatCustom");
+        if (sel.value === "__custom__") inp.classList.remove("hidden");
+        else inp.classList.add("hidden");
+      }
+
+      async function createNewMeetingSchedule(e) {
+        e.preventDefault();
+        const sel = document.getElementById("mtgTempatSelect");
+        const cust = document.getElementById("mtgTempatCustom");
+        const photoInput = document.getElementById("mtgPhotoInput");
+        const tempat =
+          sel.value === "__custom__" ? cust.value.trim() : sel.value;
+
+        const ev = getActiveEvent();
+        const code = "MTG-" + Math.floor(100 + Math.random() * 900);
+        let uploadedPhoto = "";
+
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+          uploadedPhoto = await readFileAsDataUrl(photoInput.files[0]);
+        }
+
+        ev.meetings.unshift({
+          id: "mtg_" + Date.now(),
+          code: code,
+          agenda: document.getElementById("mtgAgenda").value.trim(),
+          tanggal: document.getElementById("mtgTanggal").value,
+          waktu: document.getElementById("mtgWaktu").value,
+          tempat: tempat || "Ruang Rapat STIT",
+          status: "scheduled",
+          isOpen: false,
+          createdBy: currentUser.name,
+          uploadedBy: currentUser.name,
+          photo: uploadedPhoto,
+          attendees: [],
+          notulensi: "",
+        });
+        syncToCloud();
+        renderAll();
+        showToast(`Jadwal meeting ${code} berhasil dibuat dan siap dibuka.`);
+      }
+
+      function startMeeting(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        (ev.meetings || []).forEach((item) => {
+          if (item.id !== mtgId && (item.isOpen || item.status === "ongoing")) {
+            item.status = "finished";
+            item.isOpen = false;
+          }
+        });
+
+        mtg.status = "ongoing";
+        mtg.isOpen = true;
+        if (!mtg.attendees.some((a) => a.name === currentUser.name)) {
+          mtg.attendees.push({
+            name: currentUser.name,
+            time: new Date().toTimeString().slice(0, 5) + " WIB",
+          });
+        }
+        syncToCloud();
+        renderAll();
+        showToast(
+          `Meeting ${mtg.agenda} sudah dimulai. Meeting lain otomatis ditutup.`,
+        );
+      }
+
+      function stopMeeting(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        mtg.status = "finished";
+        mtg.isOpen = false;
+        syncToCloud();
+        renderAll();
+        showToast(`Meeting ${mtg.agenda} telah dihentikan / selesai.`);
+      }
+
+      async function uploadMeetingPhoto(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        const fileInput = document.getElementById(`meetingPhoto_${mtgId}`);
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+          showToast("Pilih foto meeting terlebih dahulu.", "error");
+          return;
+        }
+
+        mtg.photo = await readFileAsDataUrl(fileInput.files[0]);
+        mtg.uploadedBy = currentUser.name;
+        syncToCloud();
+        renderAll();
+        showToast("Foto meeting berhasil diupload.");
+      }
+
+      function checkInMeetingByUser(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+        if (!mtg.attendees.some((a) => a.name === currentUser.name)) {
+          mtg.attendees.push({
+            name: currentUser.name,
+            time: new Date().toTimeString().slice(0, 5) + " WIB",
+          });
+          syncToCloud();
+          renderAll();
+          showToast(
+            `Kehadiran rapat Anda (${currentUser.name}) berhasil tercatat!`,
+          );
+        }
+      }
+
+      function toggleMeetingOpenStatus(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        if (mtg.status === "finished") {
+          mtg.status = "ongoing";
+          mtg.isOpen = true;
+        } else if (mtg.status === "ongoing") {
+          mtg.status = "finished";
+          mtg.isOpen = false;
+        } else {
+          mtg.status = "ongoing";
+          mtg.isOpen = true;
+        }
+
+        syncToCloud();
+        renderAll();
+      }
+
+      function editMeetingSchedule(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        const agenda = prompt("Edit agenda meeting:", mtg.agenda);
+        if (agenda !== null && agenda.trim()) mtg.agenda = agenda.trim();
+
+        const tanggal = prompt(
+          "Edit tanggal meeting (YYYY-MM-DD):",
+          mtg.tanggal,
+        );
+        if (tanggal !== null && tanggal.trim()) mtg.tanggal = tanggal.trim();
+
+        const waktu = prompt("Edit waktu meeting (HH:MM):", mtg.waktu);
+        if (waktu !== null && waktu.trim()) mtg.waktu = waktu.trim();
+
+        const tempat = prompt("Edit tempat meeting:", mtg.tempat);
+        if (tempat !== null && tempat.trim()) mtg.tempat = tempat.trim();
+
+        syncToCloud();
+        renderAll();
+        showToast("Data meeting berhasil diperbarui.");
+      }
+
+      function deleteMeetingSchedule(mtgId) {
+        const ev = getActiveEvent();
+        ev.meetings = ev.meetings.filter((m) => m.id !== mtgId);
+        syncToCloud();
+        renderAll();
+        showToast("Riwayat meeting berhasil dihapus.");
+      }
+
+      function saveMeetingNotulensi(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        const txt = document.getElementById(`notulensiText_${mtgId}`);
+        if (mtg && txt) {
+          mtg.notulensi = txt.value;
+          syncToCloud();
+          showToast("Notulensi meeting berhasil disimpan!");
+        }
+      }
+
+      // ==========================================
+      // TAB 8: ARSIP DOKUMEN & SK
+      // ==========================================
+      function renderDokumenTab(ev) {
+        const isVip = currentUser.role === "vip_anggota";
+        const container = document.getElementById("dashContentDokumen");
+
+        container.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+                    <div class="border-b border-slate-200 pb-4">
+                        <h3 class="text-xl font-black text-navy">📂 Arsip Dokumen, SK, Proposal & Booklet</h3>
+                        <p class="text-xs text-slate-500">Pusat penyimpanan tautan dokumen resmi kepanitiaan.</p>
+                    </div>
+
+                    ${
+                      !isVip
+                        ? `
+                        <form onsubmit="addDocumentItem(event)" class="p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3.5">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Dokumen *</label>
+                                <input type="text" id="docTitle" placeholder="Contoh: SK Kepanitiaan Resmi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Kategori Dokumen *</label>
+                                <select id="docCategorySelect" onchange="toggleDocCustomCategory()" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <option value="SK Kepanitiaan">SK Kepanitiaan</option>
+                                    <option value="Proposal & TOR">Proposal & TOR</option>
+                                    <option value="Booklet / Materi">Booklet / Materi</option>
+                                    <option value="Surat Menyurat">Surat Menyurat</option>
+                                    <option value="LPJ & Dokumentasi">LPJ & Dokumentasi</option>
+                                    <option value="__custom__">+ Tulis Kategori Sendiri...</option>
+                                </select>
+                                <input type="text" id="docCategoryCustom" placeholder="Ketik kategori..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Diunggah Oleh (Dikelompokkan) *</label>
+                                <select id="docUploader" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                    ${buildGroupedSdmOptionsHtml(currentUser.name, false)}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Link Google Drive / Cloud *</label>
+                                <div class="flex gap-2">
+                                    <input type="url" id="docUrl" placeholder="https://drive.google.com/..." class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                    <button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs">+ Arsip</button>
+                                </div>
+                            </div>
+                        </form>
+                    `
+                        : ""
+                    }
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${
+                          (ev.documents || [])
+                            .map(
+                              (d) => `
+                            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
+                                <div class="space-y-1">
+                                    <span class="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-extrabold text-[10px] uppercase">${d.category}</span>
+                                    <h4 class="text-sm font-extrabold text-navy">${d.title}</h4>
+                                    <p class="text-[11px] text-slate-500">Diunggah oleh: <b>${d.uploader}</b></p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <a href="${d.url}" target="_blank" class="px-3.5 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">Buka File</a>
+                                    ${
+                                      !isVip
+                                        ? `
+                                        <button onclick="deleteDocItem('${d.id}')" title="Hapus Dokumen" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    `
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+                        `,
+                            )
+                            .join("") ||
+                          `<p class="text-xs text-slate-400 italic">Belum ada dokumen diunggah.</p>`
+                        }
+                    </div>
+                </div>
+            `;
+      }
+
+      function toggleDocCustomCategory() {
+        const sel = document.getElementById("docCategorySelect");
+        const inp = document.getElementById("docCategoryCustom");
+        if (sel.value === "__custom__") inp.classList.remove("hidden");
+        else inp.classList.add("hidden");
+      }
+
+      function addDocumentItem(e) {
+        e.preventDefault();
+        const sel = document.getElementById("docCategorySelect");
+        const cust = document.getElementById("docCategoryCustom");
+        const cat = sel.value === "__custom__" ? cust.value.trim() : sel.value;
+
+        const ev = getActiveEvent();
+        ev.documents.unshift({
+          id: "doc_" + Date.now(),
+          title: document.getElementById("docTitle").value.trim(),
+          category: cat || "Dokumen",
+          uploader: document.getElementById("docUploader").value,
+          url: document.getElementById("docUrl").value.trim(),
+        });
+        syncToCloud();
+        renderAll();
+        showToast("Dokumen berhasil diarsipkan!");
+      }
+
+      function deleteDocItem(id) {
+        const ev = getActiveEvent();
+        ev.documents = ev.documents.filter((d) => d.id !== id);
+        syncToCloud();
+        renderAll();
+      }
+
+      // ==========================================
+      // WIZARD BUAT & EDIT EVENT BARU
+      // ==========================================
+      function openEventModal(mode) {
+        wizardMode = mode;
+        const modal = document.getElementById("eventWizardModal");
+        document.getElementById("wizardModalTitle").textContent =
+          mode === "edit"
+            ? "Edit & Kelola Konfigurasi Event"
+            : "Buat Event Baru";
+
+        if (mode === "edit") {
+          const ev = getActiveEvent();
+          document.getElementById("wizDivisi").value = ev.divisi;
+          document.getElementById("wizKategori").value = ev.kategori;
+          document.getElementById("wizNamaEvent").value = ev.nama;
+          document.getElementById("wizTema").value = ev.tema;
+          document.getElementById("wizDeskripsi").value = ev.deskripsi;
+          document.getElementById("wizTanggal").value = ev.tanggal;
+          document.getElementById("wizJamMulai").value = ev.jamMulai;
+          document.getElementById("wizJamSelesai").value = ev.jamSelesai;
+
+          const locSel = document.getElementById("wizLokasiSelect");
+          const presetLocs = [
+            "Aula Utama Lt. 2 Kampus STIT",
+            "Ruang Auditorium Terpadu STIT",
+            "Hall Serbaguna / Zoom Hybrid STIT",
+          ];
+          if (presetLocs.includes(ev.lokasi)) {
+            locSel.value = ev.lokasi;
+            document.getElementById("wizLokasiCustom").classList.add("hidden");
+          } else {
+            locSel.value = "__custom__";
+            const locCust = document.getElementById("wizLokasiCustom");
+            locCust.classList.remove("hidden");
+            locCust.value = ev.lokasi;
+          }
+
+          document.getElementById("wizTargetPeserta").value = ev.targetPeserta;
+          document.getElementById("wizSubsidi").value = ev.subsidiKampus;
+          document.getElementById("wizHtm").value = ev.htmPeserta;
+          document.getElementById("wizHeroBanner").value = ev.heroBanner || "";
+
+          wizardTempSpeakers = JSON.parse(
+            JSON.stringify(
+              ev.speakers || [{ name: DUMMY_SPEAKERS[0], topic: "" }],
+            ),
+          );
+          wizardTempDivisions = JSON.parse(JSON.stringify(ev.divisions || []));
+        } else {
+          document.getElementById("wizNamaEvent").value = "";
+          document.getElementById("wizTema").value = "";
+          document.getElementById("wizDeskripsi").value = "";
+          document.getElementById("wizTanggal").value = "2026-11-20";
+          document.getElementById("wizJamMulai").value = "08:00";
+          document.getElementById("wizJamSelesai").value = "15:00";
+          document.getElementById("wizTargetPeserta").value = 60;
+          document.getElementById("wizSubsidi").value = 2000000;
+          document.getElementById("wizHtm").value = 75000;
+          document.getElementById("wizHeroBanner").value = "";
+
+          wizardTempSpeakers = [
+            { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
+          ];
+          wizardTempDivisions = [
+            {
+              id: "wdiv_1",
+              name: "Seksi Acara",
+              pic: "Yusuf Abdullah, M.Pd.",
+              members: [],
+              tasks: getDefault10Tasks("Seksi Acara", "Yusuf Abdullah, M.Pd."),
+            },
+            {
+              id: "wdiv_2",
+              name: "Seksi Konsumsi",
+              pic: "Sumarni, S.Ag., M.Pd.",
+              members: [],
+              tasks: getDefault10Tasks(
+                "Seksi Konsumsi",
+                "Sumarni, S.Ag., M.Pd.",
+              ),
+            },
+            {
+              id: "wdiv_3",
+              name: "Seksi Logistik / Perlengkapan",
+              pic: "Muhamad Zacky Haidar, B.A.",
+              members: [],
+              tasks: getDefault10Tasks(
+                "Seksi Logistik / Perlengkapan",
+                "Muhamad Zacky Haidar, B.A.",
+              ),
+            },
+            {
+              id: "wdiv_4",
+              name: "Seksi Humas & Sponsorship",
+              pic: "Said Imanullah, S.Ag.",
+              members: [],
+              tasks: getDefault10Tasks(
+                "Seksi Humas & Sponsorship",
+                "Said Imanullah, S.Ag.",
+              ),
+            },
+            {
+              id: "wdiv_5",
+              name: "Seksi Dokumentasi & Publikasi",
+              pic: "Afghani, S.Kom.",
+              members: [],
+              tasks: getDefault10Tasks(
+                "Seksi Dokumentasi & Publikasi",
+                "Afghani, S.Kom.",
+              ),
+            },
+          ];
+        }
+
+        renderWizardSpeakers();
+        renderWizardDivisions();
+
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeEventModal() {
+        const modal = document.getElementById("eventWizardModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function toggleWizCustomLokasi() {
+        const sel = document.getElementById("wizLokasiSelect");
+        const cust = document.getElementById("wizLokasiCustom");
+        if (sel.value === "__custom__") cust.classList.remove("hidden");
+        else cust.classList.add("hidden");
+      }
+
+      function renderWizardSpeakers() {
+        const container = document.getElementById("wizSpeakersContainer");
+        container.innerHTML = wizardTempSpeakers
+          .map((s, idx) => {
+            const isCustom = s.name && !DUMMY_SPEAKERS.includes(s.name);
+            return `
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-white p-3 rounded-xl border border-slate-200">
+                        <div class="sm:col-span-5">
+                            <label class="block text-[10px] font-bold text-slate-500">Pemateri ${idx + 1} (5 Opsi + Tulis Baru)</label>
+                            <select onchange="handleWizSpeakerSelect(${idx}, this.value)" class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
+                                ${DUMMY_SPEAKERS.map((ds) => `<option value="${ds}" ${s.name === ds ? "selected" : ""}>${ds}</option>`).join("")}
+                                <option value="__custom__" ${isCustom ? "selected" : ""}>+ Tulis Nama Pemateri Baru...</option>
+                            </select>
+                            <input type="text" id="wizSpkCustom_${idx}" value="${isCustom ? s.name : ""}" oninput="wizardTempSpeakers[${idx}].name = this.value" placeholder="Ketik nama pemateri baru..." class="${isCustom ? "" : "hidden"} mt-1.5 w-full px-3 py-1.5 rounded-lg border border-amber-400 text-xs font-semibold">
+                        </div>
+                        <div class="sm:col-span-6">
+                            <label class="block text-[10px] font-bold text-slate-500">Topik Pembahasan (Materi ${idx + 1})</label>
+                            <input type="text" value="${s.topic || ""}" oninput="wizardTempSpeakers[${idx}].topic = this.value" placeholder="Masukkan topik bahasan..." class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
+                        </div>
+                        <div class="sm:col-span-1 flex justify-end pt-3">
+                            ${
+                              wizardTempSpeakers.length > 1
+                                ? `
+                                <button type="button" onclick="removeSpeakerRowInWizard(${idx})" class="p-2 rounded-lg bg-rose-100 text-rose-700">✕</button>
+                            `
+                                : ""
+                            }
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      function handleWizSpeakerSelect(idx, val) {
+        const cust = document.getElementById(`wizSpkCustom_${idx}`);
+        if (val === "__custom__") {
+          cust.classList.remove("hidden");
+          wizardTempSpeakers[idx].name = cust.value;
+        } else {
+          cust.classList.add("hidden");
+          wizardTempSpeakers[idx].name = val;
+        }
+      }
+
+      function addSpeakerRowInWizard() {
+        wizardTempSpeakers.push({ name: DUMMY_SPEAKERS[0], topic: "" });
+        renderWizardSpeakers();
+      }
+
+      function removeSpeakerRowInWizard(idx) {
+        wizardTempSpeakers.splice(idx, 1);
+        renderWizardSpeakers();
+      }
+
+      function renderWizardDivisions() {
+        const container = document.getElementById("wizDivisionsContainer");
+        const picCandidates = [...SDM_STIT, ...SDM_SUPPORT];
+
+        container.innerHTML = wizardTempDivisions
+          .map((d, idx) => {
+            const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+
+            const usedInOtherSections = new Set();
+            wizardTempDivisions.forEach((otherDiv, oIdx) => {
+              if (oIdx !== idx) {
+                (otherDiv.members || []).forEach((m) =>
+                  usedInOtherSections.add(m),
+                );
+              }
+            });
+
+            const avail2025 = SDM_MHS_2025.filter(
+              (m) => !usedInOtherSections.has(m),
+            );
+            const avail2026 = SDM_MHS_2026.filter(
+              (m) => !usedInOtherSections.has(m),
+            );
+            const isCustomPic = d.pic && !picCandidates.includes(d.pic);
+
+            return `
+                    <div class="p-5 rounded-3xl border-2 ${theme.bg} ${theme.border} space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 flex-1 min-w-[220px]">
+                                <span class="px-3 py-1 rounded-full text-xs font-black ${theme.badge}">Seksi ${idx + 1}</span>
+                                <input type="text" value="${d.name}" oninput="wizardTempDivisions[${idx}].name = this.value" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-extrabold text-navy bg-white flex-1">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-navy">PIC Koordinator:</label>
+                                <select onchange="handleWizDivPicChange(${idx}, this.value)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
+                                    ${picCandidates.map((p) => `<option value="${p}" ${d.pic === p ? "selected" : ""}>${p}</option>`).join("")}
+                                    <option value="__custom__" ${isCustomPic ? "selected" : ""}>+ Tulis Sendiri...</option>
+                                </select>
+                                <input type="text" id="wizDivPicCustom_${idx}" value="${isCustomPic ? d.pic : ""}" oninput="wizardTempDivisions[${idx}].pic = this.value" placeholder="Nama PIC..." class="${isCustomPic ? "" : "hidden"} px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold bg-white">
+                                <button type="button" onclick="removeWizardDivisionCard(${idx})" title="Hapus Seksi Ini" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <p class="text-[11px] font-extrabold uppercase text-slate-600">Pilih Anggota Mahasiswa Angkatan 2025 (Klik Tombol):</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${avail2025
+                                  .map((m) => {
+                                    const active = d.members.includes(m);
+                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-navy text-amber-400 shadow" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
+                                  })
+                                  .join("")}
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                            <p class="text-[11px] font-extrabold uppercase text-slate-600">Pilih Anggota Mahasiswa Angkatan 2026 (Klik Tombol):</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${avail2026
+                                  .map((m) => {
+                                    const active = d.members.includes(m);
+                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-navy text-amber-400 shadow" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
+                                  })
+                                  .join("")}
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+                            <div class="text-xs font-bold text-navy">Terpilih (${d.members.length}): <span class="font-normal text-slate-700">${d.members.join(", ") || "Belum ada"}</span></div>
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="wizCustomMember_${idx}" placeholder="Tambah Personil Baru..." class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
+                                <button type="button" onclick="addWizCustomMember(${idx})" class="px-3 py-1.5 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah Personil Baru</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+          })
+          .join("");
+      }
+
+      function handleWizDivPicChange(idx, val) {
+        const cust = document.getElementById(`wizDivPicCustom_${idx}`);
+        if (val === "__custom__") {
+          cust.classList.remove("hidden");
+          wizardTempDivisions[idx].pic = cust.value;
+        } else {
+          cust.classList.add("hidden");
+          wizardTempDivisions[idx].pic = val;
+        }
+      }
+
+      function toggleWizMember(divIdx, memberName) {
+        const arr = wizardTempDivisions[divIdx].members;
+        const pos = arr.indexOf(memberName);
+        if (pos >= 0) arr.splice(pos, 1);
+        else arr.push(memberName);
+        renderWizardDivisions();
+      }
+
+      function addWizCustomMember(divIdx) {
+        const inp = document.getElementById(`wizCustomMember_${divIdx}`);
+        const val = inp ? inp.value.trim() : "";
+        if (!val) return;
+        if (!wizardTempDivisions[divIdx].members.includes(val)) {
+          wizardTempDivisions[divIdx].members.push(val);
+        }
+        inp.value = "";
+        renderWizardDivisions();
+      }
+
+      function addWizardDivisionCard() {
+        const newName = `Seksi Tambahan ${wizardTempDivisions.length + 1}`;
+        wizardTempDivisions.push({
+          id: "wdiv_" + Date.now(),
+          name: newName,
+          pic: SDM_STIT[0],
+          members: [],
+          tasks: getDefault10Tasks(newName, SDM_STIT[0]),
+        });
+        renderWizardDivisions();
+      }
+
+      function removeWizardDivisionCard(idx) {
+        wizardTempDivisions.splice(idx, 1);
+        renderWizardDivisions();
+      }
+
+      function saveEventFromWizard() {
+        const nama = document.getElementById("wizNamaEvent").value.trim();
+        if (!nama) {
+          showToast("Nama Event wajib diisi!", "error");
+          return;
+        }
+        const locSel = document.getElementById("wizLokasiSelect").value;
+        const lokasi =
+          locSel === "__custom__"
+            ? document.getElementById("wizLokasiCustom").value.trim()
+            : locSel;
+
+        if (wizardMode === "edit") {
+          const ev = getActiveEvent();
+          ev.divisi = document.getElementById("wizDivisi").value;
+          ev.kategori = document.getElementById("wizKategori").value;
+          ev.nama = nama;
+          ev.tema = document.getElementById("wizTema").value.trim();
+          ev.deskripsi = document.getElementById("wizDeskripsi").value.trim();
+          ev.tanggal = document.getElementById("wizTanggal").value;
+          ev.jamMulai = document.getElementById("wizJamMulai").value;
+          ev.jamSelesai = document.getElementById("wizJamSelesai").value;
+          ev.lokasi = lokasi || "Kampus STIT";
+          ev.heroBanner = document.getElementById("wizHeroBanner").value.trim();
+          ev.participantCheckinOpen = !!ev.participantCheckinOpen;
+          ev.speakers = JSON.parse(JSON.stringify(wizardTempSpeakers));
+          ev.targetPeserta =
+            Number(document.getElementById("wizTargetPeserta").value) || 50;
+          ev.subsidiKampus =
+            Number(document.getElementById("wizSubsidi").value) || 0;
+          ev.htmPeserta = Number(document.getElementById("wizHtm").value) || 0;
+          ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
+        } else {
+          const newId = "evt_" + Date.now();
+          const htm = Number(document.getElementById("wizHtm").value) || 75000;
+          eventsData.push({
+            id: newId,
+            divisi: document.getElementById("wizDivisi").value,
+            kategori: document.getElementById("wizKategori").value,
+            nama: nama,
+            tema:
+              document.getElementById("wizTema").value.trim() ||
+              "Tema Kegiatan STIT",
+            deskripsi:
+              document.getElementById("wizDeskripsi").value.trim() ||
+              "Kegiatan resmi STIT.",
+            tanggal: document.getElementById("wizTanggal").value,
+            jamMulai: document.getElementById("wizJamMulai").value,
+            jamSelesai: document.getElementById("wizJamSelesai").value,
+            lokasi: lokasi || "Kampus STIT",
+            heroBanner: document.getElementById("wizHeroBanner").value.trim(),
+            participantCheckinOpen: false,
+            speakers: JSON.parse(JSON.stringify(wizardTempSpeakers)),
+            targetPeserta:
+              Number(document.getElementById("wizTargetPeserta").value) || 60,
+            subsidiKampus:
+              Number(document.getElementById("wizSubsidi").value) || 0,
+            htmPeserta: htm,
+            unitEconomics: [
+              {
+                id: "ue_" + Date.now() + "1",
+                item: "Makan Siang & Snack",
+                cost: 35000,
+              },
+              {
+                id: "ue_" + Date.now() + "2",
+                item: "Seminar Kit & Sertifikat",
+                cost: 20000,
+              },
+            ],
+            biayaOperasional: [
+              {
+                id: "bo_" + Date.now() + "1",
+                item: "Honorarium Pemateri & Dekorasi",
+                cost: 1500000,
+              },
+            ],
+            divisions: JSON.parse(JSON.stringify(wizardTempDivisions)),
+            kasTransactions: [],
+            participants: [],
+            rundown: [],
+            meetings: [],
+            documents: [],
+            formConfigSaved: false,
+            formConfig: {
+              useGender: true,
+              useWa: true,
+              useEmail: true,
+              useDomisili: true,
+              useAfiliasi: true,
+              usePaket: true,
+              packages: [
+                { name: "Paket-A", price: htm },
+                { name: "Paket-B", price: htm + 25000 },
+              ],
+            },
+          });
+          activeEventId = newId;
+        }
+
+        closeEventModal();
+        syncToCloud();
+        renderAll();
+        showToast("Konfigurasi Event berhasil disimpan!");
+      }
+
+      // ==========================================
+      // KUSTOMISASI FORMAT & PAKET PENDAFTARAN PESERTA
+      // ==========================================
+      let tempPackagesConfig = [];
+
+      function getEventRegistrationMode(ev = getActiveEvent()) {
+        if (!ev) return "umum";
+        return ev.registrationMode || ev.formConfig?.registrationMode || "umum";
+      }
+
+      function setRegistrationModePreset(mode) {
+        const ev = getActiveEvent();
+        if (!ev) return;
+        ev.registrationMode = mode;
+        if (!ev.formConfig) ev.formConfig = {};
+        ev.formConfig.registrationMode = mode;
+        const select = document.getElementById("cfgRegistrationMode");
+        if (select) select.value = mode;
+        syncToCloud();
+        renderAll();
+      }
+
+      function openRegistrationModeChooser(mode) {
+        const modalTitle = document.getElementById("customModalTitle");
+        const modalText = document.getElementById("customModalText");
+        const modalActions = document.getElementById("customModalActions");
+
+        if (mode === "mahasiswa") {
+          modalTitle.textContent = "Pilih Tahun Mahasiswa";
+          modalText.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left mt-2">
+              <label class="flex items-center gap-3 p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 cursor-pointer">
+                <input type="radio" name="studentYearChoice" value="2025" checked>
+                <span>
+                  <span class="block text-sm font-black text-navy">Mahasiswa 2025</span>
+                  <span class="text-[11px] text-slate-500">Tahun ajaran masuk 2025</span>
+                </span>
+              </label>
+              <label class="flex items-center gap-3 p-4 border-2 border-slate-200 rounded-2xl bg-slate-50 cursor-pointer">
+                <input type="radio" name="studentYearChoice" value="2026">
+                <span>
+                  <span class="block text-sm font-black text-navy">Mahasiswa 2026</span>
+                  <span class="text-[11px] text-slate-500">Tahun ajaran masuk 2026</span>
+                </span>
+              </label>
+            </div>
+          `;
+          modalActions.innerHTML = `
+            <button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Batal</button>
+            <button type="button" onclick="applyRegistrationModeChoice('mahasiswa')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-sm shadow">Simpan Pilihan</button>
+          `;
+        } else if (mode === "internal") {
+          modalTitle.textContent = "Data Pegawai Internal";
+          modalText.innerHTML = `
+            <div class="space-y-4 text-left mt-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="p-4 border-2 border-slate-200 rounded-2xl bg-slate-50">
+                  <p class="text-xs font-extrabold uppercase tracking-wider text-navy mb-2">Ikhwan</p>
+                  <input type="file" accept=".xlsx,.xls,.csv" class="w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1" id="internalUploadIkhwan">
+                </div>
+                <div class="p-4 border-2 border-slate-200 rounded-2xl bg-slate-50">
+                  <p class="text-xs font-extrabold uppercase tracking-wider text-navy mb-2">Akhwat</p>
+                  <input type="file" accept=".xlsx,.xls,.csv" class="w-full text-[11px] file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1" id="internalUploadAkhwat">
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-slate-700 leading-relaxed">
+                <b>Format file Excel / CSV:</b> kolom 1 = <b>No</b>; kolom 2 = <b>Nama Pegawai</b>; kolom 3 = <b>NIP</b>.
+              </div>
+            </div>
+          `;
+          modalActions.innerHTML = `
+            <button type="button" onclick="closeCustomModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">Batal</button>
+            <button type="button" onclick="applyRegistrationModeChoice('internal')" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-sm shadow">Simpan Data</button>
+          `;
+        }
+        const overlay = document.getElementById("customModalOverlay");
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+      }
+
+      function applyRegistrationModeChoice(mode) {
+        const ev = getActiveEvent();
+        if (!ev) return;
+        ev.registrationMode = mode;
+        if (!ev.formConfig) ev.formConfig = {};
+        ev.formConfig.registrationMode = mode;
+        const yearChoice = document.querySelector(
+          'input[name="studentYearChoice"]:checked',
+        );
+        if (mode === "mahasiswa" && yearChoice) {
+          ev.studentYear = yearChoice.value;
+        }
+        if (mode === "internal") {
+          ev.internalEmployeeUploads = {
+            ikhwan:
+              document.getElementById("internalUploadIkhwan")?.files?.[0]
+                ?.name || "",
+            akhwat:
+              document.getElementById("internalUploadAkhwat")?.files?.[0]
+                ?.name || "",
+          };
+        }
+        syncToCloud();
+        closeCustomModal();
+        renderAll();
+      }
+
+      function openFormConfigModal() {
+        const ev = getActiveEvent();
+        const cfg = ev.formConfig;
+        document.getElementById("cfgUseGender").checked = cfg.useGender;
+        document.getElementById("cfgUseWa").checked = cfg.useWa;
+        document.getElementById("cfgUseEmail").checked = cfg.useEmail;
+        document.getElementById("cfgUseDomisili").checked = cfg.useDomisili;
+        document.getElementById("cfgUseAfiliasi").checked = cfg.useAfiliasi;
+        document.getElementById("cfgUsePaket").checked = cfg.usePaket;
+        document.getElementById("cfgRegistrationMode").value =
+          getEventRegistrationMode(ev);
+
+        tempPackagesConfig = JSON.parse(JSON.stringify(cfg.packages || []));
+        renderPackagesConfigRows();
+
+        const m = document.getElementById("formConfigModal");
+        m.classList.remove("hidden");
+        m.classList.add("flex");
+      }
+
+      function closeFormConfigModal() {
+        const m = document.getElementById("formConfigModal");
+        m.classList.add("hidden");
+        m.classList.remove("flex");
+      }
+
+      function renderPackagesConfigRows() {
+        const list = document.getElementById("cfgPackagesList");
+        list.innerHTML = tempPackagesConfig
+          .map(
+            (p, idx) => `
+                <div class="flex items-center gap-2">
+                    <input type="text" value="${p.name}" oninput="tempPackagesConfig[${idx}].name = this.value" placeholder="Nama Paket (Mis: Paket-A)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-bold">
+                    <input type="number" value="${p.price}" oninput="tempPackagesConfig[${idx}].price = Number(this.value)" placeholder="Harga (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-bold">
+                    ${
+                      tempPackagesConfig.length > 1
+                        ? `
+                        <button type="button" onclick="removePackageConfigRow(${idx})" class="p-2 rounded-xl bg-rose-100 text-rose-700 font-bold text-xs">✕</button>
+                    `
+                        : ""
+                    }
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      function addPackageConfigRow() {
+        const nextChar = String.fromCharCode(65 + tempPackagesConfig.length);
+        tempPackagesConfig.push({ name: `Paket-${nextChar}`, price: 75000 });
+        renderPackagesConfigRows();
+      }
+
+      function removePackageConfigRow(idx) {
+        tempPackagesConfig.splice(idx, 1);
+        renderPackagesConfigRows();
+      }
+
+      function saveFormConfigModal() {
+        const ev = getActiveEvent();
+        const registrationMode = document.getElementById(
+          "cfgRegistrationMode",
+        ).value;
+        ev.registrationMode = registrationMode;
+        ev.formConfig = {
+          registrationMode,
+          useGender: document.getElementById("cfgUseGender").checked,
+          useWa: document.getElementById("cfgUseWa").checked,
+          useEmail: document.getElementById("cfgUseEmail").checked,
+          useDomisili: document.getElementById("cfgUseDomisili").checked,
+          useAfiliasi: document.getElementById("cfgUseAfiliasi").checked,
+          usePaket: document.getElementById("cfgUsePaket").checked,
+          packages: JSON.parse(JSON.stringify(tempPackagesConfig)),
+        };
+        ev.formConfigSaved = true;
+        closeFormConfigModal();
+        syncToCloud();
+        showToast("Format & Paket Link Pendaftaran Peserta diperbarui!");
+        renderAll();
+      }
+
+      // ==========================================
+      // LANDING PAGE PUBLIK & E-TIKET QR GENERATOR
+      // ==========================================
+      function openPublicLanding(eventId = null) {
+        if (eventId) activeEventId = eventId;
+        const ev = getActiveEvent();
+        if (ev.formConfigSaved === false) {
+          showToast(
+            "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
+            "error",
+          );
+          return;
+        }
+        document.getElementById("pubDivisiBadge").textContent = ev.divisi;
+        document.getElementById("pubKategoriBadge").textContent = ev.kategori;
+        document.getElementById("pubEventTitle").textContent = ev.nama;
+        document.getElementById("pubEventTheme").textContent = `"${ev.tema}"`;
+        document.getElementById("pubEventDesc").textContent = ev.deskripsi;
+        document.getElementById("pubEventDate").textContent = ev.tanggal;
+        document.getElementById("pubEventTime").textContent =
+          `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
+        document.getElementById("pubEventLocation").textContent = ev.lokasi;
+
+        const heroBannerImg = document.getElementById("pubHeroBannerImg");
+        const heroBannerWrap = document.getElementById("pubHeroBannerWrap");
+        if (ev.heroBanner) {
+          heroBannerImg.src = ev.heroBanner;
+          heroBannerWrap.classList.remove("hidden");
+        } else {
+          heroBannerWrap.classList.add("hidden");
+          heroBannerImg.src = "";
+        }
+
+        const cfg = ev.formConfig || {};
+        const mode = getEventRegistrationMode(ev);
+        const isMahasiswa = mode === "mahasiswa";
+        const isInternal = mode === "internal";
+
+        const fieldIds = [
+          "fieldWrapGender",
+          "fieldWrapWa",
+          "fieldWrapEmail",
+          "fieldWrapDomisili",
+          "fieldWrapNim",
+          "fieldWrapProdi",
+        ];
+        fieldIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add("hidden");
+        });
+
+        document
+          .getElementById("fieldWrapGender")
+          .classList.toggle(
+            "hidden",
+            !cfg.useGender || isMahasiswa || isInternal,
+          );
+        document
+          .getElementById("fieldWrapWa")
+          .classList.toggle("hidden", !cfg.useWa || isMahasiswa || isInternal);
+        document
+          .getElementById("fieldWrapEmail")
+          .classList.toggle(
+            "hidden",
+            !cfg.useEmail || isMahasiswa || isInternal,
+          );
+        document
+          .getElementById("fieldWrapDomisili")
+          .classList.toggle(
+            "hidden",
+            !cfg.useDomisili || isMahasiswa || isInternal,
+          );
+        document
+          .getElementById("fieldWrapNim")
+          .classList.toggle("hidden", !isMahasiswa);
+        document
+          .getElementById("fieldWrapProdi")
+          .classList.toggle("hidden", !isMahasiswa);
+
+        document
+          .getElementById("pubGroupAfiliasi")
+          .classList.toggle(
+            "hidden",
+            !cfg.useAfiliasi || isInternal || isMahasiswa,
+          );
+        document
+          .getElementById("pubGroupPaket")
+          .classList.toggle(
+            "hidden",
+            !cfg.usePaket || isMahasiswa || isInternal,
+          );
+
+        const afiliasiInput = document.getElementById("pubSelectedAfiliasi");
+        if (afiliasiInput) {
+          afiliasiInput.value = isInternal
+            ? "Pegawai Internal"
+            : isMahasiswa
+              ? "Mahasiswa"
+              : "Mahasiswa";
+        }
+
+        const provSel = document.getElementById("pubProvinsi");
+        provSel.innerHTML = Object.keys(PROVINSI_KOTA)
+          .map((p) => `<option value="${p}">${p}</option>`)
+          .join("");
+        populatePublicKota();
+
+        const pkgContainer = document.getElementById("pubPackagesContainer");
+        const pkgs = cfg.packages || [
+          { name: "Paket-A", price: ev.htmPeserta },
+        ];
+        document.getElementById("pubSelectedPackage").value = pkgs[0]
+          ? pkgs[0].name
+          : "Paket-A";
+
+        if (isMahasiswa || isInternal) {
+          pkgContainer.innerHTML = "";
+        } else {
+          pkgContainer.innerHTML = pkgs
+            .map(
+              (p, idx) => `
+                  <button type="button" onclick="selectPubPackage('${p.name}')" class="pub-pkg-btn p-4 rounded-2xl border-2 text-left transition ${idx === 0 ? "border-navy bg-navy text-amber-400 shadow-md" : "border-slate-300 bg-white text-slate-800"}">
+                      <div class="text-xs font-black">${p.name}</div>
+                      <div class="text-sm font-extrabold mt-1">${formatRp(p.price)}</div>
+                  </button>
+              `,
+            )
+            .join("");
+        }
+
+        document.getElementById("pubTicketResult").classList.add("hidden");
+        document.getElementById("viewPublicLanding").classList.remove("hidden");
+      }
+
+      function closePublicLanding() {
+        document.getElementById("viewPublicLanding").classList.add("hidden");
+        if (!currentUser && publicEventId) {
+          document.getElementById("viewLogin").classList.remove("hidden");
+          return;
+        }
+        renderAll();
+      }
+
+      function populatePublicKota() {
+        const prov = document.getElementById("pubProvinsi").value;
+        const kotaSel = document.getElementById("pubKota");
+        const list = PROVINSI_KOTA[prov] || [];
+        kotaSel.innerHTML = list
+          .map((k) => `<option value="${k}">${k}</option>`)
+          .join("");
+      }
+
+      function selectPubAfiliasi(val) {
+        document.getElementById("pubSelectedAfiliasi").value = val;
+        document.querySelectorAll(".pub-afil-btn").forEach((btn) => {
+          if (btn.textContent.trim() === val) {
+            btn.className =
+              "pub-afil-btn px-3 py-2.5 rounded-xl border-2 border-navy bg-navy text-amber-400 font-extrabold text-xs transition";
+          } else {
+            btn.className =
+              "pub-afil-btn px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs transition";
+          }
+        });
+      }
+
+      function selectPubPackage(pkgName) {
+        document.getElementById("pubSelectedPackage").value = pkgName;
+        document.querySelectorAll(".pub-pkg-btn").forEach((btn) => {
+          if (btn.innerText.includes(pkgName)) {
+            btn.className =
+              "pub-pkg-btn p-4 rounded-2xl border-2 text-left transition border-navy bg-navy text-amber-400 shadow-md";
+          } else {
+            btn.className =
+              "pub-pkg-btn p-4 rounded-2xl border-2 text-left transition border-slate-300 bg-white text-slate-800";
+          }
+        });
+      }
+
+      async function generateTicketQrImage(value, size = 480) {
+        if (
+          typeof QRCode !== "undefined" &&
+          typeof QRCode.toDataURL === "function"
+        ) {
+          try {
+            return await QRCode.toDataURL(value, {
+              width: size,
+              margin: 2,
+              errorCorrectionLevel: "H",
+            });
+          } catch (error) {
+            console.warn(
+              "QR fallback aktif karena library utama gagal:",
+              error,
+            );
+          }
+        }
+
+        const encodedValue = encodeURIComponent(value);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedValue}&ecc=H`;
+      }
+
+      async function submitPublicRegistration(e) {
+        e.preventDefault();
+        const ev = getActiveEvent();
+        const mode = getEventRegistrationMode(ev);
+        const nama = document.getElementById("pubNama").value.trim();
+        const genderEl = document.querySelector(
+          "input[name='pubGender']:checked",
+        );
+        const gender = genderEl ? genderEl.value : "Laki-laki";
+        const wa = document.getElementById("pubWa").value.trim();
+        const email = document.getElementById("pubEmail").value.trim();
+        const provinsi = document.getElementById("pubProvinsi").value;
+        const kota = document.getElementById("pubKota").value;
+        const afiliasi = document.getElementById("pubSelectedAfiliasi").value;
+        const instansi = document.getElementById("pubInstansi").value.trim();
+        const paketName =
+          document.getElementById("pubSelectedPackage").value || "Peserta Umum";
+
+        if (mode === "mahasiswa") {
+          const nim = document.getElementById("pubNim").value.trim();
+          const prodi = document.getElementById("pubProdi").value.trim();
+          if (!nim || !prodi) {
+            showToast(
+              "NIM dan Program Studi wajib diisi untuk form mahasiswa.",
+              "error",
+            );
+            return;
+          }
+          const pkgObj = (ev.formConfig.packages || []).find(
+            (p) => p.name === paketName,
+          ) || { price: ev.htmPeserta };
+          const pricePaid = Number(pkgObj.price || ev.htmPeserta);
+          const ticketCode =
+            "SEO-2026-" + Math.floor(100 + Math.random() * 900);
+          ev.participants.unshift({
+            id: "p_" + Date.now(),
+            ticketCode,
+            nama,
+            gender: "Mahasiswa",
+            wa,
+            email,
+            provinsi,
+            kota,
+            afiliasi: "Mahasiswa",
+            instansi: prodi,
+            paket: "Mahasiswa",
+            nim,
+            prodi,
+            htmPaid: pricePaid,
+            checkedIn: false,
+            lunas: false,
+            checkInTime: "-",
+            statusAktif: true,
+          });
+          const qrValue = ticketCode + " | " + nama + " | Mahasiswa | " + prodi;
+          currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
+          document.getElementById("pubTicketQrImg").src =
+            currentTicketQrDataUrl;
+          document.getElementById("ticketCodeText").textContent = ticketCode;
+          document.getElementById("ticketNameText").textContent =
+            `${nama} (Mahasiswa)`;
+          document.getElementById("ticketInstansiText").textContent =
+            `${prodi} (${kota || provinsi})`;
+          document.getElementById("ticketPackageText").textContent =
+            `Mahasiswa (${formatRp(pricePaid)})`;
+          document
+            .getElementById("viewPublicLanding")
+            .classList.remove("hidden");
+          document.getElementById("publicRegForm").classList.add("hidden");
+          document.getElementById("pubTicketResult").classList.remove("hidden");
+          document
+            .getElementById("pubTicketResult")
+            .scrollIntoView({ behavior: "smooth", block: "start" });
+          syncToCloud();
+          showToast(
+            `Pendaftaran mahasiswa berhasil! Kode Tiket: ${ticketCode}`,
+          );
+          return;
+        }
+
+        if (mode === "internal") {
+          if (!nama) {
+            showToast("Nama pegawai internal wajib diisi.", "error");
+            return;
+          }
+          const ticketCode =
+            "INT-2026-" + Math.floor(100 + Math.random() * 900);
+          ev.participants.unshift({
+            id: "p_" + Date.now(),
+            ticketCode,
+            nama,
+            gender: "Pegawai Internal",
+            wa: "-",
+            email: "-",
+            provinsi: "-",
+            kota: "-",
+            afiliasi: "Pegawai Internal",
+            instansi: "STIT",
+            paket: "Pegawai Internal",
+            htmPaid: 0,
+            checkedIn: false,
+            lunas: true,
+            checkInTime: "-",
+            statusAktif: true,
+          });
+          const qrValue = ticketCode + " | " + nama + " | Pegawai Internal";
+          currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
+          document.getElementById("pubTicketQrImg").src =
+            currentTicketQrDataUrl;
+          document.getElementById("ticketCodeText").textContent = ticketCode;
+          document.getElementById("ticketNameText").textContent =
+            `${nama} (Pegawai Internal)`;
+          document.getElementById("ticketInstansiText").textContent =
+            "STIT — Pegawai Internal";
+          document.getElementById("ticketPackageText").textContent =
+            "Pegawai Internal (Rp 0)";
+          document
+            .getElementById("viewPublicLanding")
+            .classList.remove("hidden");
+          document.getElementById("publicRegForm").classList.add("hidden");
+          document.getElementById("pubTicketResult").classList.remove("hidden");
+          document
+            .getElementById("pubTicketResult")
+            .scrollIntoView({ behavior: "smooth", block: "start" });
+          syncToCloud();
+          showToast(
+            `Daftar pegawai internal berhasil dibuat! Kode Tiket: ${ticketCode}`,
+          );
+          return;
+        }
+
+        if (!nama || !wa || !email || !instansi) {
+          showToast("Semua field peserta umum wajib diisi.", "error");
+          return;
+        }
+
+        const pkgObj = (ev.formConfig.packages || []).find(
+          (p) => p.name === paketName,
+        );
+        const pricePaid = pkgObj ? Number(pkgObj.price) : Number(ev.htmPeserta);
+        const ticketCode = "SEO-2026-" + Math.floor(100 + Math.random() * 900);
+
+        ev.participants.unshift({
+          id: "p_" + Date.now(),
+          ticketCode: ticketCode,
+          nama: nama,
+          gender: gender,
+          wa: wa,
+          email: email,
+          provinsi: provinsi,
+          kota: kota,
+          afiliasi: afiliasi,
+          instansi: instansi,
+          paket: paketName,
+          htmPaid: pricePaid,
+          checkedIn: false,
+          lunas: false,
+          checkInTime: "-",
+          statusAktif: true,
+        });
+
+        const qrValue = ticketCode + " | " + nama + " | " + paketName;
+        try {
+          currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
+          document.getElementById("pubTicketQrImg").src =
+            currentTicketQrDataUrl;
+          document.getElementById("ticketCodeText").textContent = ticketCode;
+          document.getElementById("ticketNameText").textContent =
+            `${nama} (${gender})`;
+          document.getElementById("ticketInstansiText").textContent =
+            `${afiliasi} — ${instansi} (${kota}, ${provinsi})`;
+          document.getElementById("ticketPackageText").textContent =
+            `${paketName} (${formatRp(pricePaid)})`;
+
+          document
+            .getElementById("viewPublicLanding")
+            .classList.remove("hidden");
+          document.getElementById("publicRegForm").classList.add("hidden");
+          document.getElementById("pubTicketResult").classList.remove("hidden");
+          document.getElementById("pubTicketResult").scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+          syncToCloud();
+          showToast(`Pendaftaran berhasil! Kode Tiket: ${ticketCode}`);
+        } catch (error) {
+          console.error("Gagal membuat QR tiket peserta:", error);
+          showToast(
+            "QR tiket gagal dibuat. Silakan cek koneksi internet lalu coba lagi.",
+            "error",
+          );
+        }
+      }
+
+      async function downloadETicketPng() {
+        if (!currentTicketQrDataUrl) return;
+        const ev = getActiveEvent();
+        const canvas = document.createElement("canvas");
+        canvas.width = 900;
+        canvas.height = 1120;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#f8fafc";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#0a192f";
+        ctx.fillRect(0, 0, canvas.width, 170);
+        ctx.fillStyle = "#fbbf24";
+        ctx.font = "bold 28px Inter, Arial";
+        ctx.fillText("STIT EVENT ORGANIZER", 60, 65);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 34px Inter, Arial";
+        ctx.fillText(ev.nama, 60, 125, 780);
+        ctx.fillStyle = "#0a192f";
+        ctx.font = "bold 30px Inter, Arial";
+        ctx.fillText("E-TIKET KEHADIRAN", 60, 235);
+
+        let qrSource = currentTicketQrDataUrl;
+        if (
+          currentTicketQrDataUrl.startsWith("http://") ||
+          currentTicketQrDataUrl.startsWith("https://")
+        ) {
+          const response = await fetch(currentTicketQrDataUrl);
+          const blob = await response.blob();
+          qrSource = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () =>
+              reject(new Error("Gagal membaca QR fallback."));
+            reader.readAsDataURL(blob);
+          });
+        }
+
+        const qrImage = new Image();
+        qrImage.src = qrSource;
+        await new Promise((resolve, reject) => {
+          qrImage.onload = resolve;
+          qrImage.onerror = reject;
+        });
+        ctx.drawImage(qrImage, 210, 275, 480, 480);
+        ctx.fillStyle = "#0a192f";
+        ctx.font = "bold 34px Inter, Arial";
+        ctx.fillText(
+          document.getElementById("ticketNameText").textContent,
+          60,
+          825,
+          780,
+        );
+        ctx.font = "bold 27px Inter, Arial";
+        ctx.fillText(
+          "Kode Tiket: " +
+            document.getElementById("ticketCodeText").textContent,
+          60,
+          890,
+        );
+        ctx.font = "24px Inter, Arial";
+        ctx.fillText(
+          "Paket: " + document.getElementById("ticketPackageText").textContent,
+          60,
+          945,
+          780,
+        );
+        ctx.fillText(
+          ev.tanggal + " • " + ev.jamMulai + "–" + ev.jamSelesai + " WIB",
+          60,
+          1000,
+          780,
+        );
+        ctx.fillText(ev.lokasi, 60, 1050, 780);
+        const link = document.createElement("a");
+        link.download = `E-Tiket-${document.getElementById("ticketCodeText").textContent}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      }
+
+      // INIT ON LOAD
+      document.addEventListener("DOMContentLoaded", () => {
+        initLoginDropdown();
+        initFirebaseConnection();
+        openPublicRouteIfRequested();
+      });
+    
