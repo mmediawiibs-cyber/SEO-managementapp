@@ -793,7 +793,6 @@
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
 
@@ -977,6 +976,28 @@
                 class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
                 placeholder="Contoh: Ahmad Fauzi, S.Pd."
                 required
+              />
+            </div>
+            <div id="fieldWrapNim" class="hidden">
+              <label class="block text-xs font-bold text-slate-700 mb-1"
+                >NIM *</label
+              >
+              <input
+                type="text"
+                id="pubNim"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                placeholder="Contoh: 202401234"
+              />
+            </div>
+            <div id="fieldWrapProdi" class="hidden">
+              <label class="block text-xs font-bold text-slate-700 mb-1"
+                >Program Studi *</label
+              >
+              <input
+                type="text"
+                id="pubProdi"
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                placeholder="Contoh: Pendidikan Agama Islam"
               />
             </div>
             <div id="fieldWrapGender">
@@ -1560,13 +1581,35 @@
                 jumlah paket pendaftaran (Paket-A, Paket-B, dst).
               </p>
             </div>
-            <button
-              type="button"
-              onclick="openFormConfigModal()"
-              class="px-4 py-2.5 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow"
-            >
-              Buat Link Pendaftaran Peserta
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onclick="openFormConfigModal()"
+                class="px-4 py-2.5 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow"
+              >
+                Buat Link Pendaftaran Peserta
+              </button>
+              <button
+                type="button"
+                onclick="
+                  setRegistrationModePreset('mahasiswa');
+                  openFormConfigModal();
+                "
+                class="px-4 py-2.5 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs shadow"
+              >
+                Buat Form Pendaftaran Mahasiswa
+              </button>
+              <button
+                type="button"
+                onclick="
+                  setRegistrationModePreset('internal');
+                  openFormConfigModal();
+                "
+                class="px-4 py-2.5 rounded-xl bg-indigo-100 text-indigo-800 font-extrabold text-xs shadow"
+              >
+                Form Pegawai Internal
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1622,6 +1665,42 @@
         </div>
 
         <div class="space-y-3">
+          <div class="space-y-2">
+            <p class="text-xs font-extrabold uppercase text-navy">
+              Tipe Formulir Pendaftaran
+            </p>
+            <div class="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onclick="setRegistrationModePreset('umum')"
+                class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-[10px]"
+              >
+                Peserta Umum
+              </button>
+              <button
+                type="button"
+                onclick="setRegistrationModePreset('mahasiswa')"
+                class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-[10px]"
+              >
+                Mahasiswa
+              </button>
+              <button
+                type="button"
+                onclick="setRegistrationModePreset('internal')"
+                class="px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-[10px]"
+              >
+                Pegawai Internal
+              </button>
+            </div>
+            <select
+              id="cfgRegistrationMode"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+            >
+              <option value="umum">Peserta Umum</option>
+              <option value="mahasiswa">Mahasiswa</option>
+              <option value="internal">Pegawai Internal</option>
+            </select>
+          </div>
           <p class="text-xs font-extrabold uppercase text-navy">
             Field Formulir yang Ditampilkan:
           </p>
@@ -2591,6 +2670,17 @@
       let html5QrCodeInstance = null;
 
       function openRealQRScanner(mode, targetMeetingId = null) {
+        if (mode === "peserta") {
+          const ev = getActiveEvent();
+          if (!ev.participantCheckinOpen) {
+            showToast(
+              "Buka Check-in Peserta terlebih dahulu sebelum scan QR.",
+              "error",
+            );
+            return;
+          }
+        }
+
         const modal = document.getElementById("qrScannerModal");
         const titleEl = document.getElementById("qrScannerTitle");
         const fallbackBox = document.getElementById("qrManualFallbackBox");
@@ -2913,7 +3003,9 @@
         document.getElementById("sidebarRoleDesc").textContent =
           roleDescriptions[currentUser.role] || "";
 
-        const sidebarMiniCalendar = document.getElementById("sidebarMiniCalendar");
+        const sidebarMiniCalendar = document.getElementById(
+          "sidebarMiniCalendar",
+        );
         if (sidebarMiniCalendar) {
           sidebarMiniCalendar.innerHTML = renderSidebarMiniCalendar(ev);
         }
@@ -3342,7 +3434,9 @@
 
         const cells = [];
         for (let i = 0; i < startWeek; i++) {
-          cells.push('<div class="h-8 rounded-lg bg-slate-50 border border-dashed border-slate-200"></div>');
+          cells.push(
+            '<div class="h-8 rounded-lg bg-slate-50 border border-dashed border-slate-200"></div>',
+          );
         }
 
         for (let day = 1; day <= totalDays; day++) {
@@ -3353,7 +3447,8 @@
           const isHoliday = !!holidayLabel;
           const isToday = dateValue === new Date().toISOString().slice(0, 10);
 
-          let className = "h-8 rounded-lg border flex items-center justify-center text-[10px] font-bold relative ";
+          let className =
+            "h-8 rounded-lg border flex items-center justify-center text-[10px] font-bold relative ";
           if (isEvent) {
             className += "border-amber-300 bg-amber-50 text-navy";
           } else if (isHoliday) {
@@ -3364,7 +3459,11 @@
             className += "border-slate-200 bg-white text-slate-600";
           }
 
-          const tooltip = isEvent ? ` title="${eventLabel}"` : isHoliday ? ` title="${holidayLabel}"` : "";
+          const tooltip = isEvent
+            ? ` title="${eventLabel}"`
+            : isHoliday
+              ? ` title="${holidayLabel}"`
+              : "";
 
           cells.push(`
             <div class="${className}"${tooltip}>
@@ -4336,11 +4435,11 @@
                                 <button type="button" onclick="toggleParticipantCheckInGate()" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-emerald-600 text-white" : "bg-amber-400 hover:bg-amber-300 text-navy"} font-extrabold text-xs shadow flex items-center gap-1.5">
                                     <span>${checkinOpen ? "🔒 Tutup Check-in Peserta" : "✅ Buka Check-in Peserta"}</span>
                                 </button>
-                                <button type="button" onclick="openRealQRScanner('peserta')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow flex items-center gap-1.5">
+                                <button type="button" onclick="${checkinOpen ? "openRealQRScanner('peserta')" : "return false;"}" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-navy text-amber-400" : "bg-slate-200 text-slate-500 cursor-not-allowed"} font-extrabold text-xs shadow flex items-center gap-1.5" ${checkinOpen ? "" : "disabled"}>
                                     <span>📷 Buka Kamera Scan QR</span>
                                 </button>
-                                <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
-                                <button onclick="scanParticipantQrTicket()" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">Check-in Manual</button>
+                                <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white" ${checkinOpen ? "" : "disabled"}>
+                                <button onclick="${checkinOpen ? "scanParticipantQrTicket()" : "return false;"}" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-grad-navy text-amber-400" : "bg-slate-200 text-slate-500 cursor-not-allowed"} font-extrabold text-xs shadow" ${checkinOpen ? "" : "disabled"}>Check-in Manual</button>
                             </div>
                         </div>
                     `
@@ -4705,10 +4804,15 @@
                         ${
                           (ev.meetings || [])
                             .map((m) => {
-                              const currentMeetingStatus = m.status || (m.isOpen ? "ongoing" : "scheduled");
-                              const isMeetingScheduled = currentMeetingStatus === "scheduled";
-                              const isMeetingOngoing = currentMeetingStatus === "ongoing";
-                              const isMeetingFinished = currentMeetingStatus === "finished";
+                              const currentMeetingStatus =
+                                m.status ||
+                                (m.isOpen ? "ongoing" : "scheduled");
+                              const isMeetingScheduled =
+                                currentMeetingStatus === "scheduled";
+                              const isMeetingOngoing =
+                                currentMeetingStatus === "ongoing";
+                              const isMeetingFinished =
+                                currentMeetingStatus === "finished";
                               const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(m.code + " - " + m.agenda)}`;
                               const alreadyCheckedIn = m.attendees.some(
                                 (a) => a.name === currentUser.name,
@@ -4892,6 +4996,13 @@
         const mtg = ev.meetings.find((m) => m.id === mtgId);
         if (!mtg) return;
 
+        (ev.meetings || []).forEach((item) => {
+          if (item.id !== mtgId && (item.isOpen || item.status === "ongoing")) {
+            item.status = "finished";
+            item.isOpen = false;
+          }
+        });
+
         mtg.status = "ongoing";
         mtg.isOpen = true;
         if (!mtg.attendees.some((a) => a.name === currentUser.name)) {
@@ -4902,7 +5013,9 @@
         }
         syncToCloud();
         renderAll();
-        showToast(`Meeting ${mtg.agenda} sudah dimulai.`);
+        showToast(
+          `Meeting ${mtg.agenda} sudah dimulai. Meeting lain otomatis ditutup.`,
+        );
       }
 
       function stopMeeting(mtgId) {
@@ -5565,6 +5678,23 @@
       // ==========================================
       let tempPackagesConfig = [];
 
+      function getEventRegistrationMode(ev = getActiveEvent()) {
+        if (!ev) return "umum";
+        return ev.registrationMode || ev.formConfig?.registrationMode || "umum";
+      }
+
+      function setRegistrationModePreset(mode) {
+        const ev = getActiveEvent();
+        if (!ev) return;
+        ev.registrationMode = mode;
+        if (!ev.formConfig) ev.formConfig = {};
+        ev.formConfig.registrationMode = mode;
+        const select = document.getElementById("cfgRegistrationMode");
+        if (select) select.value = mode;
+        syncToCloud();
+        renderAll();
+      }
+
       function openFormConfigModal() {
         const ev = getActiveEvent();
         const cfg = ev.formConfig;
@@ -5574,6 +5704,8 @@
         document.getElementById("cfgUseDomisili").checked = cfg.useDomisili;
         document.getElementById("cfgUseAfiliasi").checked = cfg.useAfiliasi;
         document.getElementById("cfgUsePaket").checked = cfg.usePaket;
+        document.getElementById("cfgRegistrationMode").value =
+          getEventRegistrationMode(ev);
 
         tempPackagesConfig = JSON.parse(JSON.stringify(cfg.packages || []));
         renderPackagesConfigRows();
@@ -5623,7 +5755,12 @@
 
       function saveFormConfigModal() {
         const ev = getActiveEvent();
+        const registrationMode = document.getElementById(
+          "cfgRegistrationMode",
+        ).value;
+        ev.registrationMode = registrationMode;
         ev.formConfig = {
+          registrationMode,
           useGender: document.getElementById("cfgUseGender").checked,
           useWa: document.getElementById("cfgUseWa").checked,
           useEmail: document.getElementById("cfgUseEmail").checked,
@@ -5672,25 +5809,73 @@
           heroBannerImg.src = "";
         }
 
-        const cfg = ev.formConfig;
+        const cfg = ev.formConfig || {};
+        const mode = getEventRegistrationMode(ev);
+        const isMahasiswa = mode === "mahasiswa";
+        const isInternal = mode === "internal";
+
+        const fieldIds = [
+          "fieldWrapGender",
+          "fieldWrapWa",
+          "fieldWrapEmail",
+          "fieldWrapDomisili",
+          "fieldWrapNim",
+          "fieldWrapProdi",
+        ];
+        fieldIds.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add("hidden");
+        });
+
         document
           .getElementById("fieldWrapGender")
-          .classList.toggle("hidden", !cfg.useGender);
+          .classList.toggle(
+            "hidden",
+            !cfg.useGender || isMahasiswa || isInternal,
+          );
         document
           .getElementById("fieldWrapWa")
-          .classList.toggle("hidden", !cfg.useWa);
+          .classList.toggle("hidden", !cfg.useWa || isMahasiswa || isInternal);
         document
           .getElementById("fieldWrapEmail")
-          .classList.toggle("hidden", !cfg.useEmail);
+          .classList.toggle(
+            "hidden",
+            !cfg.useEmail || isMahasiswa || isInternal,
+          );
         document
           .getElementById("fieldWrapDomisili")
-          .classList.toggle("hidden", !cfg.useDomisili);
+          .classList.toggle(
+            "hidden",
+            !cfg.useDomisili || isMahasiswa || isInternal,
+          );
+        document
+          .getElementById("fieldWrapNim")
+          .classList.toggle("hidden", !isMahasiswa);
+        document
+          .getElementById("fieldWrapProdi")
+          .classList.toggle("hidden", !isMahasiswa);
+
         document
           .getElementById("pubGroupAfiliasi")
-          .classList.toggle("hidden", !cfg.useAfiliasi);
+          .classList.toggle(
+            "hidden",
+            !cfg.useAfiliasi || isInternal || isMahasiswa,
+          );
         document
           .getElementById("pubGroupPaket")
-          .classList.toggle("hidden", !cfg.usePaket);
+          .classList.toggle(
+            "hidden",
+            !cfg.usePaket || isMahasiswa || isInternal,
+          );
+
+        const afiliasiInput = document.getElementById("pubSelectedAfiliasi");
+        if (afiliasiInput) {
+          afiliasiInput.value = isInternal
+            ? "Pegawai Internal"
+            : isMahasiswa
+              ? "Mahasiswa"
+              : "Mahasiswa";
+        }
 
         const provSel = document.getElementById("pubProvinsi");
         provSel.innerHTML = Object.keys(PROVINSI_KOTA)
@@ -5706,16 +5891,20 @@
           ? pkgs[0].name
           : "Paket-A";
 
-        pkgContainer.innerHTML = pkgs
-          .map(
-            (p, idx) => `
-                <button type="button" onclick="selectPubPackage('${p.name}')" class="pub-pkg-btn p-4 rounded-2xl border-2 text-left transition ${idx === 0 ? "border-navy bg-navy text-amber-400 shadow-md" : "border-slate-300 bg-white text-slate-800"}">
-                    <div class="text-xs font-black">${p.name}</div>
-                    <div class="text-sm font-extrabold mt-1">${formatRp(p.price)}</div>
-                </button>
-            `,
-          )
-          .join("");
+        if (isMahasiswa || isInternal) {
+          pkgContainer.innerHTML = "";
+        } else {
+          pkgContainer.innerHTML = pkgs
+            .map(
+              (p, idx) => `
+                  <button type="button" onclick="selectPubPackage('${p.name}')" class="pub-pkg-btn p-4 rounded-2xl border-2 text-left transition ${idx === 0 ? "border-navy bg-navy text-amber-400 shadow-md" : "border-slate-300 bg-white text-slate-800"}">
+                      <div class="text-xs font-black">${p.name}</div>
+                      <div class="text-sm font-extrabold mt-1">${formatRp(p.price)}</div>
+                  </button>
+              `,
+            )
+            .join("");
+        }
 
         document.getElementById("pubTicketResult").classList.add("hidden");
         document.getElementById("viewPublicLanding").classList.remove("hidden");
@@ -5766,7 +5955,10 @@
       }
 
       async function generateTicketQrImage(value, size = 480) {
-        if (typeof QRCode !== "undefined" && typeof QRCode.toDataURL === "function") {
+        if (
+          typeof QRCode !== "undefined" &&
+          typeof QRCode.toDataURL === "function"
+        ) {
           try {
             return await QRCode.toDataURL(value, {
               width: size,
@@ -5774,7 +5966,10 @@
               errorCorrectionLevel: "H",
             });
           } catch (error) {
-            console.warn("QR fallback aktif karena library utama gagal:", error);
+            console.warn(
+              "QR fallback aktif karena library utama gagal:",
+              error,
+            );
           }
         }
 
@@ -5785,6 +5980,7 @@
       async function submitPublicRegistration(e) {
         e.preventDefault();
         const ev = getActiveEvent();
+        const mode = getEventRegistrationMode(ev);
         const nama = document.getElementById("pubNama").value.trim();
         const genderEl = document.querySelector(
           "input[name='pubGender']:checked",
@@ -5796,13 +5992,103 @@
         const kota = document.getElementById("pubKota").value;
         const afiliasi = document.getElementById("pubSelectedAfiliasi").value;
         const instansi = document.getElementById("pubInstansi").value.trim();
-        const paketName = document.getElementById("pubSelectedPackage").value;
+        const paketName = document.getElementById("pubSelectedPackage").value || "Peserta Umum";
+
+        if (mode === "mahasiswa") {
+          const nim = document.getElementById("pubNim").value.trim();
+          const prodi = document.getElementById("pubProdi").value.trim();
+          if (!nim || !prodi) {
+            showToast("NIM dan Program Studi wajib diisi untuk form mahasiswa.", "error");
+            return;
+          }
+          const pkgObj = (ev.formConfig.packages || []).find((p) => p.name === paketName) || { price: ev.htmPeserta };
+          const pricePaid = Number(pkgObj.price || ev.htmPeserta);
+          const ticketCode = "SEO-2026-" + Math.floor(100 + Math.random() * 900);
+          ev.participants.unshift({
+            id: "p_" + Date.now(),
+            ticketCode,
+            nama,
+            gender: "Mahasiswa",
+            wa,
+            email,
+            provinsi,
+            kota,
+            afiliasi: "Mahasiswa",
+            instansi: prodi,
+            paket: "Mahasiswa",
+            nim,
+            prodi,
+            htmPaid: pricePaid,
+            checkedIn: false,
+            lunas: false,
+            checkInTime: "-",
+            statusAktif: true,
+          });
+          const qrValue = ticketCode + " | " + nama + " | Mahasiswa | " + prodi;
+          currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
+          document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
+          document.getElementById("ticketCodeText").textContent = ticketCode;
+          document.getElementById("ticketNameText").textContent = `${nama} (Mahasiswa)`;
+          document.getElementById("ticketInstansiText").textContent = `${prodi} (${kota || provinsi})`;
+          document.getElementById("ticketPackageText").textContent = `Mahasiswa (${formatRp(pricePaid)})`;
+          document.getElementById("viewPublicLanding").classList.remove("hidden");
+          document.getElementById("publicRegForm").classList.add("hidden");
+          document.getElementById("pubTicketResult").classList.remove("hidden");
+          document.getElementById("pubTicketResult").scrollIntoView({ behavior: "smooth", block: "start" });
+          syncToCloud();
+          showToast(`Pendaftaran mahasiswa berhasil! Kode Tiket: ${ticketCode}`);
+          return;
+        }
+
+        if (mode === "internal") {
+          if (!nama) {
+            showToast("Nama pegawai internal wajib diisi.", "error");
+            return;
+          }
+          const ticketCode = "INT-2026-" + Math.floor(100 + Math.random() * 900);
+          ev.participants.unshift({
+            id: "p_" + Date.now(),
+            ticketCode,
+            nama,
+            gender: "Pegawai Internal",
+            wa: "-",
+            email: "-",
+            provinsi: "-",
+            kota: "-",
+            afiliasi: "Pegawai Internal",
+            instansi: "STIT",
+            paket: "Pegawai Internal",
+            htmPaid: 0,
+            checkedIn: false,
+            lunas: true,
+            checkInTime: "-",
+            statusAktif: true,
+          });
+          const qrValue = ticketCode + " | " + nama + " | Pegawai Internal";
+          currentTicketQrDataUrl = await generateTicketQrImage(qrValue, 480);
+          document.getElementById("pubTicketQrImg").src = currentTicketQrDataUrl;
+          document.getElementById("ticketCodeText").textContent = ticketCode;
+          document.getElementById("ticketNameText").textContent = `${nama} (Pegawai Internal)`;
+          document.getElementById("ticketInstansiText").textContent = "STIT — Pegawai Internal";
+          document.getElementById("ticketPackageText").textContent = "Pegawai Internal (Rp 0)";
+          document.getElementById("viewPublicLanding").classList.remove("hidden");
+          document.getElementById("publicRegForm").classList.add("hidden");
+          document.getElementById("pubTicketResult").classList.remove("hidden");
+          document.getElementById("pubTicketResult").scrollIntoView({ behavior: "smooth", block: "start" });
+          syncToCloud();
+          showToast(`Daftar pegawai internal berhasil dibuat! Kode Tiket: ${ticketCode}`);
+          return;
+        }
+
+        if (!nama || !wa || !email || !instansi) {
+          showToast("Semua field peserta umum wajib diisi.", "error");
+          return;
+        }
 
         const pkgObj = (ev.formConfig.packages || []).find(
           (p) => p.name === paketName,
         );
         const pricePaid = pkgObj ? Number(pkgObj.price) : Number(ev.htmPeserta);
-
         const ticketCode = "SEO-2026-" + Math.floor(100 + Math.random() * 900);
 
         ev.participants.unshift({
@@ -5836,7 +6122,9 @@
           document.getElementById("ticketPackageText").textContent =
             `${paketName} (${formatRp(pricePaid)})`;
 
-          document.getElementById("viewPublicLanding").classList.remove("hidden");
+          document
+            .getElementById("viewPublicLanding")
+            .classList.remove("hidden");
           document.getElementById("publicRegForm").classList.add("hidden");
           document.getElementById("pubTicketResult").classList.remove("hidden");
           document.getElementById("pubTicketResult").scrollIntoView({
@@ -5876,13 +6164,17 @@
         ctx.fillText("E-TIKET KEHADIRAN", 60, 235);
 
         let qrSource = currentTicketQrDataUrl;
-        if (currentTicketQrDataUrl.startsWith("http://") || currentTicketQrDataUrl.startsWith("https://")) {
+        if (
+          currentTicketQrDataUrl.startsWith("http://") ||
+          currentTicketQrDataUrl.startsWith("https://")
+        ) {
           const response = await fetch(currentTicketQrDataUrl);
           const blob = await response.blob();
           qrSource = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error("Gagal membaca QR fallback."));
+            reader.onerror = () =>
+              reject(new Error("Gagal membaca QR fallback."));
             reader.readAsDataURL(blob);
           });
         }
