@@ -686,100 +686,109 @@
 
             <!-- TAB CONTENT 1: TASK & FINANCE (OVERVIEW) -->
             <div id="dashContentOverview" class="space-y-6">
-              <div id="calendarOverviewCard"></div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div
-                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
-                >
-                  <p class="text-xs font-bold uppercase text-slate-400">
-                    Status Anggaran
-                  </p>
-                  <p
-                    id="ovStatusAntiBoncos"
-                    class="text-lg font-black mt-1 text-emerald-600"
+              <div class="grid grid-cols-1 xl:grid-cols-[1.45fr_0.95fr] gap-6">
+                <div class="space-y-6">
+                  <div
+                    class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
                   >
-                    -
-                  </p>
-                  <p id="ovBepInfo" class="text-[11px] text-slate-500 mt-1">
-                    -
-                  </p>
-                </div>
-                <div
-                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
-                >
-                  <p class="text-xs font-bold uppercase text-slate-400">
-                    Total Kas Masuk Riil
-                  </p>
-                  <p
-                    id="ovTotalMasuk"
-                    class="text-xl font-black mt-1 text-navy"
-                  >
-                    Rp 0
-                  </p>
-                  <p
-                    id="ovSubsidiAndPeserta"
-                    class="text-[11px] text-slate-500 mt-1"
-                  >
-                    -
-                  </p>
-                </div>
-                <div
-                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
-                >
-                  <p class="text-xs font-bold uppercase text-slate-400">
-                    Total Pengeluaran Riil
-                  </p>
-                  <p
-                    id="ovTotalKeluar"
-                    class="text-xl font-black mt-1 text-rose-600"
-                  >
-                    Rp 0
-                  </p>
-                  <p
-                    id="ovSisaSaldo"
-                    class="text-[11px] font-bold text-emerald-700 mt-1"
-                  >
-                    Saldo: Rp 0
-                  </p>
-                </div>
-                <div
-                  class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
-                >
-                  <p class="text-xs font-bold uppercase text-slate-400">
-                    Progres Tugas Panitia
-                  </p>
-                  <p
-                    id="ovTotalProgress"
-                    class="text-xl font-black mt-1 text-amber-600"
-                  >
-                    0%
-                  </p>
-                  <p
-                    id="ovTotalTasksCount"
-                    class="text-[11px] text-slate-500 mt-1"
-                  >
-                    0 dari 0 tugas selesai
-                  </p>
-                </div>
-              </div>
+                    <div
+                      class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                    >
+                      <p class="text-xs font-bold uppercase text-slate-400">
+                        Status Anggaran
+                      </p>
+                      <p
+                        id="ovStatusAntiBoncos"
+                        class="text-lg font-black mt-1 text-emerald-600"
+                      >
+                        -
+                      </p>
+                      <p id="ovBepInfo" class="text-[11px] text-slate-500 mt-1">
+                        -
+                      </p>
+                    </div>
+                    <div
+                      class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                    >
+                      <p class="text-xs font-bold uppercase text-slate-400">
+                        Total Kas Masuk Riil
+                      </p>
+                      <p
+                        id="ovTotalMasuk"
+                        class="text-xl font-black mt-1 text-navy"
+                      >
+                        Rp 0
+                      </p>
+                      <p
+                        id="ovSubsidiAndPeserta"
+                        class="text-[11px] text-slate-500 mt-1"
+                      >
+                        -
+                      </p>
+                    </div>
+                    <div
+                      class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                    >
+                      <p class="text-xs font-bold uppercase text-slate-400">
+                        Total Pengeluaran Riil
+                      </p>
+                      <p
+                        id="ovTotalKeluar"
+                        class="text-xl font-black mt-1 text-rose-600"
+                      >
+                        Rp 0
+                      </p>
+                      <p
+                        id="ovSisaSaldo"
+                        class="text-[11px] font-bold text-emerald-700 mt-1"
+                      >
+                        Saldo: Rp 0
+                      </p>
+                    </div>
+                    <div
+                      class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm"
+                    >
+                      <p class="text-xs font-bold uppercase text-slate-400">
+                        Progres Tugas Panitia
+                      </p>
+                      <p
+                        id="ovTotalProgress"
+                        class="text-xl font-black mt-1 text-amber-600"
+                      >
+                        0%
+                      </p>
+                      <p
+                        id="ovTotalTasksCount"
+                        class="text-[11px] text-slate-500 mt-1"
+                      >
+                        0 dari 0 tugas selesai
+                      </p>
+                    </div>
+                  </div>
 
-              <!-- Grafik Progress Tiap Seksi & Ringkasan Keuangan -->
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div
-                  class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
-                >
-                  <h3 class="text-base font-extrabold text-navy mb-4">
-                    📈 Progres Penyelesaian Tugas per Seksi
-                  </h3>
-                  <div id="ovSectionProgressBars" class="space-y-4"></div>
+                  <!-- Grafik Progress Tiap Seksi & Ringkasan Keuangan -->
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div
+                      class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
+                    >
+                      <h3 class="text-base font-extrabold text-navy mb-4">
+                        📈 Progres Penyelesaian Tugas per Seksi
+                      </h3>
+                      <div id="ovSectionProgressBars" class="space-y-4"></div>
+                    </div>
+                    <div
+                      class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
+                    >
+                      <h3 class="text-base font-extrabold text-navy mb-4">
+                        💰 Perbandingan Estimasi vs Realisasi Kas
+                      </h3>
+                      <div id="ovFinanceComparisonBox" class="space-y-4"></div>
+                    </div>
+                  </div>
                 </div>
-                <div
-                  class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
-                >
-                  <h3 class="text-base font-extrabold text-navy mb-4">
-                    💰 Perbandingan Estimasi vs Realisasi Kas
-                  </h3>
-                  <div id="ovFinanceComparisonBox" class="space-y-4"></div>
+
+                <div class="space-y-6">
+                  <div id="calendarOverviewCard"></div>
                 </div>
               </div>
             </div>
@@ -4540,6 +4549,16 @@
         renderAll();
       }
 
+      function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result || "");
+          reader.onerror = () =>
+            reject(new Error("Gagal membaca file foto meeting."));
+          reader.readAsDataURL(file);
+        });
+      }
+
       // ==========================================
       // TAB 7: MEETING & NOTULENSI (DENGAN KAMERA QR SCANNER ASLI)
       // ==========================================
@@ -4554,7 +4573,7 @@
                         ? `
                         <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
                             <h3 class="text-lg font-black text-navy">📅 Buat Schedule Meeting Baru & Generate QR Check-in Panitia</h3>
-                            <form onsubmit="createNewMeetingSchedule(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
+                            <form onsubmit="createNewMeetingSchedule(event)" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3.5">
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Agenda Rapat *</label>
                                     <input type="text" id="mtgAgenda" placeholder="Contoh: Rapat Koordinasi H-3" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
@@ -4577,7 +4596,12 @@
                                     </select>
                                     <input type="text" id="mtgTempatCustom" placeholder="Ketik tempat rapat..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold">
                                 </div>
-                                <div class="sm:col-span-4 flex justify-end">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Foto Meeting (Opsional)</label>
+                                    <input type="file" id="mtgPhotoInput" accept="image/*" class="w-full px-2.5 py-2 rounded-xl border text-[10px] font-semibold bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1">
+                                    <p class="mt-1 text-[10px] text-slate-500">Diunggah oleh: <span class="font-bold text-navy">${currentUser.name}</span></p>
+                                </div>
+                                <div class="sm:col-span-2 xl:col-span-5 flex justify-end">
                                     <button type="submit" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Buat Schedule & Buka QR Meeting</button>
                                 </div>
                             </form>
@@ -4658,6 +4682,20 @@
                                         }
                                     </div>
 
+                                    ${
+                                      m.photo
+                                        ? `
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <p class="text-xs font-extrabold uppercase text-navy">📸 Foto Meeting</p>
+                                                <span class="text-[10px] text-slate-500">Diunggah oleh ${m.uploadedBy || m.createdBy || currentUser.name}</span>
+                                            </div>
+                                            <img src="${m.photo}" alt="Foto Meeting ${m.agenda}" class="w-full max-h-72 object-cover rounded-2xl border border-slate-200 bg-white">
+                                        </div>
+                                        `
+                                        : ""
+                                    }
+
                                     <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                                         <p class="text-xs font-extrabold uppercase text-navy">👥 Daftar Peserta Hadir Meeting (${m.attendees.length} Orang):</p>
                                         <div class="flex flex-wrap gap-2">
@@ -4701,15 +4739,22 @@
         else inp.classList.add("hidden");
       }
 
-      function createNewMeetingSchedule(e) {
+      async function createNewMeetingSchedule(e) {
         e.preventDefault();
         const sel = document.getElementById("mtgTempatSelect");
         const cust = document.getElementById("mtgTempatCustom");
+        const photoInput = document.getElementById("mtgPhotoInput");
         const tempat =
           sel.value === "__custom__" ? cust.value.trim() : sel.value;
 
         const ev = getActiveEvent();
         const code = "MTG-" + Math.floor(100 + Math.random() * 900);
+        let uploadedPhoto = "";
+
+        if (photoInput && photoInput.files && photoInput.files[0]) {
+          uploadedPhoto = await readFileAsDataUrl(photoInput.files[0]);
+        }
+
         ev.meetings.unshift({
           id: "mtg_" + Date.now(),
           code: code,
@@ -4718,6 +4763,9 @@
           waktu: document.getElementById("mtgWaktu").value,
           tempat: tempat || "Ruang Rapat STIT",
           isOpen: true,
+          createdBy: currentUser.name,
+          uploadedBy: currentUser.name,
+          photo: uploadedPhoto,
           attendees: [
             {
               name: currentUser.name,
