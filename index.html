@@ -362,6 +362,29 @@
       >
         <!-- SIDEBAR PEMILIHAN EVENT (BERUPA KARTU, 3 ITEM: NAMA EVENT, DIVISI, TANGGAL) -->
         <aside class="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+          <!-- Ringkasan Role Aktif di Event Ini -->
+          <div
+            class="bg-slate-900 text-white rounded-3xl p-5 shadow-md border border-amber-500/20"
+          >
+            <p
+              class="text-[11px] uppercase tracking-widest text-amber-400 font-bold mb-1"
+            >
+              Status Akses Anda di Event Ini
+            </p>
+            <p
+              id="sidebarRoleTitle"
+              class="text-sm font-extrabold text-white mb-1"
+            >
+              -
+            </p>
+            <p
+              id="sidebarRoleDesc"
+              class="text-xs text-slate-300 leading-relaxed"
+            >
+              -
+            </p>
+          </div>
+
           <div
             class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5"
           >
@@ -386,27 +409,11 @@
             <div id="sidebarEventCardList" class="space-y-3"></div>
           </div>
 
-          <!-- Ringkasan Role Aktif di Event Ini -->
           <div
-            class="bg-slate-900 text-white rounded-3xl p-5 shadow-md border border-amber-500/20"
+            id="sidebarMiniCalendarWrap"
+            class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4"
           >
-            <p
-              class="text-[11px] uppercase tracking-widest text-amber-400 font-bold mb-1"
-            >
-              Status Akses Anda di Event Ini
-            </p>
-            <p
-              id="sidebarRoleTitle"
-              class="text-sm font-extrabold text-white mb-1"
-            >
-              -
-            </p>
-            <p
-              id="sidebarRoleDesc"
-              class="text-xs text-slate-300 leading-relaxed"
-            >
-              -
-            </p>
+            <div id="sidebarMiniCalendar"></div>
           </div>
         </aside>
 
@@ -686,7 +693,7 @@
 
             <!-- TAB CONTENT 1: TASK & FINANCE (OVERVIEW) -->
             <div id="dashContentOverview" class="space-y-6">
-              <div class="grid grid-cols-1 xl:grid-cols-[1.45fr_0.95fr] gap-6">
+              <div class="grid grid-cols-1 gap-6">
                 <div class="space-y-6">
                   <div
                     class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
@@ -787,9 +794,6 @@
                   </div>
                 </div>
 
-                <div class="space-y-6">
-                  <div id="calendarOverviewCard"></div>
-                </div>
               </div>
             </div>
 
@@ -2909,6 +2913,11 @@
         document.getElementById("sidebarRoleDesc").textContent =
           roleDescriptions[currentUser.role] || "";
 
+        const sidebarMiniCalendar = document.getElementById("sidebarMiniCalendar");
+        if (sidebarMiniCalendar) {
+          sidebarMiniCalendar.innerHTML = renderSidebarMiniCalendar(ev);
+        }
+
         document.getElementById("headlineDivisiBadge").textContent =
           `Divisi: ${ev.divisi}`;
         document.getElementById("headlineKategoriBadge").textContent =
@@ -3295,6 +3304,88 @@
           renderAll();
           showToast("Jobdesk baru berhasil ditambahkan!");
         }
+      }
+
+      function renderSidebarMiniCalendar(ev) {
+        const monthTarget = ev.tanggal
+          ? new Date(ev.tanggal + "T00:00:00")
+          : new Date();
+        const year = monthTarget.getFullYear();
+        const month = monthTarget.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startWeek = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "Mei",
+          "Jun",
+          "Jul",
+          "Ags",
+          "Sep",
+          "Okt",
+          "Nov",
+          "Des",
+        ];
+        const dayLabels = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+        const holidayMap = new Map(
+          getNationalHolidayList(year).map((h) => [h.date, h.label]),
+        );
+        const eventDates = new Map(
+          eventsData
+            .filter((item) => item.tanggal)
+            .map((item) => [item.tanggal, item.nama]),
+        );
+
+        const cells = [];
+        for (let i = 0; i < startWeek; i++) {
+          cells.push('<div class="h-8 rounded-lg bg-slate-50 border border-dashed border-slate-200"></div>');
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dateValue = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const eventLabel = eventDates.get(dateValue);
+          const holidayLabel = holidayMap.get(dateValue);
+          const isEvent = !!eventLabel;
+          const isHoliday = !!holidayLabel;
+          const isToday = dateValue === new Date().toISOString().slice(0, 10);
+
+          let className = "h-8 rounded-lg border flex items-center justify-center text-[10px] font-bold relative ";
+          if (isEvent) {
+            className += "border-amber-300 bg-amber-50 text-navy";
+          } else if (isHoliday) {
+            className += "border-rose-200 bg-rose-50 text-rose-700";
+          } else if (isToday) {
+            className += "border-blue-300 bg-blue-50 text-blue-700";
+          } else {
+            className += "border-slate-200 bg-white text-slate-600";
+          }
+
+          const tooltip = isEvent ? ` title="${eventLabel}"` : isHoliday ? ` title="${holidayLabel}"` : "";
+
+          cells.push(`
+            <div class="${className}"${tooltip}>
+              <span>${day}</span>
+              ${isEvent ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-amber-500"></span>' : ""}
+            </div>
+          `);
+        }
+
+        return `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-2">
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-navy">Kalender Mini</h3>
+              <span class="px-2 py-1 rounded-full bg-slate-100 text-[10px] font-black text-slate-600">${monthNames[month]} ${year}</span>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-[9px] font-bold uppercase text-slate-500">
+              ${dayLabels.map((d) => `<div class="text-center">${d}</div>`).join("")}
+            </div>
+            <div class="grid grid-cols-7 gap-1">${cells.join("")}</div>
+          </div>
+        `;
       }
 
       function renderOverviewCalendar(ev) {
