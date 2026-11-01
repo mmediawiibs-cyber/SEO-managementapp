@@ -5746,9 +5746,9 @@
             `${paketName} (${formatRp(pricePaid)})`;
 
           document.getElementById("viewPublicLanding").classList.remove("hidden");
+          document.getElementById("publicRegForm").classList.add("hidden");
           document.getElementById("pubTicketResult").classList.remove("hidden");
-          document.getElementById("publicRegForm").classList.remove("hidden");
-          document.getElementById("publicRegForm").scrollIntoView({
+          document.getElementById("pubTicketResult").scrollIntoView({
             behavior: "smooth",
             block: "start",
           });
