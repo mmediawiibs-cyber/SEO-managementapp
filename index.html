@@ -4572,7 +4572,7 @@
                       isSc
                         ? `
                         <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="text-lg font-black text-navy">📅 Buat Schedule Meeting Baru & Generate QR Check-in Panitia</h3>
+                            <h3 class="text-lg font-black text-navy">📅 Buat Schedule Meeting Baru</h3>
                             <form onsubmit="createNewMeetingSchedule(event)" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3.5">
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Agenda Rapat *</label>
@@ -4602,7 +4602,7 @@
                                     <p class="mt-1 text-[10px] text-slate-500">Diunggah oleh: <span class="font-bold text-navy">${currentUser.name}</span></p>
                                 </div>
                                 <div class="sm:col-span-2 xl:col-span-5 flex justify-end">
-                                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Buat Schedule & Buka QR Meeting</button>
+                                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Simpan Jadwal Meeting</button>
                                 </div>
                             </form>
                         </div>
@@ -4614,18 +4614,22 @@
                         ${
                           (ev.meetings || [])
                             .map((m) => {
+                              const currentMeetingStatus = m.status || (m.isOpen ? "ongoing" : "scheduled");
+                              const isMeetingScheduled = currentMeetingStatus === "scheduled";
+                              const isMeetingOngoing = currentMeetingStatus === "ongoing";
+                              const isMeetingFinished = currentMeetingStatus === "finished";
                               const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(m.code + " - " + m.agenda)}`;
                               const alreadyCheckedIn = m.attendees.some(
                                 (a) => a.name === currentUser.name,
                               );
 
                               return `
-                                <div class="bg-white rounded-3xl p-6 border-2 ${m.isOpen ? "border-amber-400" : "border-slate-200"} shadow-sm space-y-5">
+                                <div class="bg-white rounded-3xl p-6 border-2 ${isMeetingOngoing ? "border-amber-400" : isMeetingFinished ? "border-slate-300" : "border-slate-200"} shadow-sm space-y-5">
                                     <div class="flex flex-col lg:flex-row justify-between gap-6 border-b border-slate-200 pb-5">
                                         <div class="space-y-2">
                                             <div class="flex flex-wrap items-center gap-2">
-                                                <span class="px-3 py-1 rounded-full text-xs font-black ${m.isOpen ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}">
-                                                    ${m.isOpen ? "🟢 QR Meeting Terbuka" : "🔒 Sesi Ditutup"}
+                                                <span class="px-3 py-1 rounded-full text-xs font-black ${isMeetingOngoing ? "bg-emerald-100 text-emerald-800" : isMeetingFinished ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}">
+                                                    ${isMeetingScheduled ? "🕒 Jadwal Meeting" : isMeetingOngoing ? "🟢 Meeting Berlangsung" : "🔒 Meeting Selesai"}
                                                 </span>
                                                 <span class="text-xs font-black text-navy bg-amber-100 px-2.5 py-1 rounded-lg">Kode: ${m.code}</span>
                                             </div>
@@ -4640,7 +4644,7 @@
                                                 ${
                                                   alreadyCheckedIn
                                                     ? `<span class="px-4 py-2 rounded-xl bg-emerald-100 text-emerald-800 font-extrabold text-xs">✓ Anda Sudah Tercatat Hadir</span>`
-                                                    : m.isOpen
+                                                    : isMeetingOngoing
                                                       ? `<button onclick="openRealQRScanner('meeting', '${m.id}')" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow flex items-center gap-1.5">
                                                            <span>📷 Buka Kamera HP & Scan QR Rapat</span>
                                                          </button>
@@ -4652,8 +4656,8 @@
                                                 ${
                                                   isSc
                                                     ? `
-                                                    <button onclick="toggleMeetingOpenStatus('${m.id}')" class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-700">
-                                                        ${m.isOpen ? "Tutup Sesi QR" : "Buka Kembali QR"}
+                                                    <button onclick="${isMeetingScheduled ? `startMeeting('${m.id}')` : isMeetingOngoing ? `stopMeeting('${m.id}')` : `startMeeting('${m.id}')`}" class="px-3.5 py-2 rounded-xl ${isMeetingScheduled ? "bg-emerald-100 text-emerald-800" : isMeetingOngoing ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800"} font-bold text-xs">
+                                                        ${isMeetingScheduled ? "▶ Buka / Mulai Meeting" : isMeetingOngoing ? "⏹ Stop / Selesai Meeting" : "▶ Buka Kembali Meeting"}
                                                     </button>
                                                     <button onclick="editMeetingSchedule('${m.id}')" class="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-navy font-bold text-xs">
                                                         Edit Meeting
@@ -4668,7 +4672,7 @@
                                         </div>
 
                                         ${
-                                          m.isOpen
+                                          isMeetingOngoing
                                             ? `
                                             <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200 shrink-0">
                                                 <img src="${qrUrl}" alt="QR Meeting" class="w-28 h-28 rounded-xl border-2 border-navy p-1 bg-white">
@@ -4681,6 +4685,23 @@
                                             : ""
                                         }
                                     </div>
+
+                                    ${
+                                      isMeetingOngoing
+                                        ? `
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 space-y-3">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <p class="text-xs font-extrabold uppercase text-navy">📸 Upload Foto Meeting Saat Berlangsung</p>
+                                                <span class="text-[10px] text-slate-500">Diunggah oleh ${currentUser.name}</span>
+                                            </div>
+                                            <div class="flex flex-col sm:flex-row gap-2">
+                                                <input type="file" id="meetingPhoto_${m.id}" accept="image/*" class="flex-1 px-2.5 py-2 rounded-xl border text-[10px] font-semibold bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1">
+                                                <button onclick="uploadMeetingPhoto('${m.id}')" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-extrabold text-xs">Upload Foto</button>
+                                            </div>
+                                        </div>
+                                        `
+                                        : ""
+                                    }
 
                                     ${
                                       m.photo
@@ -4762,21 +4783,65 @@
           tanggal: document.getElementById("mtgTanggal").value,
           waktu: document.getElementById("mtgWaktu").value,
           tempat: tempat || "Ruang Rapat STIT",
-          isOpen: true,
+          status: "scheduled",
+          isOpen: false,
           createdBy: currentUser.name,
           uploadedBy: currentUser.name,
           photo: uploadedPhoto,
-          attendees: [
-            {
-              name: currentUser.name,
-              time: new Date().toTimeString().slice(0, 5) + " WIB",
-            },
-          ],
+          attendees: [],
           notulensi: "",
         });
         syncToCloud();
         renderAll();
-        showToast(`Schedule Meeting & QR Code (${code}) berhasil dibuka!`);
+        showToast(`Jadwal meeting ${code} berhasil dibuat dan siap dibuka.`);
+      }
+
+      function startMeeting(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        mtg.status = "ongoing";
+        mtg.isOpen = true;
+        if (!mtg.attendees.some((a) => a.name === currentUser.name)) {
+          mtg.attendees.push({
+            name: currentUser.name,
+            time: new Date().toTimeString().slice(0, 5) + " WIB",
+          });
+        }
+        syncToCloud();
+        renderAll();
+        showToast(`Meeting ${mtg.agenda} sudah dimulai.`);
+      }
+
+      function stopMeeting(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        mtg.status = "finished";
+        mtg.isOpen = false;
+        syncToCloud();
+        renderAll();
+        showToast(`Meeting ${mtg.agenda} telah dihentikan / selesai.`);
+      }
+
+      async function uploadMeetingPhoto(mtgId) {
+        const ev = getActiveEvent();
+        const mtg = ev.meetings.find((m) => m.id === mtgId);
+        if (!mtg) return;
+
+        const fileInput = document.getElementById(`meetingPhoto_${mtgId}`);
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+          showToast("Pilih foto meeting terlebih dahulu.", "error");
+          return;
+        }
+
+        mtg.photo = await readFileAsDataUrl(fileInput.files[0]);
+        mtg.uploadedBy = currentUser.name;
+        syncToCloud();
+        renderAll();
+        showToast("Foto meeting berhasil diupload.");
       }
 
       function checkInMeetingByUser(mtgId) {
@@ -4799,11 +4864,21 @@
       function toggleMeetingOpenStatus(mtgId) {
         const ev = getActiveEvent();
         const mtg = ev.meetings.find((m) => m.id === mtgId);
-        if (mtg) {
-          mtg.isOpen = !mtg.isOpen;
-          syncToCloud();
-          renderAll();
+        if (!mtg) return;
+
+        if (mtg.status === "finished") {
+          mtg.status = "ongoing";
+          mtg.isOpen = true;
+        } else if (mtg.status === "ongoing") {
+          mtg.status = "finished";
+          mtg.isOpen = false;
+        } else {
+          mtg.status = "ongoing";
+          mtg.isOpen = true;
         }
+
+        syncToCloud();
+        renderAll();
       }
 
       function editMeetingSchedule(mtgId) {
