@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script
-      src="https://unpkg.com/html5-qrcode"
+      src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"
       type="text/javascript"
     ></script>
     <!-- SDK Firebase (Compat) -->
@@ -6587,38 +6587,41 @@
       }
 
       function applyGlassmorphismToWhiteCards() {
-        const selectors = [
-          ".bg-white.rounded-3xl",
-          ".bg-white.rounded-2xl",
-          ".bg-white.rounded-xl",
-          ".bg-white.border.border-slate-200.shadow-sm",
-          ".bg-white.border.border-slate-200/80.shadow-sm",
-        ];
+        const elements = Array.from(document.querySelectorAll("*"));
 
-        selectors.forEach((selector) => {
-          document.querySelectorAll(selector).forEach((el) => {
-            if (
-              el.closest("#viewLogin") ||
-              el.closest("#mainHeader") ||
-              el.closest("#eventWizardModal") ||
-              el.closest("#formConfigModal") ||
-              el.closest("#customModalOverlay") ||
-              el.closest("#qrScannerModal") ||
-              (el.closest("#viewPublicLanding") && el.id !== "pubTicketResult")
-            )
-              return;
+        elements.forEach((el) => {
+          const classNames = el.className;
+          if (typeof classNames !== "string") return;
 
-            const classesToAdd = [
-              "bg-white/30",
-              "border-white/60",
-              "backdrop-blur-xl",
-              "shadow-[0_16px_40px_rgba(15,23,42,0.06)]",
-            ];
+          const hasWhiteBg = classNames.includes("bg-white");
+          const hasRounded =
+            classNames.includes("rounded-3xl") ||
+            classNames.includes("rounded-2xl") ||
+            classNames.includes("rounded-xl");
 
-            classesToAdd.forEach((className) => {
-              if (!el.classList.contains(className))
-                el.classList.add(className);
-            });
+          if (!hasWhiteBg || !hasRounded) return;
+
+          if (
+            el.closest("#viewLogin") ||
+            el.closest("#mainHeader") ||
+            el.closest("#eventWizardModal") ||
+            el.closest("#formConfigModal") ||
+            el.closest("#customModalOverlay") ||
+            el.closest("#qrScannerModal") ||
+            (el.closest("#viewPublicLanding") && el.id !== "pubTicketResult")
+          )
+            return;
+
+          const classesToAdd = [
+            "bg-white/30",
+            "border-white/60",
+            "backdrop-blur-xl",
+            "shadow-[0_16px_40px_rgba(15,23,42,0.06)]",
+          ];
+
+          classesToAdd.forEach((className) => {
+            if (!el.classList.contains(className))
+              el.classList.add(className);
           });
         });
       }
