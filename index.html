@@ -1209,10 +1209,10 @@
          ========================================== -->
     <div
       id="eventWizardModal"
-      class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 overflow-y-auto"
+      class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 overflow-y-auto"
     >
       <div
-        class="bg-white/30 rounded-[32px] shadow-[0_24px_80px_rgba(15,23,42,0.12)] border border-white/60 max-w-5xl w-full my-8 overflow-hidden flex flex-col max-h-[92vh] backdrop-blur-2xl"
+        class="bg-white/20 rounded-[32px] shadow-[0_28px_90px_rgba(15,23,42,0.16)] border border-white/60 max-w-5xl w-full my-8 overflow-hidden flex flex-col max-h-[92vh] backdrop-blur-2xl"
       >
         <div
           class="bg-grad-navy text-white px-6 py-4 flex items-center justify-between shrink-0"
@@ -1262,7 +1262,7 @@
                   >
                   <select
                     id="wizDivisi"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
                     <option value="HRD">HRD</option>
                     <option value="LPM">LPM</option>
@@ -1286,7 +1286,7 @@
                   >
                   <select
                     id="wizKategori"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
                     <option value="Orientasi Mahasiswa Baru">
                       Orientasi Mahasiswa Baru
@@ -1308,7 +1308,7 @@
                   <input
                     type="text"
                     id="wizNamaEvent"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                     placeholder="Contoh: Workshop Metodologi Penelitian 2026"
                   />
                 </div>
@@ -1319,7 +1319,7 @@
                   <input
                     type="text"
                     id="wizTema"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                     placeholder="Masukkan tema acara..."
                   />
                 </div>
@@ -1331,14 +1331,14 @@
                 <textarea
                   id="wizDeskripsi"
                   rows="2"
-                  class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-semibold"
+                  class="w-full px-3.5 py-2 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   placeholder="Deskripsi tujuan kegiatan..."
                 ></textarea>
               </div>
             </div>
 
             <div
-              class="p-5 rounded-2xl bg-white/30 border border-white/60 shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md space-y-4"
+              class="p-5 rounded-3xl border border-white/70 bg-white/25 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl space-y-4"
             >
               <p
                 class="text-xs font-extrabold uppercase tracking-wider text-navy"
@@ -1353,7 +1353,7 @@
                   <input
                     type="date"
                     id="wizTanggal"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   />
                 </div>
                 <div class="grid grid-cols-2 gap-2">
@@ -1364,7 +1364,7 @@
                     <input
                       type="time"
                       id="wizJamMulai"
-                      class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                      class="w-full px-3 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                     />
                   </div>
                   <div>
@@ -1374,7 +1374,7 @@
                     <input
                       type="time"
                       id="wizJamSelesai"
-                      class="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                      class="w-full px-3 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                     />
                   </div>
                 </div>
@@ -1385,7 +1385,7 @@
                   <select
                     id="wizLokasiSelect"
                     onchange="toggleWizCustomLokasi()"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
                     <option value="Aula Utama Lt. 2 Kampus STIT">
                       Aula Utama Lt. 2 Kampus STIT
@@ -1402,14 +1402,14 @@
                     type="text"
                     id="wizLokasiCustom"
                     placeholder="Ketik nama tempat/lokasi baru..."
-                    class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-amber-400 text-xs font-semibold"
+                    class="hidden mt-2 w-full px-3.5 py-2 rounded-2xl border border-amber-300 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-amber-200"
                   />
                 </div>
               </div>
             </div>
 
             <div
-              class="p-5 rounded-2xl bg-white/30 border border-white/60 shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md space-y-3"
+              class="p-5 rounded-3xl border border-white/70 bg-white/25 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl space-y-3"
             >
               <div class="flex items-center justify-between">
                 <p
@@ -1420,7 +1420,7 @@
                 <button
                   type="button"
                   onclick="addSpeakerRowInWizard()"
-                  class="px-3 py-1.5 rounded-xl bg-navy text-amber-400 font-bold text-xs"
+                  class="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-amber-300 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.12)] border border-amber-300/30"
                 >
                   + Tambah Pemateri
                 </button>
@@ -1479,14 +1479,14 @@
               </div>
               <div
                 id="financeSettingsLockedNote"
-                class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 font-bold"
+                class="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-[11px] text-amber-800 font-bold backdrop-blur-md"
               >
                 Mode Non-Profit: target peserta dan HTM tetap dicatat untuk
                 perencanaan, tetapi tidak menambah arus kas.
               </div>
             </div>
             <div
-              class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl bg-white/30 border border-white/60 shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-3xl border border-white/70 bg-white/25 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
             >
               <div id="wizTargetPesertaField">
                 <label class="block text-xs font-bold text-slate-700 mb-1"
@@ -1495,7 +1495,7 @@
                 <input
                   type="number"
                   id="wizTargetPeserta"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   value="60"
                 />
               </div>
@@ -1506,7 +1506,7 @@
                 <input
                   type="number"
                   id="wizHtm"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   value="75000"
                 />
               </div>
@@ -1536,7 +1536,7 @@
               <button
                 type="button"
                 onclick="addWizardDivisionCard()"
-                class="px-3.5 py-2 rounded-xl bg-grad-gold text-navy font-extrabold text-xs shadow"
+                class="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-200 text-navy font-extrabold text-xs shadow-[0_10px_24px_rgba(251,191,36,0.18)] border border-amber-300/60"
               >
                 + Tambah Seksi Baru
               </button>
@@ -1597,19 +1597,19 @@
         </div>
 
         <div
-          class="bg-white/20 px-6 py-4 flex justify-end gap-3 border-t border-white/60 shrink-0 backdrop-blur-md"
+          class="bg-white/15 px-6 py-4 flex justify-end gap-3 border-t border-white/60 shrink-0 backdrop-blur-xl"
         >
           <button
             type="button"
             onclick="closeEventModal()"
-            class="px-7 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 font-extrabold text-sm shadow-sm"
+            class="px-7 py-3 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-sm shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
           >
             Batal
           </button>
           <button
             type="button"
             onclick="saveEventFromWizard()"
-            class="px-8 py-3 rounded-xl bg-grad-navy text-amber-400 font-black text-sm shadow-lg"
+            class="px-8 py-3 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-amber-300 font-black text-sm shadow-[0_18px_34px_rgba(15,23,42,0.18)] border border-amber-300/30 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110"
           >
             Simpan Konfigurasi Event
           </button>
@@ -1682,7 +1682,7 @@
             </div>
             <select
               id="cfgRegistrationMode"
-              class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold bg-white"
+              class="w-full px-3 py-2 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
             >
               <option value="umum">Peserta Umum</option>
               <option value="mahasiswa">Mahasiswa</option>
