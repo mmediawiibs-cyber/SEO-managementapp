@@ -941,6 +941,14 @@
         </div>
 
         <!-- Form Pendaftaran 4 Kelompok -->
+        <div
+          id="pubAutoRegistrationNotice"
+          class="hidden mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 font-semibold"
+        >
+          Peserta mahasiswa otomatis tercatat pada database peserta event ini.
+          Check-in hanya dilakukan saat panitia membuka akses check-in.
+        </div>
+
         <form
           id="publicRegForm"
           onsubmit="submitPublicRegistration(event)"
@@ -2596,7 +2604,7 @@
         if (!event) return;
         publicRouteOpened = true;
         activeEventId = event.id;
-        if (event.formConfigSaved === false) {
+        if (event.formConfigSaved === false && event.registrationMode !== "mahasiswa") {
           document.getElementById("viewLogin").classList.add("hidden");
           document.getElementById("viewPublicLanding").classList.add("hidden");
           document.body.insertAdjacentHTML(
@@ -2612,7 +2620,11 @@
 
       function openPublicRegistrationInNewTab(eventId) {
         const event = eventsData.find((item) => item.id === eventId);
-        if (!event || event.formConfigSaved === false) {
+        if (!event) {
+          showToast("Event tidak ditemukan.", "error");
+          return;
+        }
+        if (event.formConfigSaved === false && event.registrationMode !== "mahasiswa") {
           showToast(
             "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
             "error",
@@ -3044,6 +3056,8 @@
               ? "bg-amber-400 text-navy"
               : "bg-slate-200 text-slate-700";
             const dateClass = isActive ? "text-amber-200" : "text-slate-500";
+            const showRegistrationButton =
+              item.formConfigSaved !== false && item.registrationMode !== "mahasiswa";
 
             return `
                     <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer rounded-2xl p-4 border-2 transition-all ${cardClass}">
@@ -3053,7 +3067,7 @@
                         </div>
                         <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
                         <div class="flex flex-wrap gap-2 mt-3" onclick="event.stopPropagation()">
-                          ${item.formConfigSaved === false ? "" : `<button type="button" onclick="openPublicRegistrationInNewTab('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-400 text-navy text-[10px] font-extrabold">Form Pendaftaran</button><button type="button" onclick="copyPublicRegistrationLink('${item.id}')" title="Salin Link Pendaftaran" aria-label="Salin Link Pendaftaran" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-white/90 text-navy border border-slate-300 hover:bg-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" stroke-width="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" stroke-width="2"/></svg></button>`}
+                          ${showRegistrationButton ? `<button type="button" onclick="openPublicRegistrationInNewTab('${item.id}')" class="px-2.5 py-1.5 rounded-lg bg-amber-400 text-navy text-[10px] font-extrabold">Form Pendaftaran</button><button type="button" onclick="copyPublicRegistrationLink('${item.id}')" title="Salin Link Pendaftaran" aria-label="Salin Link Pendaftaran" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-white/90 text-navy border border-slate-300 hover:bg-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" stroke-width="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" stroke-width="2"/></svg></button>` : ""}
                           ${currentUser.role === "sc" ? `<button type="button" onclick="confirmDeleteEvent('${item.id}')" title="Hapus event" aria-label="Hapus event ${item.nama}" class="w-8 h-8 inline-flex items-center justify-center rounded-lg bg-rose-100 text-rose-700 border border-rose-200 hover:bg-rose-200"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 7h16"/></svg></button>` : ""}
                         </div>
                     </div>
@@ -5744,6 +5758,7 @@
         const profitMode = applyProfitModeState();
         const isProfitEvent = profitMode !== "nonprofit";
         const htmInput = document.getElementById("wizHtm");
+        const registrationMode = wizardDraftRegistrationMode || "umum";
 
         if (wizardMode === "edit") {
           const ev = getActiveEvent();
@@ -5764,6 +5779,7 @@
           ev.subsidiKampus = 0;
           ev.htmPeserta = Number(htmInput?.value || ev.htmPeserta || 0);
           ev.isProfitEvent = isProfitEvent;
+          ev.formConfigSaved = registrationMode === "mahasiswa" ? true : ev.formConfigSaved;
           ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
           if (ev.registrationMode === "mahasiswa") {
             ev.studentYear = ev.studentYear || "2025";
@@ -5833,7 +5849,7 @@
             rundown: [],
             meetings: [],
             documents: [],
-            formConfigSaved: false,
+            formConfigSaved: registrationMode === "mahasiswa" ? true : false,
             formConfig: {
               useGender: true,
               useWa: true,
@@ -5993,6 +6009,7 @@
         const ev = getActiveEvent();
         if (ev) {
           ev.registrationMode = mode;
+          ev.formConfigSaved = mode === "mahasiswa" ? true : ev.formConfigSaved;
           if (!ev.formConfig) ev.formConfig = {};
           ev.formConfig.registrationMode = mode;
           const yearChoice = document.querySelector(
@@ -6118,7 +6135,8 @@
       function openPublicLanding(eventId = null) {
         if (eventId) activeEventId = eventId;
         const ev = getActiveEvent();
-        if (ev.formConfigSaved === false) {
+        const mode = getEventRegistrationMode(ev);
+        if (ev.formConfigSaved === false && mode !== "mahasiswa") {
           showToast(
             "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
             "error",
@@ -6146,9 +6164,18 @@
         }
 
         const cfg = ev.formConfig || {};
-        const mode = getEventRegistrationMode(ev);
         const isMahasiswa = mode === "mahasiswa";
         const isInternal = mode === "internal";
+
+        const autoNotice = document.getElementById("pubAutoRegistrationNotice");
+        if (autoNotice) {
+          autoNotice.classList.toggle("hidden", !isMahasiswa);
+        }
+
+        if (isMahasiswa) {
+          document.getElementById("publicRegForm").classList.add("hidden");
+          document.getElementById("pubTicketResult").classList.add("hidden");
+        }
 
         const fieldIds = [
           "fieldWrapGender",
@@ -6227,7 +6254,9 @@
           ? pkgs[0].name
           : "Paket-A";
 
-        if (isMahasiswa || isInternal) {
+        if (isMahasiswa) {
+          pkgContainer.innerHTML = "";
+        } else if (isInternal) {
           pkgContainer.innerHTML = "";
         } else {
           pkgContainer.innerHTML = pkgs
