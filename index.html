@@ -858,7 +858,7 @@
          ========================================== -->
     <div
       id="viewPublicLanding"
-      class="hidden fixed inset-0 bg-slate-100 z-[95] overflow-y-auto"
+      class="hidden fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(148,163,184,0.30),_transparent_24%),radial-gradient(circle_at_bottom_right,_rgba(251,191,36,0.22),_transparent_22%),linear-gradient(135deg,#f8fafc_0%,#eef4ff_35%,#f8fafc_100%)] z-[95] overflow-y-auto"
     >
       <div class="max-w-3xl mx-auto px-4 py-10">
         <!-- Header Event Publik -->
@@ -908,13 +908,13 @@
         <form
           id="publicRegForm"
           onsubmit="submitPublicRegistration(event)"
-          class="bg-white/90 rounded-3xl p-6 sm:p-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)] border border-slate-200/80 backdrop-blur-sm space-y-6"
+          class="bg-white/30 rounded-[30px] p-6 sm:p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] border border-white/50 backdrop-blur-xl space-y-6"
         >
-          <div class="border-b border-slate-200 pb-4">
-            <h2 class="text-xl font-black text-navy">
+          <div class="border-b border-white/60 pb-4">
+            <h2 class="text-xl font-black text-slate-800">
               Formulir Pendaftaran Peserta
             </h2>
-            <p class="text-xs text-slate-500">
+            <p class="text-xs text-slate-600">
               Isi data berikut dengan benar untuk mendapatkan E-Tiket & QR Code
               Kehadiran.
             </p>
@@ -923,7 +923,7 @@
           <!-- Kelompok 1: Identitas -->
           <div
             id="pubGroupIdentitas"
-            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-4"
+            class="p-5 rounded-2xl border border-white/60 bg-white/30 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-lg space-y-4"
           >
             <h3
               class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
@@ -937,7 +937,7 @@
               <input
                 type="text"
                 id="pubNama"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                 placeholder="Contoh: Ahmad Fauzi, S.Pd."
                 required
               />
@@ -949,7 +949,7 @@
               <input
                 type="text"
                 id="pubNim"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                 placeholder="Contoh: 202401234"
               />
             </div>
@@ -960,7 +960,7 @@
               <input
                 type="text"
                 id="pubProdi"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                 placeholder="Contoh: Pendidikan Agama Islam"
               />
             </div>
@@ -970,7 +970,7 @@
               >
               <div class="grid grid-cols-2 gap-3">
                 <label
-                  class="flex items-center gap-2 p-3 rounded-xl border border-slate-300 bg-white cursor-pointer font-semibold text-xs"
+                  class="flex items-center gap-2 p-3 rounded-2xl border border-white/70 bg-white/45 cursor-pointer font-semibold text-xs shadow-[0_6px_16px_rgba(15,23,42,0.04)] backdrop-blur-md"
                 >
                   <input
                     type="radio"
@@ -981,7 +981,7 @@
                   <span>Laki-laki</span>
                 </label>
                 <label
-                  class="flex items-center gap-2 p-3 rounded-xl border border-slate-300 bg-white cursor-pointer font-semibold text-xs"
+                  class="flex items-center gap-2 p-3 rounded-2xl border border-white/70 bg-white/45 cursor-pointer font-semibold text-xs shadow-[0_6px_16px_rgba(15,23,42,0.04)] backdrop-blur-md"
                 >
                   <input type="radio" name="pubGender" value="Perempuan" />
                   <span>Perempuan</span>
@@ -993,7 +993,7 @@
           <!-- Kelompok 2: Kontak dan Alamat -->
           <div
             id="pubGroupKontak"
-            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-4"
+            class="p-5 rounded-2xl border border-white/60 bg-white/30 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-lg space-y-4"
           >
             <h3
               class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
@@ -1008,7 +1008,7 @@
                 <input
                   type="tel"
                   id="pubWa"
-                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                  class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   placeholder="0812xxxxxxxx"
                   required
                 />
@@ -1020,7 +1020,7 @@
                 <input
                   type="email"
                   id="pubEmail"
-                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                  class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   placeholder="nama@email.com"
                   required
                 />
@@ -1037,7 +1037,7 @@
                 <select
                   id="pubProvinsi"
                   onchange="populatePublicKota()"
-                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold bg-white"
+                  class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   required
                 ></select>
               </div>
@@ -1047,7 +1047,7 @@
                 >
                 <select
                   id="pubKota"
-                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold bg-white"
+                  class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   required
                 ></select>
               </div>
@@ -1057,7 +1057,7 @@
           <!-- Kelompok 3: Afiliasi -->
           <div
             id="pubGroupAfiliasi"
-            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-4"
+            class="p-5 rounded-2xl border border-white/60 bg-white/30 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-lg space-y-4"
           >
             <h3
               class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
@@ -1075,7 +1075,7 @@
                 <button
                   type="button"
                   onclick="selectPubAfiliasi('Mahasiswa')"
-                  class="pub-afil-btn px-3 py-2.5 rounded-xl border-2 border-navy bg-navy text-amber-400 font-extrabold text-xs transition"
+                  class="pub-afil-btn px-3 py-2.5 rounded-2xl border-2 border-sky-500/70 bg-sky-500/80 text-white font-extrabold text-xs shadow-[0_10px_22px_rgba(14,165,233,0.2)] transition"
                 >
                   Mahasiswa
                 </button>
@@ -1111,7 +1111,7 @@
               <input
                 type="text"
                 id="pubInstansi"
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold"
+                class="w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-sm font-semibold text-slate-700 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                 placeholder="Contoh: STIT Hidayatunnajah - Bekasi"
                 required
               />
@@ -1121,7 +1121,7 @@
           <!-- Kelompok 4: Pilihan Paket -->
           <div
             id="pubGroupPaket"
-            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-3 pt-5 mt-2"
+            class="p-5 rounded-2xl border border-white/60 bg-white/30 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-lg space-y-3 pt-5 mt-2"
           >
             <h3
               class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
@@ -1137,7 +1137,7 @@
 
           <button
             type="submit"
-            class="w-full py-4 rounded-2xl bg-grad-navy hover:opacity-95 text-amber-400 font-black text-sm tracking-wide shadow-xl transition"
+            class="w-full py-4 rounded-2xl bg-[linear-gradient(135deg,#0f172a,#1e293b_45%,#0f172a)] hover:brightness-110 text-amber-300 font-black text-sm tracking-[0.12em] shadow-[0_18px_32px_rgba(15,23,42,0.18)] transition"
           >
             DAFTAR SEKARANG & GENERATE QR TIKET
           </button>
@@ -6234,7 +6234,7 @@
           pkgContainer.innerHTML = pkgs
             .map(
               (p, idx) => `
-                  <button type="button" onclick="selectPubPackage('${p.name}')" class="pub-pkg-btn p-4 rounded-2xl border-2 text-left transition ${idx === 0 ? "border-navy bg-navy text-amber-400 shadow-md" : "border-slate-300 bg-white text-slate-800"}">
+                  <button type="button" onclick="selectPubPackage('${p.name}')" class="pub-pkg-btn p-4 rounded-2xl border text-left transition ${idx === 0 ? "border-sky-500/70 bg-sky-500/80 text-white shadow-[0_12px_24px_rgba(14,165,233,0.18)]" : "border-white/70 bg-white/35 text-slate-800 shadow-[0_8px_18px_rgba(15,23,42,0.04)] backdrop-blur-md"}">
                       <div class="text-xs font-black">${p.name}</div>
                       <div class="text-sm font-extrabold mt-1">${formatRp(p.price)}</div>
                   </button>
@@ -6270,10 +6270,10 @@
         document.querySelectorAll(".pub-afil-btn").forEach((btn) => {
           if (btn.textContent.trim() === val) {
             btn.className =
-              "pub-afil-btn px-3 py-2.5 rounded-xl border-2 border-navy bg-navy text-amber-400 font-extrabold text-xs transition";
+              "pub-afil-btn px-3 py-2.5 rounded-2xl border-2 border-sky-500/70 bg-sky-500/80 text-white font-extrabold text-xs shadow-[0_10px_22px_rgba(14,165,233,0.2)] transition";
           } else {
             btn.className =
-              "pub-afil-btn px-3 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 font-bold text-xs transition";
+              "pub-afil-btn px-3 py-2.5 rounded-2xl border border-white/70 bg-white/40 text-slate-700 font-bold text-xs shadow-[0_6px_16px_rgba(15,23,42,0.04)] backdrop-blur-md transition";
           }
         });
       }
@@ -6283,10 +6283,10 @@
         document.querySelectorAll(".pub-pkg-btn").forEach((btn) => {
           if (btn.innerText.includes(pkgName)) {
             btn.className =
-              "pub-pkg-btn p-4 rounded-2xl border-2 text-left transition border-navy bg-navy text-amber-400 shadow-md";
+              "pub-pkg-btn p-4 rounded-2xl border text-left transition border-sky-500/70 bg-sky-500/80 text-white shadow-[0_12px_24px_rgba(14,165,233,0.18)]";
           } else {
             btn.className =
-              "pub-pkg-btn p-4 rounded-2xl border-2 text-left transition border-slate-300 bg-white text-slate-800";
+              "pub-pkg-btn p-4 rounded-2xl border text-left transition border-white/70 bg-white/35 text-slate-800 shadow-[0_8px_18px_rgba(15,23,42,0.04)] backdrop-blur-md";
           }
         });
       }
