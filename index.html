@@ -865,18 +865,6 @@
         <div
           class="bg-grad-navy text-white rounded-3xl p-8 shadow-xl border border-amber-400/40 mb-8"
         >
-          <div class="flex flex-wrap gap-2 mb-3">
-            <span
-              id="pubDivisiBadge"
-              class="px-3 py-1 rounded-full bg-amber-400 text-navy font-extrabold text-xs uppercase"
-              >-</span
-            >
-            <span
-              id="pubKategoriBadge"
-              class="px-3 py-1 rounded-full bg-white/15 text-amber-200 font-bold text-xs"
-              >-</span
-            >
-          </div>
           <h1
             id="pubEventTitle"
             class="text-2xl sm:text-3xl font-black text-white mb-2"
@@ -885,13 +873,7 @@
           </h1>
           <p
             id="pubEventTheme"
-            class="text-sm font-semibold text-amber-300 italic mb-3"
-          >
-            -
-          </p>
-          <p
-            id="pubEventDesc"
-            class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-5"
+            class="text-sm font-semibold text-amber-300 italic mb-5"
           >
             -
           </p>
@@ -911,18 +893,6 @@
               ><span id="pubEventLocation" class="font-bold text-white">-</span>
             </div>
           </div>
-        </div>
-
-        <div
-          id="pubHeroBannerWrap"
-          class="hidden mb-8 rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-lg"
-        >
-          <img
-            id="pubHeroBannerImg"
-            src=""
-            alt="Hero banner event"
-            class="w-full h-64 object-cover"
-          />
         </div>
 
         <!-- Form Pendaftaran 4 Kelompok -->
@@ -1434,57 +1404,6 @@
                     placeholder="Ketik nama tempat/lokasi baru..."
                     class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-amber-400 text-xs font-semibold"
                   />
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
-            >
-              <p
-                class="text-xs font-extrabold uppercase tracking-wider text-navy"
-              >
-                Kelompok C — Hero Banner / Poster Event
-              </p>
-              <div class="space-y-3">
-                <label class="block text-xs font-bold text-slate-700 mb-1"
-                  >Poster / Hero Banner Event</label
-                >
-                <div class="flex flex-col sm:flex-row gap-2 items-stretch">
-                  <input
-                    type="text"
-                    id="wizHeroBanner"
-                    oninput="syncHeroBannerPreview()"
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
-                    placeholder="https://example.com/poster-event.jpg atau upload file"
-                  />
-                  <input
-                    type="file"
-                    id="wizHeroBannerFile"
-                    accept="image/*"
-                    class="hidden"
-                  />
-                  <button
-                    type="button"
-                    onclick="document.getElementById('wizHeroBannerFile').click()"
-                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-navy text-amber-400 font-extrabold text-xs shadow border border-navy whitespace-nowrap"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.9A5.5 5.5 0 0117.5 9H18a4 4 0 110 8H7zm5-6V5m0 0l-2.5 2.5M12 5l2.5 2.5"/></svg>
-                    Upload File
-                  </button>
-                </div>
-                <div
-                  id="wizHeroBannerPreviewWrap"
-                  class="hidden mt-2 rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm"
-                >
-                  <img
-                    id="wizHeroBannerPreview"
-                    alt="Preview hero banner"
-                    class="w-full h-32 object-cover"
-                  />
-                </div>
-                <div class="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-slate-700 leading-relaxed">
-                  <strong>Rekomendasi:</strong> rasio ideal 1200x675 px (16:9). <strong>Maksimal upload:</strong> 2 MB. Format yang disarankan: JPG / PNG.
                 </div>
               </div>
             </div>
@@ -2461,7 +2380,6 @@
               url: "https://drive.google.com",
             },
           ],
-          heroBanner: "",
           participantCheckinOpen: false,
           formConfig: {
             useGender: true,
@@ -2549,7 +2467,6 @@
           ],
           meetings: [],
           documents: [],
-          heroBanner: "",
           participantCheckinOpen: false,
           formConfig: {
             useGender: true,
@@ -2611,44 +2528,6 @@
         url.hash = "";
         url.searchParams.set("event", eventId);
         return url.toString();
-      }
-
-      function syncHeroBannerPreview() {
-        const bannerInput = document.getElementById("wizHeroBanner");
-        const previewWrap = document.getElementById("wizHeroBannerPreviewWrap");
-        const preview = document.getElementById("wizHeroBannerPreview");
-        const bannerValue = (bannerInput?.value || "").trim();
-        if (!preview || !previewWrap) return;
-        if (!bannerValue) {
-          previewWrap.classList.add("hidden");
-          preview.src = "";
-          return;
-        }
-        preview.src = bannerValue;
-        previewWrap.classList.remove("hidden");
-      }
-
-      function handleHeroBannerUpload(event) {
-        const file = event.target.files && event.target.files[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) {
-          showToast("File banner harus berupa gambar.", "error");
-          event.target.value = "";
-          return;
-        }
-        if (file.size > 2 * 1024 * 1024) {
-          showToast("Ukuran banner maksimal 2 MB.", "error");
-          event.target.value = "";
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = function () {
-          const bannerUrl = String(reader.result || "");
-          document.getElementById("wizHeroBanner").value = bannerUrl;
-          syncHeroBannerPreview();
-          showToast("Banner event berhasil diupload.");
-        };
-        reader.readAsDataURL(file);
       }
 
       function openPublicRouteIfRequested() {
@@ -5506,9 +5385,6 @@
 
           document.getElementById("wizTargetPeserta").value = ev.targetPeserta;
           document.getElementById("wizHtm").value = ev.htmPeserta;
-          document.getElementById("wizHeroBanner").value = ev.heroBanner || "";
-          document.getElementById("wizHeroBannerFile").value = "";
-          syncHeroBannerPreview();
           const radioProfit = document.querySelector(
             `input[name="eventProfitMode"][value="${wizardDraftProfitMode}"]`,
           );
@@ -5537,9 +5413,6 @@
           document.getElementById("wizJamSelesai").value = "15:00";
           document.getElementById("wizTargetPeserta").value = 60;
           document.getElementById("wizHtm").value = 75000;
-          document.getElementById("wizHeroBanner").value = "";
-          document.getElementById("wizHeroBannerFile").value = "";
-          syncHeroBannerPreview();
 
           wizardTempSpeakers = [
             { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
@@ -5857,7 +5730,6 @@
           ev.jamMulai = document.getElementById("wizJamMulai").value;
           ev.jamSelesai = document.getElementById("wizJamSelesai").value;
           ev.lokasi = lokasi || "Kampus STIT";
-          ev.heroBanner = document.getElementById("wizHeroBanner").value.trim();
           ev.participantCheckinOpen = !!ev.participantCheckinOpen;
           ev.speakers = JSON.parse(JSON.stringify(wizardTempSpeakers));
           ev.targetPeserta =
@@ -5900,7 +5772,6 @@
             jamMulai: document.getElementById("wizJamMulai").value,
             jamSelesai: document.getElementById("wizJamSelesai").value,
             lokasi: lokasi || "Kampus STIT",
-            heroBanner: document.getElementById("wizHeroBanner").value.trim(),
             participantCheckinOpen: false,
             speakers: JSON.parse(JSON.stringify(wizardTempSpeakers)),
             targetPeserta:
@@ -6248,31 +6119,13 @@
           );
           return;
         }
-        document.getElementById("pubDivisiBadge").textContent = ev.divisi;
-        document.getElementById("pubKategoriBadge").textContent = ev.kategori;
         document.getElementById("pubEventTitle").textContent = ev.nama;
         document.getElementById("pubEventTheme").textContent = `"${ev.tema}"`;
-        document.getElementById("pubEventDesc").textContent = ev.deskripsi;
         document.getElementById("pubEventDate").textContent = ev.tanggal;
         document.getElementById("pubEventTime").textContent =
           `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
         document.getElementById("pubEventLocation").textContent = ev.lokasi;
 
-        const heroBannerImg = document.getElementById("pubHeroBannerImg");
-        const heroBannerWrap = document.getElementById("pubHeroBannerWrap");
-        const bannerSource = (ev.heroBanner || "").trim();
-        if (bannerSource) {
-          heroBannerImg.src = bannerSource;
-          heroBannerImg.onerror = () => {
-            heroBannerWrap.classList.add("hidden");
-            heroBannerImg.src = "";
-          };
-          heroBannerWrap.classList.remove("hidden");
-        } else {
-          heroBannerWrap.classList.add("hidden");
-          heroBannerImg.src = "";
-          heroBannerImg.onerror = null;
-        }
 
         const cfg = ev.formConfig || {};
         const isMahasiswa = mode === "mahasiswa";
@@ -6728,10 +6581,6 @@
 
       // INIT ON LOAD
       document.addEventListener("DOMContentLoaded", () => {
-        const bannerFileInput = document.getElementById("wizHeroBannerFile");
-        if (bannerFileInput) {
-          bannerFileInput.addEventListener("change", handleHeroBannerUpload);
-        }
         if (publicEventId) {
           document.getElementById("viewLogin").classList.add("hidden");
           document.getElementById("viewApp").classList.add("hidden");
