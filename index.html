@@ -1212,10 +1212,10 @@
       class="fixed inset-0 bg-slate-900/65 backdrop-blur-sm hidden items-center justify-center z-[100] p-4 overflow-y-auto"
     >
       <div
-        class="bg-white/20 rounded-[32px] shadow-[0_28px_90px_rgba(15,23,42,0.16)] border border-white/60 max-w-5xl w-full my-8 overflow-hidden flex flex-col max-h-[92vh] backdrop-blur-2xl"
+        class="bg-[#f3f6fb] rounded-[32px] shadow-[0_28px_90px_rgba(15,23,42,0.12)] border border-slate-200 max-w-5xl w-full my-8 overflow-hidden flex flex-col max-h-[92vh]"
       >
         <div
-          class="bg-grad-navy text-white px-6 py-4 flex items-center justify-between shrink-0"
+          class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between shrink-0"
         >
           <div>
             <h3 id="wizardModalTitle" class="text-lg font-black text-amber-400">
@@ -1338,7 +1338,7 @@
             </div>
 
             <div
-              class="p-5 rounded-3xl border border-white/70 bg-white/25 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl space-y-4"
+              class="p-5 rounded-3xl border border-slate-200 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.03)] space-y-4"
             >
               <p
                 class="text-xs font-extrabold uppercase tracking-wider text-navy"
@@ -1597,19 +1597,19 @@
         </div>
 
         <div
-          class="bg-white/15 px-6 py-4 flex justify-end gap-3 border-t border-white/60 shrink-0 backdrop-blur-xl"
+          class="bg-[#eef3f9] px-6 py-4 flex justify-end gap-3 border-t border-slate-200 shrink-0"
         >
           <button
             type="button"
             onclick="closeEventModal()"
-            class="px-7 py-3 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-sm shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
+            class="px-7 py-3 rounded-2xl border border-slate-300 bg-white text-slate-700 font-extrabold text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-slate-50"
           >
             Batal
           </button>
           <button
             type="button"
             onclick="saveEventFromWizard()"
-            class="px-8 py-3 rounded-2xl bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-amber-300 font-black text-sm shadow-[0_18px_34px_rgba(15,23,42,0.18)] border border-amber-300/30 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110"
+            class="px-8 py-3 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black text-sm shadow-[0_18px_34px_rgba(14,165,233,0.2)] border border-blue-400 transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110"
           >
             Simpan Konfigurasi Event
           </button>
@@ -1622,140 +1622,116 @@
          ========================================== -->
     <div
       id="formConfigModal"
-      class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center z-[105] p-4 overflow-y-auto"
+      class="fixed inset-0 bg-slate-900/55 backdrop-blur-sm hidden items-center justify-center z-[105] p-4 overflow-y-auto"
     >
       <div
-        class="bg-white/30 rounded-[30px] shadow-[0_24px_80px_rgba(15,23,42,0.12)] border border-white/60 max-w-2xl w-full p-6 space-y-5 backdrop-blur-2xl"
+        class="bg-[#f2f5f9] rounded-[26px] border border-slate-200 max-w-2xl w-full p-4 sm:p-5 shadow-[0_24px_80px_rgba(15,23,42,0.12)]"
       >
         <div
-          class="flex items-center justify-between border-b border-slate-200 pb-3"
+          class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200"
         >
           <div>
-            <h3 class="text-lg font-black text-navy">
-              🔗 Kustomisasi Format & Paket Link Pendaftaran
+            <h3 class="text-[15px] font-black text-slate-800 leading-tight">
+              Kustomisasi Format & Paket Link Pendaftaran
             </h3>
-            <p class="text-xs text-slate-500">
-              Centang field yang dipakai dan atur daftar pilihan paket
-              pendaftaran.
+            <p class="text-[11px] text-slate-500 mt-1">
+              Field yang dipilih akan ditampilkan di form peserta.
             </p>
           </div>
           <button
             onclick="closeFormConfigModal()"
-            class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold"
+            class="w-8 h-8 rounded-full border border-slate-200 bg-white text-slate-700 font-bold shadow-sm"
           >
             ✕
           </button>
         </div>
 
-        <div class="space-y-3">
-          <div
-            class="space-y-2 p-3 rounded-2xl border border-white/70 bg-white/20 shadow-[0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-md"
-          >
-            <p class="text-xs font-extrabold uppercase text-navy">
-              Tipe Formulir Pendaftaran
+        <div class="space-y-4">
+          <div class="space-y-3">
+            <p class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700">
+              FIELD FORMULIR YANG DITAMPILKAN:
             </p>
-            <div class="grid grid-cols-3 gap-2">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[12px] font-semibold text-slate-700">
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <input type="checkbox" id="cfgUseGender" checked class="accent-sky-500" />
+                Jenis Kelamin
+              </label>
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <input type="checkbox" id="cfgUseWa" checked class="accent-sky-500" />
+                Nomor WhatsApp
+              </label>
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <input type="checkbox" id="cfgUseEmail" checked class="accent-sky-500" />
+                Alamat Email
+              </label>
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <input type="checkbox" id="cfgUseDomisili" checked class="accent-sky-500" />
+                Domisili (Provinsi & Kota)
+              </label>
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <input type="checkbox" id="cfgUseAfiliasi" checked class="accent-sky-500" />
+                Kategori Afiliasi & Instansi
+              </label>
+              <label
+                class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <input type="checkbox" id="cfgUsePaket" checked class="accent-sky-500" />
+                Kelompok Pilihan Paket
+              </label>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-3 border-t border-slate-200">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700">
+                DAFTAR PILIHAN PAKET (DAPAT DIUBAH / DITAMBAH / DIKURANGI):
+              </p>
               <button
                 type="button"
-                data-form-mode="umum"
-                onclick="setRegistrationModePreset('umum')"
-                class="form-mode-btn px-3 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
+                onclick="addPackageConfigRow()"
+                class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-[10px] shadow-[0_10px_20px_rgba(14,165,233,0.18)]"
               >
-                Peserta Umum
-              </button>
-              <button
-                type="button"
-                data-form-mode="mahasiswa"
-                onclick="setRegistrationModePreset('mahasiswa')"
-                class="form-mode-btn px-3 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
-              >
-                Mahasiswa
-              </button>
-              <button
-                type="button"
-                data-form-mode="internal"
-                onclick="setRegistrationModePreset('internal')"
-                class="form-mode-btn px-3 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-[10px] shadow-[0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
-              >
-                Pegawai Internal
+                + Tambah Paket
               </button>
             </div>
-            <select
-              id="cfgRegistrationMode"
-              class="w-full px-3 py-2 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
-            >
-              <option value="umum">Peserta Umum</option>
-              <option value="mahasiswa">Mahasiswa</option>
-              <option value="internal">Pegawai Internal</option>
-            </select>
-          </div>
-          <p class="text-xs font-extrabold uppercase text-navy">
-            Field Formulir yang Ditampilkan:
-          </p>
-          <div class="grid grid-cols-2 gap-2.5 text-xs font-semibold">
-            <label
-              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
-              ><input type="checkbox" id="cfgUseGender" checked /> Jenis
-              Kelamin</label
-            >
-            <label
-              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
-              ><input type="checkbox" id="cfgUseWa" checked /> Nomor
-              WhatsApp</label
-            >
-            <label
-              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
-              ><input type="checkbox" id="cfgUseEmail" checked /> Alamat
-              Email</label
-            >
-            <label
-              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
-              ><input type="checkbox" id="cfgUseDomisili" checked /> Domisili
-              (Provinsi & Kota)</label
-            >
-            <label
-              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
-              ><input type="checkbox" id="cfgUseAfiliasi" checked /> Kategori
-              Afiliasi & Instansi</label
-            >
-            <label
-              class="flex items-center gap-2 p-2.5 rounded-xl border bg-slate-50"
-              ><input type="checkbox" id="cfgUsePaket" checked /> Kelompok
-              Pilihan Paket</label
-            >
+            <div id="cfgPackagesList" class="space-y-2"></div>
           </div>
         </div>
 
-        <div class="space-y-3 pt-2 border-t border-slate-200">
-          <div class="flex items-center justify-between">
-            <p class="text-xs font-extrabold uppercase text-navy">
-              Daftar Pilihan Paket (Dapat Diubah / Ditambah / Dikurangi):
-            </p>
-            <button
-              type="button"
-              onclick="addPackageConfigRow()"
-              class="px-3 py-1 rounded-lg bg-navy text-amber-400 font-bold text-xs"
-            >
-              + Tambah Paket
-            </button>
-          </div>
-          <div id="cfgPackagesList" class="space-y-2"></div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-4 border-t border-white/70">
+        <div class="flex justify-end gap-2 pt-4 mt-4 border-t border-slate-200">
           <button
             onclick="closeFormConfigModal()"
-            class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs"
+            class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs shadow-sm"
           >
             Tutup
           </button>
           <button
             onclick="saveFormConfigModal()"
-            class="px-5 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs"
+            class="px-5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-extrabold text-xs shadow-[0_10px_20px_rgba(14,165,233,0.18)]"
           >
             Simpan Format Pendaftaran
           </button>
         </div>
+
+        <select
+          id="cfgRegistrationMode"
+          class="hidden"
+        >
+          <option value="umum">Peserta Umum</option>
+          <option value="mahasiswa">Mahasiswa</option>
+          <option value="internal">Pegawai Internal</option>
+        </select>
       </div>
     </div>
 
@@ -3226,9 +3202,9 @@
           const btn = document.getElementById(btnId);
           if (!btn) return;
           if (key === activeDashTab) {
-            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-grad-navy text-amber-400 shadow-lg scale-[1.02] border border-amber-400/50`;
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-[0_12px_24px_rgba(14,165,233,0.2)] scale-[1.02] border border-sky-400`;
           } else {
-            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-white hover:bg-amber-50 text-slate-700 border border-slate-200/90 shadow-sm`;
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm`;
           }
         });
 
@@ -5602,7 +5578,7 @@
                                 ${avail2025
                                   .map((m) => {
                                     const active = d.members.includes(m);
-                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-navy text-amber-400 shadow" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
+                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-sky-500 text-white border border-sky-500 shadow-[0_8px_18px_rgba(14,165,233,0.18)]" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
                                   })
                                   .join("")}
                             </div>
@@ -5614,7 +5590,7 @@
                                 ${avail2026
                                   .map((m) => {
                                     const active = d.members.includes(m);
-                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-navy text-amber-400 shadow" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
+                                    return `<button type="button" onclick="toggleWizMember(${idx}, '${m}')" class="px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition ${active ? "bg-sky-500 text-white border border-sky-500 shadow-[0_8px_18px_rgba(14,165,233,0.18)]" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-100"}">${active ? "✓ " : "+ "}${m}</button>`;
                                   })
                                   .join("")}
                             </div>
@@ -5886,12 +5862,13 @@
       function activateFormActionButton(mode) {
         document.querySelectorAll(".form-action-btn").forEach((btn) => {
           const isActive = btn.dataset.formAction === mode;
-          btn.classList.toggle("bg-navy", isActive);
-          btn.classList.toggle("text-amber-400", isActive);
-          btn.classList.toggle("border-navy", isActive);
-          btn.classList.toggle("shadow-sm", isActive);
+          btn.classList.toggle("bg-sky-500", isActive);
+          btn.classList.toggle("text-white", isActive);
+          btn.classList.toggle("border-sky-500", isActive);
+          btn.classList.toggle("shadow-[0_10px_24px_rgba(14,165,233,0.18)]", isActive);
           btn.classList.toggle("text-slate-700", !isActive);
           btn.classList.toggle("bg-white", !isActive);
+          btn.classList.toggle("border-slate-300", !isActive);
         });
       }
 
@@ -5906,12 +5883,13 @@
         if (select) select.value = mode;
         document.querySelectorAll(".form-mode-btn").forEach((btn) => {
           const isActive = btn.dataset.formMode === mode;
-          btn.classList.toggle("bg-navy", isActive);
-          btn.classList.toggle("text-amber-400", isActive);
-          btn.classList.toggle("border-navy", isActive);
-          btn.classList.toggle("shadow-sm", isActive);
+          btn.classList.toggle("bg-sky-500", isActive);
+          btn.classList.toggle("text-white", isActive);
+          btn.classList.toggle("border-sky-500", isActive);
+          btn.classList.toggle("shadow-[0_10px_24px_rgba(14,165,233,0.18)]", isActive);
           btn.classList.toggle("text-slate-700", !isActive);
           btn.classList.toggle("bg-white", !isActive);
+          btn.classList.toggle("border-slate-300", !isActive);
         });
         syncToCloud();
         renderAll();
@@ -6032,12 +6010,13 @@
         document.getElementById("cfgRegistrationMode").value = mode;
         document.querySelectorAll(".form-mode-btn").forEach((btn) => {
           const isActive = btn.dataset.formMode === mode;
-          btn.classList.toggle("bg-navy", isActive);
-          btn.classList.toggle("text-amber-400", isActive);
-          btn.classList.toggle("border-navy", isActive);
-          btn.classList.toggle("shadow-sm", isActive);
+          btn.classList.toggle("bg-sky-500", isActive);
+          btn.classList.toggle("text-white", isActive);
+          btn.classList.toggle("border-sky-500", isActive);
+          btn.classList.toggle("shadow-[0_10px_24px_rgba(14,165,233,0.18)]", isActive);
           btn.classList.toggle("text-slate-700", !isActive);
           btn.classList.toggle("bg-white", !isActive);
+          btn.classList.toggle("border-slate-300", !isActive);
         });
 
         tempPackagesConfig = JSON.parse(JSON.stringify(cfg.packages || []));
