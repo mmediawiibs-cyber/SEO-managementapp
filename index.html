@@ -945,7 +945,7 @@
           id="pubAutoRegistrationNotice"
           class="hidden mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 font-semibold"
         >
-          Peserta mahasiswa otomatis tercatat pada database peserta event ini.
+          Peserta mahasiswa dan pegawai internal otomatis tercatat pada database peserta event ini.
           Check-in hanya dilakukan saat panitia membuka akses check-in.
         </div>
 
@@ -2604,7 +2604,11 @@
         if (!event) return;
         publicRouteOpened = true;
         activeEventId = event.id;
-        if (event.formConfigSaved === false && event.registrationMode !== "mahasiswa") {
+        if (
+          event.formConfigSaved === false &&
+          event.registrationMode !== "mahasiswa" &&
+          event.registrationMode !== "internal"
+        ) {
           document.getElementById("viewLogin").classList.add("hidden");
           document.getElementById("viewPublicLanding").classList.add("hidden");
           document.body.insertAdjacentHTML(
@@ -2624,7 +2628,11 @@
           showToast("Event tidak ditemukan.", "error");
           return;
         }
-        if (event.formConfigSaved === false && event.registrationMode !== "mahasiswa") {
+        if (
+          event.formConfigSaved === false &&
+          event.registrationMode !== "mahasiswa" &&
+          event.registrationMode !== "internal"
+        ) {
           showToast(
             "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
             "error",
@@ -3057,7 +3065,9 @@
               : "bg-slate-200 text-slate-700";
             const dateClass = isActive ? "text-amber-200" : "text-slate-500";
             const showRegistrationButton =
-              item.formConfigSaved !== false && item.registrationMode !== "mahasiswa";
+              item.formConfigSaved !== false &&
+              item.registrationMode !== "mahasiswa" &&
+              item.registrationMode !== "internal";
 
             return `
                     <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer rounded-2xl p-4 border-2 transition-all ${cardClass}">
@@ -5779,7 +5789,10 @@
           ev.subsidiKampus = 0;
           ev.htmPeserta = Number(htmInput?.value || ev.htmPeserta || 0);
           ev.isProfitEvent = isProfitEvent;
-          ev.formConfigSaved = registrationMode === "mahasiswa" ? true : ev.formConfigSaved;
+          ev.formConfigSaved =
+            registrationMode === "mahasiswa" || registrationMode === "internal"
+              ? true
+              : ev.formConfigSaved;
           ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
           if (ev.registrationMode === "mahasiswa") {
             ev.studentYear = ev.studentYear || "2025";
@@ -5849,7 +5862,11 @@
             rundown: [],
             meetings: [],
             documents: [],
-            formConfigSaved: registrationMode === "mahasiswa" ? true : false,
+            formConfigSaved:
+              registrationMode === "mahasiswa" ||
+              registrationMode === "internal"
+                ? true
+                : false,
             formConfig: {
               useGender: true,
               useWa: true,
@@ -6009,7 +6026,10 @@
         const ev = getActiveEvent();
         if (ev) {
           ev.registrationMode = mode;
-          ev.formConfigSaved = mode === "mahasiswa" ? true : ev.formConfigSaved;
+          ev.formConfigSaved =
+            mode === "mahasiswa" || mode === "internal"
+              ? true
+              : ev.formConfigSaved;
           if (!ev.formConfig) ev.formConfig = {};
           ev.formConfig.registrationMode = mode;
           const yearChoice = document.querySelector(
@@ -6136,7 +6156,11 @@
         if (eventId) activeEventId = eventId;
         const ev = getActiveEvent();
         const mode = getEventRegistrationMode(ev);
-        if (ev.formConfigSaved === false && mode !== "mahasiswa") {
+        if (
+          ev.formConfigSaved === false &&
+          mode !== "mahasiswa" &&
+          mode !== "internal"
+        ) {
           showToast(
             "Simpan Format Pendaftaran terlebih dahulu untuk membuka link.",
             "error",
@@ -6169,10 +6193,10 @@
 
         const autoNotice = document.getElementById("pubAutoRegistrationNotice");
         if (autoNotice) {
-          autoNotice.classList.toggle("hidden", !isMahasiswa);
+          autoNotice.classList.toggle("hidden", !(isMahasiswa || isInternal));
         }
 
-        if (isMahasiswa) {
+        if (isMahasiswa || isInternal) {
           document.getElementById("publicRegForm").classList.add("hidden");
           document.getElementById("pubTicketResult").classList.add("hidden");
         }
