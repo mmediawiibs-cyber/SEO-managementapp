@@ -242,22 +242,7 @@
               id="loginRoleHint"
               class="mt-2.5 p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 leading-relaxed"
             >
-              💡 <b>Panduan Password:</b><br />
-              • Super Admin:
-              <code
-                class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
-                >111</code
-              ><br />
-              • Admin / SC / Pengelola:
-              <code
-                class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
-                >456</code
-              ><br />
-              • Anggota / VIP / Mahasiswa:
-              <code
-                class="font-bold text-navy bg-amber-100 px-1.5 py-0.5 rounded"
-                >777</code
-              >
+              Masukkan password sesuai akun Anda.
             </div>
           </div>
 
@@ -6665,6 +6650,11 @@
 
       // INIT ON LOAD
       document.addEventListener("DOMContentLoaded", () => {
+        if (publicEventId) {
+          document.getElementById("viewLogin").classList.add("hidden");
+          document.getElementById("viewApp").classList.add("hidden");
+          document.getElementById("viewPublicLanding").classList.add("hidden");
+        }
         initLoginDropdown();
         initFirebaseConnection();
         openPublicRouteIfRequested();
