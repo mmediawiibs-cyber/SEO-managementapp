@@ -908,7 +908,7 @@
         <form
           id="publicRegForm"
           onsubmit="submitPublicRegistration(event)"
-          class="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-slate-200 space-y-6"
+          class="bg-white/90 rounded-3xl p-6 sm:p-8 shadow-[0_18px_50px_rgba(15,23,42,0.08)] border border-slate-200/80 backdrop-blur-sm space-y-6"
         >
           <div class="border-b border-slate-200 pb-4">
             <h2 class="text-xl font-black text-navy">
@@ -923,12 +923,12 @@
           <!-- Kelompok 1: Identitas -->
           <div
             id="pubGroupIdentitas"
-            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-4"
           >
             <h3
-              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
             >
-              1. Kelompok Identitas
+              Informasi Pribadi
             </h3>
             <div id="fieldWrapNama">
               <label class="block text-xs font-bold text-slate-700 mb-1"
@@ -993,12 +993,12 @@
           <!-- Kelompok 2: Kontak dan Alamat -->
           <div
             id="pubGroupKontak"
-            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-4"
           >
             <h3
-              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
             >
-              2. Kelompok Kontak & Domisili Saat Ini
+              Informasi Kontak dan Domisili
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div id="fieldWrapWa">
@@ -1057,12 +1057,12 @@
           <!-- Kelompok 3: Afiliasi -->
           <div
             id="pubGroupAfiliasi"
-            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4"
+            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-4"
           >
             <h3
-              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
             >
-              3. Kelompok Afiliasi & Instansi
+              Identitas Peserta dan Instansi
             </h3>
             <div id="fieldWrapKategoriAfiliasi">
               <label class="block text-xs font-bold text-slate-700 mb-2"
@@ -1121,12 +1121,12 @@
           <!-- Kelompok 4: Pilihan Paket -->
           <div
             id="pubGroupPaket"
-            class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 border-t-2 border-t-slate-300 pt-5 mt-2"
+            class="p-5 rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.04)] space-y-3 pt-5 mt-2"
           >
             <h3
-              class="text-xs font-extrabold uppercase tracking-wider text-navy"
+              class="text-[11px] font-black uppercase tracking-[0.18em] text-slate-700"
             >
-              4. Kelompok Pilihan Paket Pendaftaran
+              Pilihan Paket Pendaftaran
             </h3>
             <div
               id="pubPackagesContainer"
@@ -4485,21 +4485,29 @@
                     ${
                       isSc
                         ? `
-                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+                        <div class="p-4 rounded-2xl border border-white/50 bg-white/40 backdrop-blur-xl shadow-[0_10px_30px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/60 flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <h4 class="text-xs font-extrabold uppercase text-navy">📲 Gate Scanner QR Kehadiran Peserta (Hari-H)</h4>
                                 <p class="text-[11px] text-slate-600">Gunakan kamera HP untuk scan QR E-Tiket peserta atau ketik kode tiket (Contoh: <b>SEO-2026-882</b>). Tombol di bawah mengunci/membuka akses pencatatan hadir.</p>
                             </div>
                             <div class="flex flex-wrap gap-2 items-center">
-                                <button type="button" onclick="clearAllParticipants()" class="px-4 py-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-extrabold text-xs shadow">🗑️ Hapus Semua Peserta</button>
-                                <button type="button" onclick="toggleParticipantCheckInGate()" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-emerald-600 text-white" : "bg-amber-400 hover:bg-amber-300 text-navy"} font-extrabold text-xs shadow flex items-center gap-1.5">
-                                    <span>${checkinOpen ? "🔒 Tutup Check-in Peserta" : "✅ Buka Check-in Peserta"}</span>
+                                <button type="button" onclick="clearAllParticipants()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-white/60 bg-white/55 hover:bg-white/75 text-rose-700 font-bold text-[11px] shadow-[0_8px_20px_rgba(244,63,94,0.12)] backdrop-blur-md transition-all">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 7h16"/></svg>
+                                    Hapus Semua Peserta
                                 </button>
-                                <button type="button" onclick="${checkinOpen ? "openRealQRScanner('peserta')" : "return false;"}" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-navy text-amber-400" : "bg-slate-200 text-slate-500 cursor-not-allowed"} font-extrabold text-xs shadow flex items-center gap-1.5" ${checkinOpen ? "" : "disabled"}>
-                                    <span>📷 Buka Kamera Scan QR</span>
+                                <button type="button" onclick="toggleParticipantCheckInGate()" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl ${checkinOpen ? "bg-emerald-400/80 hover:bg-emerald-500/85 border border-emerald-200/80 text-white" : "bg-amber-200/80 hover:bg-amber-300/80 border border-amber-100/80 text-navy"} font-bold text-[11px] shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all">
+                                    <span>${checkinOpen ? "🔒" : "✅"}</span>
+                                    <span>${checkinOpen ? "Tutup Check-in" : "Buka Check-in"}</span>
                                 </button>
-                                <input type="text" id="qrScanTicketInput" placeholder="Atau Ketik Kode Tiket..." class="px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white" ${checkinOpen ? "" : "disabled"}>
-                                <button onclick="${checkinOpen ? "scanParticipantQrTicket()" : "return false;"}" class="px-4 py-2 rounded-xl ${checkinOpen ? "bg-grad-navy text-amber-400" : "bg-slate-200 text-slate-500 cursor-not-allowed"} font-extrabold text-xs shadow" ${checkinOpen ? "" : "disabled"}>Check-in Manual</button>
+                                <button type="button" onclick="${checkinOpen ? "openRealQRScanner('peserta')" : "return false;"}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl ${checkinOpen ? "bg-slate-900/80 hover:bg-slate-800/85 border border-slate-300/50 text-amber-200" : "bg-slate-200/70 text-slate-500 cursor-not-allowed border border-slate-200/50"} font-bold text-[11px] shadow-[0_8px_20px_rgba(15,23,42,0.08)] backdrop-blur-md transition-all" ${checkinOpen ? "" : "disabled"}>
+                                    <span>📷</span>
+                                    <span>Scan QR</span>
+                                </button>
+                                <input type="text" id="qrScanTicketInput" placeholder="Kode tiket..." class="px-3 py-2 rounded-2xl border border-white/60 bg-white/60 backdrop-blur-md text-[11px] font-semibold text-slate-700 w-32 shadow-[0_8px_20px_rgba(15,23,42,0.04)]" ${checkinOpen ? "" : "disabled"}>
+                                <button onclick="${checkinOpen ? "scanParticipantQrTicket()" : "return false;"}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-2xl ${checkinOpen ? "bg-sky-500/80 hover:bg-sky-600/85 border border-sky-200/60 text-white" : "bg-slate-200/70 text-slate-500 cursor-not-allowed border border-slate-200/50"} font-bold text-[11px] shadow-[0_8px_20px_rgba(14,165,233,0.14)] backdrop-blur-md transition-all" ${checkinOpen ? "" : "disabled"}>
+                                    <span>✓</span>
+                                    <span>Check-in Manual</span>
+                                </button>
                             </div>
                         </div>
                     `
@@ -4563,13 +4571,13 @@
                                             ? `
                                             <td class="p-3 text-right">
                                                 <div class="inline-flex gap-1.5">
-                                                    <button onclick="editParticipantPrompt('${p.id}')" title="Edit Peserta" class="p-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800">
+                                                    <button onclick="editParticipantPrompt('${p.id}')" title="Edit Peserta" class="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-white/70 bg-white/60 hover:bg-white/80 text-amber-700 shadow-[0_6px_14px_rgba(251,191,36,0.12)] backdrop-blur-md transition-all">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                                     </button>
-                                                    <button onclick="deleteParticipantFromEvent('${p.id}')" title="Hapus Peserta" class="p-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700">
+                                                    <button onclick="deleteParticipantFromEvent('${p.id}')" title="Hapus Peserta" class="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-white/70 bg-white/60 hover:bg-white/80 text-red-600 shadow-[0_6px_14px_rgba(239,68,68,0.12)] backdrop-blur-md transition-all">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 7h16"/></svg>
                                                     </button>
-                                                    <button onclick="cancelParticipantStatus('${p.id}')" title="Batal Mengikuti Event" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
+                                                    <button onclick="cancelParticipantStatus('${p.id}')" title="Batal Mengikuti Event" class="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-white/70 bg-white/60 hover:bg-white/80 text-rose-600 shadow-[0_6px_14px_rgba(244,63,94,0.12)] backdrop-blur-md transition-all">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
                                                     </button>
                                                 </div>
