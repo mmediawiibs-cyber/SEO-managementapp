@@ -1542,7 +1542,7 @@
               </div>
             </div>
             <div
-              class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200"
             >
               <div id="wizTargetPesertaField">
                 <label class="block text-xs font-bold text-slate-700 mb-1"
@@ -1553,17 +1553,6 @@
                   id="wizTargetPeserta"
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
                   value="60"
-                />
-              </div>
-              <div id="wizSubsidiField">
-                <label class="block text-xs font-bold text-slate-700 mb-1"
-                  >Subsidi / Dana Awal Kampus (Rp)</label
-                >
-                <input
-                  type="number"
-                  id="wizSubsidi"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
-                  value="2000000"
                 />
               </div>
               <div id="wizHtmField">
@@ -4062,14 +4051,10 @@
                             : "Mode Non-Profit: target peserta dan HTM tetap dicatat untuk perencanaan, tetapi nilai tiket tidak masuk ke saldo kas."
                         }
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="p-4 rounded-2xl bg-slate-50 border">
                             <label class="text-[11px] font-bold text-slate-500 block">Target Peserta</label>
                             <input type="number" value="${ev.targetPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('targetPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
-                        </div>
-                        <div class="p-4 rounded-2xl ${isProfitEvent ? "bg-slate-50 border" : "bg-emerald-50 border border-emerald-200"}">
-                            <label class="text-[11px] font-bold ${isProfitEvent ? "text-slate-500" : "text-emerald-800"} block">${isProfitEvent ? "Subsidi Kampus (Rp)" : "Dana Subsidi Kampus (Uang Masuk)"}</label>
-                            <input type="number" value="${ev.subsidiKampus}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('subsidiKampus', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border ${isProfitEvent ? "text-navy bg-white" : "border-emerald-200 text-emerald-900 bg-white"} text-sm font-black">
                         </div>
                         <div class="p-4 rounded-2xl bg-slate-50 border">
                             <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
@@ -4210,14 +4195,14 @@
 
       function updateBasicFinanceParam(field, val) {
         const ev = getActiveEvent();
+        if (field === "subsidiKampus") {
+          showToast("Parameter dana subsidi kampus tidak digunakan lagi.", "error");
+          return;
+        }
         ev[field] = Number(val) || 0;
         syncToCloud();
         renderAll();
-        showToast(
-          field === "subsidiKampus"
-            ? "Dana subsidi kampus diperbarui."
-            : "Parameter dasar keuangan diperbarui.",
-        );
+        showToast("Parameter dasar keuangan diperbarui.");
       }
 
       function saveUnitEconomicItem() {
@@ -4231,7 +4216,8 @@
         }
         const itemEl = document.getElementById("ueItemInput");
         const costEl = document.getElementById("ueCostInput");
-        if (!itemEl.value.trim()) return;
+        const submitBtn = document.getElementById("ueSubmitBtn");
+        if (!itemEl || !costEl || !itemEl.value.trim()) return;
         if (editUeId) {
           const target = ev.unitEconomics.find((u) => u.id === editUeId);
           if (target) {
@@ -4246,6 +4232,9 @@
             cost: Number(costEl.value) || 0,
           });
         }
+        itemEl.value = "";
+        costEl.value = "";
+        if (submitBtn) submitBtn.textContent = "+ Tambah";
         syncToCloud();
         renderAll();
         showToast("Unit Economics disimpan.");
@@ -4255,10 +4244,13 @@
         const ev = getActiveEvent();
         const target = ev.unitEconomics.find((u) => u.id === id);
         if (!target) return;
+        const itemEl = document.getElementById("ueItemInput");
+        const costEl = document.getElementById("ueCostInput");
+        const submitBtn = document.getElementById("ueSubmitBtn");
         editUeId = id;
-        document.getElementById("ueItemInput").value = target.item;
-        document.getElementById("ueCostInput").value = target.cost;
-        document.getElementById("ueSubmitBtn").textContent = "Update";
+        if (itemEl) itemEl.value = target.item;
+        if (costEl) costEl.value = target.cost;
+        if (submitBtn) submitBtn.textContent = "Update";
       }
 
       function deleteUe(id) {
@@ -4279,7 +4271,8 @@
         }
         const itemEl = document.getElementById("boItemInput");
         const costEl = document.getElementById("boCostInput");
-        if (!itemEl.value.trim()) return;
+        const submitBtn = document.getElementById("boSubmitBtn");
+        if (!itemEl || !costEl || !itemEl.value.trim()) return;
         if (editBoId) {
           const target = ev.biayaOperasional.find((b) => b.id === editBoId);
           if (target) {
@@ -4294,6 +4287,9 @@
             cost: Number(costEl.value) || 0,
           });
         }
+        itemEl.value = "";
+        costEl.value = "";
+        if (submitBtn) submitBtn.textContent = "+ Biaya Lain";
         syncToCloud();
         renderAll();
         showToast("Biaya Operasional disimpan.");
@@ -4303,10 +4299,13 @@
         const ev = getActiveEvent();
         const target = ev.biayaOperasional.find((b) => b.id === id);
         if (!target) return;
+        const itemEl = document.getElementById("boItemInput");
+        const costEl = document.getElementById("boCostInput");
+        const submitBtn = document.getElementById("boSubmitBtn");
         editBoId = id;
-        document.getElementById("boItemInput").value = target.item;
-        document.getElementById("boCostInput").value = target.cost;
-        document.getElementById("boSubmitBtn").textContent = "Update";
+        if (itemEl) itemEl.value = target.item;
+        if (costEl) costEl.value = target.cost;
+        if (submitBtn) submitBtn.textContent = "Update";
       }
 
       function deleteBo(id) {
@@ -5389,7 +5388,6 @@
           }
 
           document.getElementById("wizTargetPeserta").value = ev.targetPeserta;
-          document.getElementById("wizSubsidi").value = ev.subsidiKampus;
           document.getElementById("wizHtm").value = ev.htmPeserta;
           document.getElementById("wizHeroBanner").value = ev.heroBanner || "";
           const radioProfit = document.querySelector(
@@ -5419,7 +5417,6 @@
           document.getElementById("wizJamMulai").value = "08:00";
           document.getElementById("wizJamSelesai").value = "15:00";
           document.getElementById("wizTargetPeserta").value = 60;
-          document.getElementById("wizSubsidi").value = 2000000;
           document.getElementById("wizHtm").value = 75000;
           document.getElementById("wizHeroBanner").value = "";
 
@@ -5725,7 +5722,6 @@
 
         const profitMode = applyProfitModeState();
         const isProfitEvent = profitMode !== "nonprofit";
-        const subsidyInput = document.getElementById("wizSubsidi");
         const htmInput = document.getElementById("wizHtm");
 
         if (wizardMode === "edit") {
@@ -5744,7 +5740,7 @@
           ev.speakers = JSON.parse(JSON.stringify(wizardTempSpeakers));
           ev.targetPeserta =
             Number(document.getElementById("wizTargetPeserta").value) || 50;
-          ev.subsidiKampus = Number(subsidyInput?.value || ev.subsidiKampus || 0);
+          ev.subsidiKampus = 0;
           ev.htmPeserta = Number(htmInput?.value || ev.htmPeserta || 0);
           ev.isProfitEvent = isProfitEvent;
           ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
@@ -5783,7 +5779,7 @@
             speakers: JSON.parse(JSON.stringify(wizardTempSpeakers)),
             targetPeserta:
               Number(document.getElementById("wizTargetPeserta").value) || 60,
-            subsidiKampus: Number(subsidyInput?.value || 0),
+            subsidiKampus: 0,
             htmPeserta: Number(htmInput?.value || htm || 0),
             isProfitEvent: isProfitEvent,
             registrationMode: draftMode,
@@ -5869,7 +5865,7 @@
               ? "Mode Non-Profit: target peserta dan HTM tetap dicatat untuk perencanaan, tetapi tidak menambah arus kas."
               : "Mode Profit: target peserta dan HTM adalah parameter dasar utama untuk simulasi keuangan.";
         }
-        ["wizTargetPeserta", "wizSubsidi", "wizHtm"].forEach((id) => {
+        ["wizTargetPeserta", "wizHtm"].forEach((id) => {
           const el = document.getElementById(id);
           if (!el) return;
           el.disabled = false;
