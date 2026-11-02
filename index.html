@@ -1472,6 +1472,16 @@
                     Upload File
                   </button>
                 </div>
+                <div
+                  id="wizHeroBannerPreviewWrap"
+                  class="hidden mt-2 rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm"
+                >
+                  <img
+                    id="wizHeroBannerPreview"
+                    alt="Preview hero banner"
+                    class="w-full h-32 object-cover"
+                  />
+                </div>
                 <div class="rounded-xl border border-dashed border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-slate-700 leading-relaxed">
                   <strong>Rekomendasi:</strong> rasio ideal 1200x675 px (16:9). <strong>Maksimal upload:</strong> 2 MB. Format yang disarankan: JPG / PNG.
                 </div>
@@ -2602,6 +2612,21 @@
         return url.toString();
       }
 
+      function syncHeroBannerPreview() {
+        const bannerInput = document.getElementById("wizHeroBanner");
+        const previewWrap = document.getElementById("wizHeroBannerPreviewWrap");
+        const preview = document.getElementById("wizHeroBannerPreview");
+        const bannerValue = (bannerInput?.value || "").trim();
+        if (!preview || !previewWrap) return;
+        if (!bannerValue) {
+          previewWrap.classList.add("hidden");
+          preview.src = "";
+          return;
+        }
+        preview.src = bannerValue;
+        previewWrap.classList.remove("hidden");
+      }
+
       function handleHeroBannerUpload(event) {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
@@ -2619,6 +2644,7 @@
         reader.onload = function () {
           const bannerUrl = String(reader.result || "");
           document.getElementById("wizHeroBanner").value = bannerUrl;
+          syncHeroBannerPreview();
           showToast("Banner event berhasil diupload.");
         };
         reader.readAsDataURL(file);
@@ -5481,6 +5507,7 @@
           document.getElementById("wizHtm").value = ev.htmPeserta;
           document.getElementById("wizHeroBanner").value = ev.heroBanner || "";
           document.getElementById("wizHeroBannerFile").value = "";
+          syncHeroBannerPreview();
           const radioProfit = document.querySelector(
             `input[name="eventProfitMode"][value="${wizardDraftProfitMode}"]`,
           );
@@ -5511,6 +5538,7 @@
           document.getElementById("wizHtm").value = 75000;
           document.getElementById("wizHeroBanner").value = "";
           document.getElementById("wizHeroBannerFile").value = "";
+          syncHeroBannerPreview();
 
           wizardTempSpeakers = [
             { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
@@ -6231,12 +6259,18 @@
 
         const heroBannerImg = document.getElementById("pubHeroBannerImg");
         const heroBannerWrap = document.getElementById("pubHeroBannerWrap");
-        if (ev.heroBanner) {
-          heroBannerImg.src = ev.heroBanner;
+        const bannerSource = (ev.heroBanner || "").trim();
+        if (bannerSource) {
+          heroBannerImg.src = bannerSource;
+          heroBannerImg.onerror = () => {
+            heroBannerWrap.classList.add("hidden");
+            heroBannerImg.src = "";
+          };
           heroBannerWrap.classList.remove("hidden");
         } else {
           heroBannerWrap.classList.add("hidden");
           heroBannerImg.src = "";
+          heroBannerImg.onerror = null;
         }
 
         const cfg = ev.formConfig || {};
