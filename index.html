@@ -45,6 +45,21 @@
         background-color: #f8fafc;
         color: #0f172a;
       }
+      #eventWizardModal input:not([type="radio"]):not([type="checkbox"]),
+      #eventWizardModal select,
+      #eventWizardModal textarea {
+        background-color: rgba(255, 255, 255, 0.88);
+        border-color: rgba(203, 213, 225, 0.85);
+        color: #334155;
+        box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.035);
+        backdrop-filter: blur(12px);
+      }
+      #wizDivisionsContainer > div {
+        background-color: rgba(255, 255, 255, 0.5);
+        border-color: rgba(255, 255, 255, 0.85);
+        box-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+        backdrop-filter: blur(16px);
+      }
       .bg-grad-navy {
         background: linear-gradient(135deg, #0a192f 0%, #1e3a8a 100%);
       }
@@ -240,10 +255,9 @@
             />
             <div
               id="loginRoleHint"
-              class="mt-2.5 p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-600 leading-relaxed"
-            >
-              Masukkan password sesuai akun Anda.
-            </div>
+              class="h-[56px]"
+              aria-hidden="true"
+            ></div>
           </div>
 
           <button
@@ -582,82 +596,92 @@
             <div
               class="bg-white/25 border border-white/50 rounded-3xl p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-xl"
             >
-              <div class="flex flex-wrap gap-2.5" id="dashboardTabButtons">
+              <div class="space-y-2.5" id="dashboardTabButtons">
+                <div class="flex flex-wrap items-stretch gap-2.5" id="dashboardTabPrimaryButtons">
                 <!-- Tab Khusus Koordinator Seksi -->
                 <button
                   id="tabBtnCoordMySection"
                   onclick="switchDashTab('coord_section')"
-                  class="hidden px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="hidden flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>⚡ Kelola Seksi, Jobdesk & Progress</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m13 2-3 8H5l6 12 3-8h5L13 2Z"/></svg>
+                  <span>Kelola Seksi, Jobdesk & Progress</span>
                 </button>
 
                 <button
                   id="tabBtnOverview"
                   onclick="switchDashTab('overview')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>📊 Task & Finance</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V5m0 14h17M8 16v-5m5 5V7m5 9v-8"/></svg>
+                  <span>Task & Finance</span>
                 </button>
 
                 <button
                   id="tabBtnStruktur"
                   onclick="switchDashTab('struktur')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>👥 Struktur Panitia & Semua Tugas</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m6-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm10 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <span>Struktur Panitia & Semua Tugas</span>
                 </button>
 
                 <button
                   id="tabBtnKeuangan"
                   onclick="switchDashTab('keuangan')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>🧮 Keuangan</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 4h2m4 0h2"/></svg>
+                  <span>Keuangan</span>
                 </button>
 
                 <button
                   id="tabBtnKas"
                   onclick="switchDashTab('kas')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>💳 Buku Kas & Bukti Nota</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18m-5 5h2"/></svg>
+                  <span>Buku Kas & Bukti Nota</span>
                 </button>
 
                 <button
                   id="tabBtnPeserta"
                   onclick="switchDashTab('peserta')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span
-                    >🎟️ Database Peserta (<span id="tabPesertaCount">0</span
-                    >)</span
-                  >
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7a2 2 0 0 0 0 4v2a2 2 0 0 0 0 4h16a2 2 0 0 0 0-4v-2a2 2 0 0 0 0-4H4Z"/><path stroke-linecap="round" stroke-dasharray="2 3" stroke-width="1.8" d="M12 7v10"/></svg>
+                  <span>Database Peserta (<span id="tabPesertaCount">0</span>)</span>
                 </button>
 
                 <button
                   id="tabBtnRundown"
                   onclick="switchDashTab('rundown')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>⏱️ Rundown Acara</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M12 7v5l3 2"/></svg>
+                  <span>Rundown Acara</span>
                 </button>
+                </div>
 
+                <div class="flex flex-wrap items-stretch gap-2.5" id="dashboardTabSecondaryButtons">
                 <button
                   id="tabBtnMeeting"
                   onclick="switchDashTab('meeting')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>📝 Meeting & Notulensi</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M9 4.5h6M9 10h6m-6 4h6m-6 4h3"/></svg>
+                  <span>Meeting & Notulensi</span>
                 </button>
 
                 <button
                   id="tabBtnDokumen"
                   onclick="switchDashTab('dokumen')"
-                  class="px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 shadow-sm"
+                  class="flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 shadow-sm"
                 >
-                  <span>📂 Arsip Dokumen & SK</span>
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+                  <span>Arsip Dokumen & SK</span>
                 </button>
+                </div>
               </div>
             </div>
 
@@ -1248,7 +1272,7 @@
             </div>
 
             <div
-              class="p-5 rounded-2xl bg-white/30 border border-white/60 shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md space-y-4"
+              class="p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl space-y-4"
             >
               <p
                 class="text-xs font-extrabold uppercase tracking-wider text-navy"
@@ -1262,7 +1286,7 @@
                   >
                   <select
                     id="wizDivisi"
-                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
+              class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-300"
                   >
                     <option value="HRD">HRD</option>
                     <option value="LPM">LPM</option>
@@ -1338,7 +1362,7 @@
             </div>
 
             <div
-              class="p-5 rounded-3xl border border-slate-200 bg-white shadow-[0_8px_20px_rgba(15,23,42,0.03)] space-y-4"
+              class="p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl space-y-4"
             >
               <p
                 class="text-xs font-extrabold uppercase tracking-wider text-navy"
@@ -1409,7 +1433,7 @@
             </div>
 
             <div
-              class="p-5 rounded-3xl border border-white/70 bg-white/25 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl space-y-3"
+              class="p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl space-y-3"
             >
               <div class="flex items-center justify-between">
                 <p
@@ -1479,14 +1503,14 @@
               </div>
               <div
                 id="financeSettingsLockedNote"
-                class="rounded-2xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-[11px] text-amber-800 font-bold backdrop-blur-md"
+                class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-slate-800 font-semibold leading-relaxed"
               >
                 Mode Non-Profit: target peserta dan HTM tetap dicatat untuk
                 perencanaan, tetapi tidak menambah arus kas.
               </div>
             </div>
             <div
-              class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-3xl border border-white/70 bg-white/25 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl"
+              class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl"
             >
               <div id="wizTargetPesertaField">
                 <label class="block text-xs font-bold text-slate-700 mb-1"
@@ -1547,7 +1571,7 @@
 
           <!-- TOMBOL KUSTOMISASI LINK PENDAFTARAN PESERTA -->
           <div
-            class="p-5 rounded-2xl bg-white/25 border border-white/60 shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-lg flex flex-wrap items-center justify-between gap-4"
+            class="p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl flex flex-wrap items-center justify-between gap-4"
           >
             <div>
               <h5 class="text-sm font-black text-navy">
@@ -1756,6 +1780,33 @@
       let isFirebaseActive = false;
       let cloudStateLoaded = false;
 
+      function migrateLegacyAfghaniName() {
+        let changed = false;
+        const rename = (value) => {
+          if (Array.isArray(value)) {
+            value.forEach((item, index) => {
+              if (item === "Afghani, S.Kom.") {
+                value[index] = "Afghani, S.Ikom";
+                changed = true;
+              } else {
+                rename(item);
+              }
+            });
+          } else if (value && typeof value === "object") {
+            Object.keys(value).forEach((key) => {
+              if (value[key] === "Afghani, S.Kom.") {
+                value[key] = "Afghani, S.Ikom";
+                changed = true;
+              } else {
+                rename(value[key]);
+              }
+            });
+          }
+        };
+        rename(eventsData);
+        return changed;
+      }
+
       function initFirebaseConnection() {
         try {
           if (
@@ -1776,6 +1827,12 @@
             const savedLocal = localStorage.getItem("seo_stit_events_backup");
             if (savedLocal) {
               eventsData = JSON.parse(savedLocal);
+              if (migrateLegacyAfghaniName()) {
+                localStorage.setItem(
+                  "seo_stit_events_backup",
+                  JSON.stringify(eventsData),
+                );
+              }
             }
           }
         } catch (err) {
@@ -1815,6 +1872,7 @@
               const cloudData = doc.data();
               if (cloudData && cloudData.eventsData) {
                 eventsData = cloudData.eventsData;
+                if (migrateLegacyAfghaniName()) syncToCloud();
                 cloudStateLoaded = true;
                 if (currentUser) {
                   const updatedRole = evaluateUserRoleForActiveEvent(
@@ -1855,9 +1913,10 @@
         "Sumarni, S.Ag., M.Pd.",
         "Siti Bariyah, M.Pd.",
         "Mulyadi Rasyid",
+        "Afghani, S.Ikom",
       ];
 
-      const SUPER_ADMIN_NAME = "Afghani, S.Kom.";
+      const SUPER_ADMIN_NAME = "Super Admin";
       const ADMIN_ROLE_NAMES = [
         "Muhamad Zacky Haidar, B.A.",
         "Nurhalisa, M.Pd.",
@@ -2184,7 +2243,7 @@
             {
               id: "div_5",
               name: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Kom.",
+              pic: "Afghani, S.Ikom",
               members: [
                 "Reza Pahlevi (2025)",
                 "Salman Alfarisi (2026)",
@@ -2224,7 +2283,7 @@
               uraian: "Cetak Banner Backdrop & Spanduk",
               nominal: 450000,
               seksi: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Kom.",
+              pic: "Afghani, S.Ikom",
               notaUrl: "https://drive.google.com",
             },
           ],
@@ -2332,7 +2391,7 @@
               tempat: "Ruang Rapat Utama STIT",
               isOpen: true,
               attendees: [
-                { name: "Afghani, S.Kom.", time: "13:25 WIB" },
+                { name: "Afghani, S.Ikom", time: "13:25 WIB" },
                 { name: "Yusuf Abdullah, M.Pd.", time: "13:28 WIB" },
                 { name: "Sumarni, S.Ag., M.Pd.", time: "13:30 WIB" },
               ],
@@ -2345,7 +2404,7 @@
               id: "d1",
               title: "SK Kepanitiaan Resmi Workshop LP2M 2026",
               category: "SK Kepanitiaan",
-              uploader: "Afghani, S.Kom.",
+              uploader: "Afghani, S.Ikom",
               url: "https://drive.google.com",
             },
             {
@@ -2746,11 +2805,10 @@
         if (!sel) return;
         sel.innerHTML = `<option value="">Nama Pengguna</option>`;
 
-        const hiddenSuperAdmin = document.createElement("option");
-        hiddenSuperAdmin.value = SUPER_ADMIN_NAME;
-        hiddenSuperAdmin.textContent = SUPER_ADMIN_NAME;
-        hiddenSuperAdmin.hidden = true;
-        sel.appendChild(hiddenSuperAdmin);
+        const superAdminOption = document.createElement("option");
+        superAdminOption.value = SUPER_ADMIN_NAME;
+        superAdminOption.textContent = SUPER_ADMIN_NAME;
+        sel.appendChild(superAdminOption);
 
         const addGroup = (label, arr) => {
           const grp = document.createElement("optgroup");
@@ -2764,7 +2822,7 @@
           sel.appendChild(grp);
         };
 
-        addGroup("1. Kelompok Dosen & Staff STIT (17 Orang)", SDM_STIT);
+        addGroup("1. Kelompok Dosen & Staf STIT (17 Orang)", SDM_STIT);
         addGroup("2. Kelompok Support (4 Orang)", SDM_SUPPORT);
         addGroup("3. Mahasiswa Angkatan 2025 (16 Orang)", SDM_MHS_2025);
         addGroup("4. Mahasiswa Angkatan 2026 (11 Orang)", SDM_MHS_2026);
@@ -2865,7 +2923,7 @@
         const isStit = SDM_STIT.includes(name);
 
         let validPass = false;
-        if (isSuperAdmin && pass === "111") validPass = true;
+        if (isSuperAdmin && pass === "1624") validPass = true;
         else if (isSc && pass === "456") validPass = true;
         else if (isStit && (pass === "456" || pass === "777")) validPass = true;
         else if (!isStit && (pass === "777" || pass === "456"))
@@ -3202,9 +3260,9 @@
           const btn = document.getElementById(btnId);
           if (!btn) return;
           if (key === activeDashTab) {
-            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-[0_12px_24px_rgba(14,165,233,0.2)] scale-[1.02] border border-sky-400`;
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-[0_12px_24px_rgba(14,165,233,0.2)] border border-sky-400`;
           } else {
-            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} px-5 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm`;
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm`;
           }
         });
 
@@ -3984,12 +4042,15 @@
                         ${isReadOnly ? `<span class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-xs">👁️ Mode Lihat Saja (View-Only)</span>` : ""}
                     </div>
 
-                    <div class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-sm text-amber-900 font-bold">
-                        ${
-                          isProfitEvent
-                            ? "Mode Profit: target peserta dan HTM adalah parameter dasar utama untuk simulasi keuangan."
-                            : "Mode Non-Profit: target peserta dan HTM tetap dicatat untuk perencanaan, tetapi nilai tiket tidak masuk ke saldo kas."
-                        }
+                    <div class="flex items-start gap-3 p-4 rounded-2xl border border-sky-200 border-l-4 border-l-sky-500 bg-sky-50 text-sm text-slate-800 leading-relaxed">
+                        <svg class="w-5 h-5 mt-0.5 shrink-0 text-sky-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 11v5m0-8h.01"/></svg>
+                        <p class="font-semibold">
+                          ${
+                            isProfitEvent
+                              ? "<strong class=\"font-extrabold text-sky-950\">Mode Profit:</strong> target peserta dan HTM adalah parameter dasar utama untuk simulasi keuangan."
+                              : "<strong class=\"font-extrabold text-sky-950\">Mode Non-Profit:</strong> target peserta dan HTM tetap dicatat untuk perencanaan, tetapi nilai tiket tidak masuk ke saldo kas."
+                          }
+                        </p>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="p-4 rounded-2xl bg-slate-50 border">
@@ -4471,8 +4532,8 @@
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0 1 16.138 21H7.862a2 2 0 0 1-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 7h16"/></svg>
                                     Hapus Semua Peserta
                                 </button>
-                                <button type="button" onclick="toggleParticipantCheckInGate()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl ${checkinOpen ? "bg-gradient-to-r from-emerald-400 to-emerald-500 border border-emerald-200/80 text-white shadow-[0_10px_24px_rgba(16,185,129,0.20)]" : "bg-gradient-to-r from-amber-200 to-amber-100 border border-amber-100/80 text-navy shadow-[0_10px_24px_rgba(251,191,36,0.12)]"} font-black text-[11px] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0">
-                                    <span>${checkinOpen ? "🔒" : "✅"}</span>
+                                <button type="button" onclick="toggleParticipantCheckInGate()" aria-label="${checkinOpen ? "Tutup Check-in" : "Buka Check-in"}" class="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl ${checkinOpen ? "bg-gradient-to-r from-rose-500 to-red-500 hover:from-rose-600 hover:to-red-600 border border-rose-300/70 text-white shadow-[0_10px_24px_rgba(244,63,94,0.24)]" : "bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 border border-emerald-300/70 text-white shadow-[0_10px_24px_rgba(16,185,129,0.24)]"} font-extrabold text-xs transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${checkinOpen ? "M8 11V7a4 4 0 0 1 8 0v4m-9 0h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Zm5 4v2" : "M13 3h6v18h-6M10 17l5-5-5-5m5 5H3"}"/></svg>
                                     <span>${checkinOpen ? "Tutup Check-in" : "Buka Check-in"}</span>
                                 </button>
                                 <button type="button" onclick="${checkinOpen ? "openRealQRScanner('peserta')" : "return false;"}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl ${checkinOpen ? "bg-slate-950/90 hover:bg-slate-900 border border-slate-300/50 text-amber-200 shadow-[0_10px_24px_rgba(15,23,42,0.12)]" : "bg-slate-200/70 text-slate-500 cursor-not-allowed border border-slate-200/50"} font-black text-[11px] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0" ${checkinOpen ? "" : "disabled"}>
@@ -5442,11 +5503,11 @@
             {
               id: "wdiv_5",
               name: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Kom.",
+              pic: "Afghani, S.Ikom",
               members: [],
               tasks: getDefault10Tasks(
                 "Seksi Dokumentasi & Publikasi",
-                "Afghani, S.Kom.",
+                "Afghani, S.Ikom",
               ),
             },
           ];
@@ -5478,7 +5539,7 @@
           .map((s, idx) => {
             const isCustom = s.name && !DUMMY_SPEAKERS.includes(s.name);
             return `
-                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-white p-3 rounded-xl border border-slate-200">
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-white/75 p-3 rounded-2xl border border-white/90 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
                         <div class="sm:col-span-5">
                             <label class="block text-[10px] font-bold text-slate-500">Pemateri ${idx + 1} (5 Opsi + Tulis Baru)</label>
                             <select onchange="handleWizSpeakerSelect(${idx}, this.value)" class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
