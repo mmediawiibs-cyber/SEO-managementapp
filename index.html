@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SEO — STIT Event Organizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"
@@ -385,7 +386,7 @@
           </div>
 
           <div
-            class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-5"
+            class="bg-white rounded-3xl shadow-[0_12px_30px_rgba(15,23,42,0.09)] border border-slate-200/80 p-5"
           >
             <div class="flex items-center justify-between mb-4">
               <div>
@@ -398,22 +399,36 @@
               <button
                 id="btnCreateNewEventSidebar"
                 onclick="openEventModal('create')"
-                class="hidden px-3 py-1.5 rounded-xl bg-grad-gold text-navy font-extrabold text-xs shadow hover:opacity-95 transition"
+                title="Buat Event Baru"
+                aria-label="Buat Event Baru"
+                class="hidden inline-flex w-10 h-10 items-center justify-center rounded-full bg-grad-gold text-navy shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
               >
-                + Buat Event
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-width="2.5" d="M12 5v14M5 12h14"/></svg>
               </button>
             </div>
 
             <!-- Daftar Kartu Event (Hanya 3 Item: Nama Event, Divisi Penyelenggara, Tanggal) -->
-            <div id="sidebarEventCardList" class="space-y-3"></div>
+            <div id="sidebarEventCardList" class="relative isolate">
+              <div id="sidebarEventActivePill" class="pointer-events-none absolute left-0 top-0 z-0 h-1 w-1 rounded-2xl border-2 border-amber-400 bg-grad-card-active shadow-lg opacity-0" aria-hidden="true"></div>
+              <div id="sidebarEventCards" class="relative z-10 space-y-3"></div>
+            </div>
           </div>
 
           <div
             id="sidebarMiniCalendarWrap"
-            class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-4"
+            class="bg-white rounded-3xl shadow-[0_12px_30px_rgba(15,23,42,0.09)] border border-slate-200/80 p-4"
           >
             <div id="sidebarMiniCalendar"></div>
           </div>
+
+          <div
+            id="sidebarInternationalDays"
+            class="bg-white rounded-3xl shadow-[0_12px_30px_rgba(15,23,42,0.09)] border border-slate-200/80 p-4"
+          ></div>
+          <div
+            id="sidebarAcademicCalendar"
+            class="bg-white rounded-3xl shadow-[0_12px_30px_rgba(15,23,42,0.09)] border border-slate-200/80 p-4"
+          ></div>
         </aside>
 
         <!-- MAIN CONTENT COLUMN -->
@@ -461,24 +476,33 @@
                   -
                 </p>
 
-                <div class="pt-3 flex flex-wrap gap-4 text-xs text-slate-200">
-                  <div
-                    class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl"
-                  >
-                    <span>📅</span>
-                    <span id="headlineDate" class="font-bold">-</span>
+                <div class="mt-5 grid grid-cols-1 text-sm sm:grid-cols-3 sm:divide-x sm:divide-white/20">
+                  <div class="flex items-center gap-3 py-3 sm:justify-start sm:pr-5">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_8px_18px_rgba(251,191,36,0.22)]">
+                      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01"/></svg>
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block text-xs font-semibold text-amber-300">Tanggal</span>
+                      <span id="headlineDate" class="block text-sm font-bold leading-snug text-white">-</span>
+                    </span>
                   </div>
-                  <div
-                    class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl"
-                  >
-                    <span>⏰</span>
-                    <span id="headlineTime" class="font-bold">-</span>
+                  <div class="flex items-center gap-3 py-3 sm:justify-start sm:px-5">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_8px_18px_rgba(251,191,36,0.22)]">
+                      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 7v5l3.5 2"/></svg>
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block text-xs font-semibold text-amber-300">Waktu</span>
+                      <span id="headlineTime" class="block text-sm font-bold leading-snug text-white">-</span>
+                    </span>
                   </div>
-                  <div
-                    class="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-xl"
-                  >
-                    <span>📍</span>
-                    <span id="headlineLocation" class="font-bold">-</span>
+                  <div class="flex items-center gap-3 py-3 sm:justify-start sm:pl-5">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-600 text-white shadow-[0_8px_18px_rgba(251,191,36,0.22)]">
+                      <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.2" stroke-width="1.8"/></svg>
+                    </span>
+                    <span class="min-w-0">
+                      <span class="block text-xs font-semibold text-amber-300">Lokasi</span>
+                      <span id="headlineLocation" class="block text-sm font-bold leading-snug text-white">-</span>
+                    </span>
                   </div>
                 </div>
 
@@ -594,9 +618,10 @@
           <div id="dashboardWorkspaceSection" class="space-y-6">
             <!-- CONTAINER MENU TAB -->
             <div
-              class="bg-white/25 border border-white/50 rounded-3xl p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-xl"
+              class="bg-white rounded-3xl border border-slate-200/80 p-3 shadow-[0_12px_30px_rgba(15,23,42,0.09)]"
             >
-              <div class="space-y-2.5" id="dashboardTabButtons">
+              <div class="relative isolate" id="dashboardTabButtons">
+                <div id="dashboardActiveTabPill" class="pointer-events-none absolute left-0 top-0 z-0 h-1 w-1 rounded-full bg-gradient-to-r from-sky-500 to-blue-600 border border-sky-400 shadow-[0_12px_24px_rgba(14,165,233,0.2)]" aria-hidden="true"></div>
                 <div class="flex flex-wrap items-stretch gap-2.5" id="dashboardTabPrimaryButtons">
                 <!-- Tab Khusus Koordinator Seksi -->
                 <button
@@ -663,7 +688,7 @@
                 </button>
                 </div>
 
-                <div class="flex flex-wrap items-stretch gap-2.5" id="dashboardTabSecondaryButtons">
+                <div class="mt-2.5 flex flex-wrap items-stretch gap-2.5" id="dashboardTabSecondaryButtons">
                 <button
                   id="tabBtnMeeting"
                   onclick="switchDashTab('meeting')"
@@ -787,16 +812,18 @@
                     <div
                       class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
                     >
-                      <h3 class="text-base font-extrabold text-navy mb-4">
-                        📈 Progres Penyelesaian Tugas per Seksi
+                      <h3 class="mb-4 flex items-center gap-2 text-base font-extrabold text-navy">
+                        <svg class="h-5 w-5 shrink-0 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V5m0 14h17M8 16v-5m5 5V7m5 9v-8"/></svg>
+                        Progres Penyelesaian Tugas per Seksi
                       </h3>
                       <div id="ovSectionProgressBars" class="space-y-4"></div>
                     </div>
                     <div
                       class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm"
                     >
-                      <h3 class="text-base font-extrabold text-navy mb-4">
-                        💰 Perbandingan Estimasi vs Realisasi Kas
+                      <h3 class="mb-4 flex items-center gap-2 text-base font-extrabold text-navy">
+                        <svg class="h-5 w-5 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M3 10h18m-5 5h2"/></svg>
+                        Perbandingan Estimasi vs Realisasi Kas
                       </h3>
                       <div id="ovFinanceComparisonBox" class="space-y-4"></div>
                     </div>
@@ -904,17 +931,23 @@
           <div
             class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white/10 p-4 rounded-2xl border border-white/15"
           >
-            <div>
-              <span class="text-slate-300 block">📅 Tanggal:</span
-              ><span id="pubEventDate" class="font-bold text-white">-</span>
+            <div class="flex items-start gap-2.5">
+              <span class="w-8 h-8 shrink-0 rounded-full bg-sky-300/15 text-sky-200 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01"/></svg>
+              </span>
+              <div><span class="text-slate-300 block">Tanggal</span><span id="pubEventDate" class="font-bold text-white">-</span></div>
             </div>
-            <div>
-              <span class="text-slate-300 block">⏰ Waktu:</span
-              ><span id="pubEventTime" class="font-bold text-white">-</span>
+            <div class="flex items-start gap-2.5">
+              <span class="w-8 h-8 shrink-0 rounded-full bg-amber-300/15 text-amber-200 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 7v5l3.5 2"/></svg>
+              </span>
+              <div><span class="text-slate-300 block">Waktu</span><span id="pubEventTime" class="font-bold text-white">-</span></div>
             </div>
-            <div>
-              <span class="text-slate-300 block">📍 Lokasi:</span
-              ><span id="pubEventLocation" class="font-bold text-white">-</span>
+            <div class="flex items-start gap-2.5">
+              <span class="w-8 h-8 shrink-0 rounded-full bg-rose-300/15 text-rose-200 flex items-center justify-center">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.2" stroke-width="1.8"/></svg>
+              </span>
+              <div><span class="text-slate-300 block">Lokasi</span><span id="pubEventLocation" class="font-bold text-white">-</span></div>
             </div>
           </div>
         </div>
@@ -1349,6 +1382,16 @@
                 </div>
               </div>
               <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1" for="wizKetuaPanitia">Ketua Panitia *</label>
+                <select
+                  id="wizKetuaPanitia"
+                  class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
+                >
+                  <option value="">-- Pilih Ketua Panitia --</option>
+                </select>
+                <p class="mt-1 text-[10px] text-slate-500">Ketua Panitia memperoleh akses SC hanya pada event yang dipilih.</p>
+              </div>
+              <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1"
                   >Deskripsi Singkat Event</label
                 >
@@ -1369,14 +1412,27 @@
               >
                 Kelompok B — Waktu & Tempat Pelaksanaan
               </p>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <div>
                   <label class="block text-xs font-bold text-slate-700 mb-1"
-                    >Tanggal Pelaksanaan (Date Picker)</label
+                    >Tanggal Mulai</label
                   >
                   <input
                     type="date"
                     id="wizTanggal"
+                    onchange="syncWizardEventDateRange()"
+                    required
+                    class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  />
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1"
+                    >Tanggal Selesai</label
+                  >
+                  <input
+                    type="date"
+                    id="wizTanggalSelesai"
+                    required
                     class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   />
                 </div>
@@ -1411,15 +1467,10 @@
                     onchange="toggleWizCustomLokasi()"
                     class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
                   >
-                    <option value="Aula Utama Lt. 2 Kampus STIT">
-                      Aula Utama Lt. 2 Kampus STIT
-                    </option>
-                    <option value="Ruang Auditorium Terpadu STIT">
-                      Ruang Auditorium Terpadu STIT
-                    </option>
-                    <option value="Hall Serbaguna / Zoom Hybrid STIT">
-                      Hall Serbaguna / Zoom Hybrid STIT
-                    </option>
+                    <option value="Aula STIT, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat">Aula STIT, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat</option>
+                    <option value="Masjid Al-Kuwait Lantai 2, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat">Masjid Al-Kuwait Lantai 2, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat</option>
+                    <option value="Masjid Nidaul Islam, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat">Masjid Nidaul Islam, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat</option>
+                    <option value="Online Zoom/Gmeet">Online Zoom/Gmeet</option>
                     <option value="__custom__">+ Tulis Tempat Baru...</option>
                   </select>
                   <input
@@ -1444,7 +1495,7 @@
                 <button
                   type="button"
                   onclick="addSpeakerRowInWizard()"
-                  class="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-amber-300 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.12)] border border-amber-300/30"
+                  class="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold text-xs shadow-[0_8px_18px_rgba(14,165,233,0.18)] border border-sky-300/70 transition-all"
                 >
                   + Tambah Pemateri
                 </button>
@@ -1528,10 +1579,12 @@
                   >Harga Tiket / HTM Peserta Default (Rp)</label
                 >
                 <input
-                  type="number"
+                  type="text"
+                  inputmode="numeric"
                   id="wizHtm"
+                  oninput="formatRupiahField(this)"
                   class="w-full px-3.5 py-2.5 rounded-2xl border border-white/70 bg-white/45 text-xs font-semibold text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-sky-200"
-                  value="75000"
+                  value="75.000"
                 />
               </div>
             </div>
@@ -1560,7 +1613,7 @@
               <button
                 type="button"
                 onclick="addWizardDivisionCard()"
-                class="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-200 text-navy font-extrabold text-xs shadow-[0_10px_24px_rgba(251,191,36,0.18)] border border-amber-300/60"
+                class="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-extrabold text-xs shadow-[0_8px_18px_rgba(14,165,233,0.18)] border border-sky-300/70 transition-all"
               >
                 + Tambah Seksi Baru
               </button>
@@ -1571,7 +1624,7 @@
 
           <!-- TOMBOL KUSTOMISASI LINK PENDAFTARAN PESERTA -->
           <div
-            class="p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl flex flex-wrap items-center justify-between gap-4"
+            class="p-5 rounded-3xl border border-white/80 bg-white/45 shadow-[0_14px_36px_rgba(15,23,42,0.07)] backdrop-blur-xl space-y-4"
           >
             <div>
               <h5 class="text-sm font-black text-navy">
@@ -1582,7 +1635,7 @@
                 jumlah paket pendaftaran (Paket-A, Paket-B, dst).
               </p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="grid w-full grid-cols-1 sm:grid-cols-3 gap-2.5">
               <button
                 type="button"
                 data-form-action="umum"
@@ -1590,7 +1643,7 @@
                   activateFormActionButton('umum');
                   openFormConfigModal();
                 "
-                class="form-action-btn px-4 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
+                class="form-action-btn w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-center text-slate-700 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
               >
                 Buat Link Pendaftaran Peserta
               </button>
@@ -1601,7 +1654,7 @@
                   activateFormActionButton('mahasiswa');
                   openRegistrationModeChooser('mahasiswa');
                 "
-                class="form-action-btn px-4 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
+                class="form-action-btn w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-center text-slate-700 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
               >
                 Buat Form Pendaftaran Mahasiswa
               </button>
@@ -1612,7 +1665,7 @@
                   activateFormActionButton('internal');
                   openRegistrationModeChooser('internal');
                 "
-                class="form-action-btn px-4 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-slate-700 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
+                class="form-action-btn w-full px-4 py-2.5 rounded-2xl border border-white/70 bg-white/55 text-center text-slate-700 font-extrabold text-xs shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/80"
               >
                 Form Pegawai Internal
               </button>
@@ -2521,9 +2574,18 @@
       // STATE APLIKASI AKTIF
       let currentUser = null;
       let activeEventId = "evt_1";
+      let renderedSidebarEventId = null;
+      let sidebarCalendarMonth = null;
+      let selectedRundownDay = "";
       const publicEventId = new URLSearchParams(window.location.search).get(
         "event",
       );
+      // Local-only Super Admin shortcut; deployed hosts must continue through login.
+      const localEditModeRequested =
+        new URLSearchParams(window.location.search).get("mode") === "edit" &&
+        (window.location.protocol === "file:" ||
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1");
       let publicRouteOpened = false;
       let currentTicketQrDataUrl = "";
       let activeDashTab = "overview";
@@ -2536,6 +2598,113 @@
       // HELPER FORMAT RUPIAH
       function formatRp(num) {
         return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+      }
+
+      function formatThousands(num) {
+        return (Number(num) || 0).toLocaleString("id-ID");
+      }
+
+      function parseRupiah(value) {
+        const digits = String(value ?? "").replace(/[^\d-]/g, "");
+        return Number(digits) || 0;
+      }
+
+      function formatRupiahField(input) {
+        const digits = String(input.value ?? "").replace(/\D/g, "");
+        input.value = digits ? Number(digits).toLocaleString("id-ID") : "";
+      }
+
+      function animateDashboardText(element, targets, formatter) {
+        if (!element) return;
+        const next = targets.map((value) => Number(value) || 0);
+        const previousTarget = element.__dashboardTarget;
+        const sameTarget =
+          previousTarget &&
+          previousTarget.length === next.length &&
+          next.every((value, index) => value === previousTarget[index]);
+        if (sameTarget && element.__dashboardTween && window.gsap?.isTweening(element.__dashboardTween)) return;
+
+        const finalText = formatter(next);
+        if (sameTarget) {
+          element.textContent = finalText;
+          return;
+        }
+
+        const from = element.__dashboardValues
+          ? [...element.__dashboardValues]
+          : next.map(() => 0);
+        element.__dashboardTarget = next;
+        const reducedMotion =
+          typeof window.matchMedia === "function" &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!window.gsap || reducedMotion) {
+          element.__dashboardValues = next;
+          element.textContent = finalText;
+          return;
+        }
+
+        if (element.__dashboardTween) window.gsap.killTweensOf(element.__dashboardTween);
+        const state = { progress: 0 };
+        element.__dashboardTween = state;
+        window.gsap.to(state, {
+          progress: 1,
+          duration: 0.8,
+          ease: "power2.inOut",
+          overwrite: true,
+          onUpdate: () => {
+            const current = from.map(
+              (value, index) => value + (next[index] - value) * state.progress,
+            );
+            element.__dashboardValues = current;
+            element.textContent = formatter(current);
+          },
+          onComplete: () => {
+            element.__dashboardValues = next;
+            element.textContent = finalText;
+            element.__dashboardTween = null;
+          },
+        });
+        window.gsap.fromTo(
+          element,
+          { y: 6, opacity: 0.78, scale: 0.98 },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: 0.8,
+            ease: "power2.inOut",
+            overwrite: true,
+          },
+        );
+      }
+
+      function getEventEndDate(event) {
+        return event?.tanggalSelesai || event?.tanggal || "";
+      }
+
+      function formatEventDateRange(event) {
+        const start = event?.tanggal || "";
+        const end = getEventEndDate(event);
+        return start && end && start !== end ? `${start} – ${end}` : start || end;
+      }
+
+      function eventOccursOnDate(event, date) {
+        const start = event?.tanggal || "";
+        const end = getEventEndDate(event);
+        return !!start && date >= start && date <= end;
+      }
+
+      const EVENT_CALENDAR_PALETTES = [
+        { cell: "border-blue-300 bg-blue-100 text-blue-900", dot: "bg-blue-600", badge: "bg-blue-200 text-blue-900" },
+        { cell: "border-emerald-300 bg-emerald-100 text-emerald-900", dot: "bg-emerald-600", badge: "bg-emerald-200 text-emerald-900" },
+        { cell: "border-violet-300 bg-violet-100 text-violet-900", dot: "bg-violet-600", badge: "bg-violet-200 text-violet-900" },
+        { cell: "border-orange-300 bg-orange-100 text-orange-900", dot: "bg-orange-600", badge: "bg-orange-200 text-orange-900" },
+        { cell: "border-cyan-300 bg-cyan-100 text-cyan-900", dot: "bg-cyan-600", badge: "bg-cyan-200 text-cyan-900" },
+        { cell: "border-fuchsia-300 bg-fuchsia-100 text-fuchsia-900", dot: "bg-fuchsia-600", badge: "bg-fuchsia-200 text-fuchsia-900" },
+      ];
+
+      function getCalendarEventPalette(index) {
+        return EVENT_CALENDAR_PALETTES[index % EVENT_CALENDAR_PALETTES.length];
       }
 
       function getNationalHolidayList(year) {
@@ -2635,9 +2804,17 @@
         const container = document.getElementById("toastContainer");
         if (!container) return;
         const el = document.createElement("div");
-        const bg = type === "error" ? "bg-rose-600" : "bg-navy";
-        el.className = `${bg} text-white px-4 py-3 rounded-2xl shadow-xl border border-amber-400/40 text-xs font-bold flex items-center gap-2 pointer-events-auto transition-all`;
-        el.innerHTML = `<span class="text-amber-400">✨</span><span>${msg}</span>`;
+        const accentClass = type === "error"
+          ? "from-rose-400 via-rose-500 to-red-500"
+          : "from-sky-400 via-blue-500 to-indigo-500";
+        el.className = "relative flex w-[min(24rem,calc(100vw-2rem))] items-center overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-white/85 via-white/70 to-sky-50/70 px-4 py-3.5 text-sm font-semibold leading-relaxed text-slate-800 shadow-[0_18px_42px_rgba(15,23,42,0.2)] ring-1 ring-white/70 backdrop-blur-2xl pointer-events-auto transition-all before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-white/55 before:via-transparent before:to-blue-100/20 before:pointer-events-none";
+        const accent = document.createElement("span");
+        accent.className = `absolute inset-y-0 left-0 z-10 w-1 bg-gradient-to-b ${accentClass}`;
+        accent.setAttribute("aria-hidden", "true");
+        const message = document.createElement("span");
+        message.className = "relative z-10 pl-1";
+        message.textContent = msg;
+        el.append(accent, message);
         container.appendChild(el);
         setTimeout(() => {
           el.remove();
@@ -2822,10 +2999,20 @@
           sel.appendChild(grp);
         };
 
-        addGroup("1. Kelompok Dosen & Staf STIT (17 Orang)", SDM_STIT);
-        addGroup("2. Kelompok Support (4 Orang)", SDM_SUPPORT);
-        addGroup("3. Mahasiswa Angkatan 2025 (16 Orang)", SDM_MHS_2025);
-        addGroup("4. Mahasiswa Angkatan 2026 (11 Orang)", SDM_MHS_2026);
+        addGroup("Dosen & Staf STIT (17 Orang)", SDM_STIT);
+        addGroup("Support (4 Orang)", SDM_SUPPORT);
+        addGroup("Mahasiswa Angkatan 2025 (16 Orang)", SDM_MHS_2025);
+        addGroup("Mahasiswa Angkatan 2026 (11 Orang)", SDM_MHS_2026);
+      }
+
+      function buildChairpersonOptionsHtml(selectedValue = "") {
+        return [
+          '<option value="">-- Pilih Nama Personil --</option>',
+          ...SDM_STIT.map((name) => {
+            const selected = name === selectedValue ? "selected" : "";
+            return `<option value="${name}" ${selected}>${name}</option>`;
+          }),
+        ].join("");
       }
 
       function buildGroupedSdmOptionsHtml(
@@ -2834,8 +3021,8 @@
       ) {
         let html = `<option value="">-- Pilih Nama Personil --</option>`;
         const groups = [
-          { label: "Kelompok Dosen & Staff STIT", list: SDM_STIT },
-          { label: "Kelompok Support", list: SDM_SUPPORT },
+          { label: "Dosen & Staf STIT", list: SDM_STIT },
+          { label: "Support", list: SDM_SUPPORT },
           { label: "Mahasiswa Angkatan 2025", list: SDM_MHS_2025 },
           { label: "Mahasiswa Angkatan 2026", list: SDM_MHS_2026 },
         ];
@@ -2856,15 +3043,28 @@
       function evaluateUserRoleForActiveEvent(userName) {
         const ev = getActiveEvent();
         const isSuperAdmin = userName === SUPER_ADMIN_NAME;
-        const isAdmin = ADMIN_ROLE_NAMES.includes(userName);
+        const isChairpersonInAnyEvent = eventsData.some(
+          (event) => event.ketuaPanitia === userName,
+        );
+        const isAdmin =
+          ADMIN_ROLE_NAMES.includes(userName) && !isChairpersonInAnyEvent;
         const isStitStaff = SDM_STIT.includes(userName);
-        const isScManager = SC_MANAGERS.includes(userName) || isAdmin;
+        const isScManager =
+          (SC_MANAGERS.includes(userName) && !isChairpersonInAnyEvent) ||
+          isAdmin;
         const coordDiv = ev.divisions.find((d) => d.pic === userName);
 
         if (isSuperAdmin) {
           return {
             role: "sc",
             roleLabel: "Super Admin & Database Manager",
+            coordDivisionId: coordDiv ? coordDiv.id : null,
+          };
+        }
+        if (ev.ketuaPanitia === userName) {
+          return {
+            role: "sc",
+            roleLabel: "Ketua Panitia",
             coordDivisionId: coordDiv ? coordDiv.id : null,
           };
         }
@@ -2964,6 +3164,7 @@
 
       function selectEventFromSidebar(eventId) {
         activeEventId = eventId;
+        sidebarCalendarMonth = null;
         if (currentUser) {
           const updatedRole = evaluateUserRoleForActiveEvent(currentUser.name);
           currentUser.role = updatedRole.role;
@@ -2988,6 +3189,89 @@
         renderDashboardTabsAndContent();
       }
 
+      function slidePill(pill, box, target, animate = true) {
+        if (!pill || !box || !target) return;
+        const boxRect = box.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        if (!boxRect.width || !boxRect.height || !targetRect.width) return;
+
+        const next = {
+          x: targetRect.left - boxRect.left,
+          y: targetRect.top - boxRect.top,
+          width: targetRect.width,
+          height: targetRect.height,
+        };
+        const previous = pill.__rect;
+        pill.__rect = next;
+
+        const reducedMotion = window.matchMedia?.(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+        if (!animate || !previous || !window.gsap || reducedMotion) {
+          if (window.gsap) window.gsap.set(pill, next);
+          else {
+            pill.style.width = `${next.width}px`;
+            pill.style.height = `${next.height}px`;
+            pill.style.transform = `translate(${next.x}px, ${next.y}px)`;
+          }
+          return;
+        }
+
+        window.gsap.to(pill, {
+          ...next,
+          duration: 0.55,
+          ease: "power3.inOut",
+          overwrite: true,
+        });
+      }
+
+      function positionDashboardPill(animate = true) {
+        const tabMap = {
+          coord_section: "tabBtnCoordMySection",
+          overview: "tabBtnOverview",
+          struktur: "tabBtnStruktur",
+          keuangan: "tabBtnKeuangan",
+          kas: "tabBtnKas",
+          peserta: "tabBtnPeserta",
+          rundown: "tabBtnRundown",
+          meeting: "tabBtnMeeting",
+          dokumen: "tabBtnDokumen",
+        };
+        const pill = document.getElementById("dashboardActiveTabPill");
+        const box = document.getElementById("dashboardTabButtons");
+        const target = document.getElementById(tabMap[activeDashTab]);
+        if (!target || target.classList.contains("hidden")) return;
+        slidePill(pill, box, target, animate);
+      }
+
+      function positionSidebarEventPill(animate = true) {
+        const box = document.getElementById("sidebarEventCardList");
+        const pill = document.getElementById("sidebarEventActivePill");
+        const target = box && Array.from(box.querySelectorAll("[data-event-card]"))
+          .find((card) => card.dataset.eventCard === activeEventId);
+        if (!target) return;
+
+        // Saat login pertama, sidebar baru saja ditampilkan dan ukuran kartu
+        // bisa belum final. Tunggu dua frame agar layout selesai sebelum ukur.
+        if (!pill.__rect || !box.getBoundingClientRect().width) {
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            const currentTarget = Array.from(box.querySelectorAll("[data-event-card]"))
+              .find((card) => card.dataset.eventCard === activeEventId);
+            if (!currentTarget || !box.getBoundingClientRect().width || !currentTarget.getBoundingClientRect().width) return;
+            slidePill(pill, box, currentTarget, false);
+            pill.classList.remove("opacity-0");
+          }));
+          return;
+        }
+        slidePill(pill, box, target, animate);
+        pill.classList.remove("opacity-0");
+      }
+
+      window.addEventListener("resize", () => {
+        positionDashboardPill(false);
+        positionSidebarEventPill(false);
+      });
+
       // ==========================================
       // MASTER RENDER FUNCTION
       // ==========================================
@@ -3009,12 +3293,12 @@
           btnCreateSidebar.classList.add("hidden");
         }
 
-        const cardList = document.getElementById("sidebarEventCardList");
+        const cardList = document.getElementById("sidebarEventCards");
         cardList.innerHTML = eventsData
           .map((item) => {
             const isActive = item.id === activeEventId;
             const cardClass = isActive
-              ? "bg-grad-card-active text-white border-amber-400 shadow-lg scale-[1.01]"
+              ? "bg-transparent text-white border-transparent shadow-none"
               : "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200";
             const divBadgeClass = isActive
               ? "bg-amber-400 text-navy"
@@ -3026,10 +3310,10 @@
               item.registrationMode !== "internal";
 
             return `
-                    <div onclick="selectEventFromSidebar('${item.id}')" class="cursor-pointer rounded-2xl p-4 border-2 transition-all ${cardClass}">
+                    <div data-event-card="${item.id}" onclick="selectEventFromSidebar('${item.id}')" class="relative z-10 cursor-pointer rounded-2xl p-4 border-2 transition-all ${cardClass}">
                         <div class="flex items-center justify-between gap-2 mb-1.5">
                             <span class="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${divBadgeClass}">${item.divisi}</span>
-                            <span class="text-[11px] font-bold ${dateClass}">📅 ${item.tanggal}</span>
+                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold ${dateClass}"><svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="16" rx="2.5" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M7.5 3.5v3M16.5 3.5v3M3.5 9.5h17M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01"/></svg>${formatEventDateRange(item)}</span>
                         </div>
                         <h4 class="text-xs sm:text-sm font-extrabold leading-snug">${item.nama}</h4>
                         <div class="flex flex-wrap gap-2 mt-3" onclick="event.stopPropagation()">
@@ -3040,6 +3324,9 @@
                 `;
           })
           .join("");
+        const animateEventChange = renderedSidebarEventId !== null && renderedSidebarEventId !== activeEventId;
+        renderedSidebarEventId = activeEventId;
+        positionSidebarEventPill(animateEventChange);
 
         document.getElementById("sidebarRoleTitle").textContent =
           currentUser.roleLabel;
@@ -3061,6 +3348,7 @@
         if (sidebarMiniCalendar) {
           sidebarMiniCalendar.innerHTML = renderSidebarMiniCalendar(ev);
         }
+        renderSidebarCalendarLists(ev);
 
         document.getElementById("headlineDivisiBadge").textContent =
           `Divisi: ${ev.divisi}`;
@@ -3070,7 +3358,8 @@
         document.getElementById("headlineEventTheme").textContent =
           `"${ev.tema}"`;
         document.getElementById("headlineEventDesc").textContent = ev.deskripsi;
-        document.getElementById("headlineDate").textContent = ev.tanggal;
+        document.getElementById("headlineDate").textContent =
+          formatEventDateRange(ev);
         document.getElementById("headlineTime").textContent =
           `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
         document.getElementById("headlineLocation").textContent = ev.lokasi;
@@ -3260,11 +3549,12 @@
           const btn = document.getElementById(btnId);
           if (!btn) return;
           if (key === activeDashTab) {
-            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-[0_12px_24px_rgba(14,165,233,0.2)] border border-sky-400`;
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} relative z-10 flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-full font-extrabold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 bg-transparent text-white border border-transparent shadow-none`;
           } else {
-            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-2xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm`;
+            btn.className = `${key === "coord_section" && !isCoord ? "hidden" : ""} relative z-10 flex-1 basis-[150px] min-w-[145px] min-h-12 px-3 py-3 rounded-full font-bold text-xs sm:text-sm transition-all flex items-center justify-center text-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm`;
           }
         });
+        positionDashboardPill(true);
 
         const contentIds = [
           "dashContentCoordSection",
@@ -3450,10 +3740,28 @@
         }
       }
 
+      function getSidebarCalendarMonth(ev) {
+        const baseDate =
+          sidebarCalendarMonth ||
+          (ev && ev.tanggal ? new Date(ev.tanggal + "T00:00:00") : new Date());
+        return new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+      }
+
+      function navigateSidebarCalendarMonth(offset) {
+        const currentMonth = getSidebarCalendarMonth(getActiveEvent());
+        sidebarCalendarMonth = new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth() + offset,
+          1,
+        );
+        const ev = getActiveEvent();
+        document.getElementById("sidebarMiniCalendar").innerHTML =
+          renderSidebarMiniCalendar(ev);
+        renderSidebarCalendarLists(ev);
+      }
+
       function renderSidebarMiniCalendar(ev) {
-        const monthTarget = ev.tanggal
-          ? new Date(ev.tanggal + "T00:00:00")
-          : new Date();
+        const monthTarget = getSidebarCalendarMonth(ev);
         const year = monthTarget.getFullYear();
         const month = monthTarget.getMonth();
         const firstDay = new Date(year, month, 1);
@@ -3478,10 +3786,8 @@
         const holidayMap = new Map(
           getNationalHolidayList(year).map((h) => [h.date, h.label]),
         );
-        const eventDates = new Map(
-          eventsData
-            .filter((item) => item.tanggal)
-            .map((item) => [item.tanggal, item.nama]),
+        const internationalMap = new Map(
+          getInternationalObservanceList(year).map((item) => [item.date, item.label]),
         );
 
         const cells = [];
@@ -3493,16 +3799,26 @@
 
         for (let day = 1; day <= totalDays; day++) {
           const dateValue = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const eventLabel = eventDates.get(dateValue);
+          const eventIndex = eventsData.findIndex((item) =>
+            eventOccursOnDate(item, dateValue),
+          );
+          const eventLabel = eventIndex >= 0 ? eventsData[eventIndex].nama : "";
+          const eventPalette = eventIndex >= 0 ? getCalendarEventPalette(eventIndex) : null;
           const holidayLabel = holidayMap.get(dateValue);
+          const internationalLabel = internationalMap.get(dateValue);
           const isEvent = !!eventLabel;
           const isHoliday = !!holidayLabel;
+          const isInternational = !!internationalLabel;
           const isToday = dateValue === new Date().toISOString().slice(0, 10);
 
           let className =
             "h-8 rounded-lg border flex items-center justify-center text-[10px] font-bold relative ";
-          if (isEvent) {
-            className += "border-amber-300 bg-amber-50 text-navy";
+          if (isInternational && isEvent) {
+            className += "border-rose-300 bg-white text-slate-600 ring-1 ring-inset ring-blue-900";
+          } else if (isInternational) {
+            className += "border-rose-300 bg-white text-slate-600";
+          } else if (isEvent) {
+            className += "border-blue-900 bg-white text-slate-600";
           } else if (isHoliday) {
             className += "border-rose-200 bg-rose-50 text-rose-700";
           } else if (isToday) {
@@ -3511,16 +3827,15 @@
             className += "border-slate-200 bg-white text-slate-600";
           }
 
-          const tooltip = isEvent
-            ? ` title="${eventLabel}"`
-            : isHoliday
-              ? ` title="${holidayLabel}"`
-              : "";
+          const tooltipLabels = [internationalLabel, eventLabel, holidayLabel].filter(Boolean);
+          const tooltip = tooltipLabels.length
+            ? ` title="${tooltipLabels.join(" • ")}"`
+            : "";
 
           cells.push(`
             <div class="${className}"${tooltip}>
               <span>${day}</span>
-              ${isEvent ? '<span class="absolute bottom-1 w-1.5 h-1.5 rounded-full bg-amber-500"></span>' : ""}
+              ${isEvent ? `<span class="absolute bottom-1 h-1.5 w-1.5 rounded-full ${eventPalette.dot}"></span>` : ""}
             </div>
           `);
         }
@@ -3529,7 +3844,15 @@
           <div class="space-y-3">
             <div class="flex items-center justify-between gap-2 border-b border-slate-200 pb-2">
               <h3 class="text-xs font-extrabold uppercase tracking-wider text-navy">Kalender Mini</h3>
-              <span class="px-2 py-1 rounded-full bg-slate-100 text-[10px] font-black text-slate-600">${monthNames[month]} ${year}</span>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="navigateSidebarCalendarMonth(-1)" title="Bulan sebelumnya" aria-label="Bulan sebelumnya" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800 transition">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <span class="min-w-[4.5rem] text-center text-[10px] font-black text-slate-600">${monthNames[month]} ${year}</span>
+                <button type="button" onclick="navigateSidebarCalendarMonth(1)" title="Bulan berikutnya" aria-label="Bulan berikutnya" class="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800 transition">
+                  <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>
+                </button>
+              </div>
             </div>
             <div class="grid grid-cols-7 gap-1 text-[9px] font-bold uppercase text-slate-500">
               ${dayLabels.map((d) => `<div class="text-center">${d}</div>`).join("")}
@@ -3537,6 +3860,98 @@
             <div class="grid grid-cols-7 gap-1">${cells.join("")}</div>
           </div>
         `;
+      }
+
+      function getInternationalObservanceList(year) {
+        const annualDays = [
+          [1, 24, "Hari Pendidikan Internasional"],
+          [1, 27, "Hari Peringatan Holocaust"],
+          [2, 11, "Hari Perempuan dan Anak Perempuan dalam Sains"],
+          [2, 21, "Hari Bahasa Ibu Internasional"],
+          [3, 8, "Hari Perempuan Internasional"],
+          [3, 22, "Hari Air Sedunia"],
+          [4, 7, "Hari Kesehatan Sedunia"],
+          [4, 22, "Hari Ibu Bumi Internasional"],
+          [5, 3, "Hari Kebebasan Pers Sedunia"],
+          [5, 15, "Hari Keluarga Internasional"],
+          [5, 22, "Hari Keanekaragaman Hayati"],
+          [6, 5, "Hari Lingkungan Hidup Sedunia"],
+          [6, 8, "Hari Laut Sedunia"],
+          [7, 11, "Hari Kependudukan Sedunia"],
+          [7, 30, "Hari Persahabatan Internasional"],
+          [8, 12, "Hari Pemuda Internasional"],
+          [9, 8, "Hari Literasi Internasional"],
+          [9, 21, "Hari Perdamaian Internasional"],
+          [10, 5, "Hari Guru Sedunia"],
+          [10, 24, "Hari Perserikatan Bangsa-Bangsa"],
+          [11, 16, "Hari Toleransi Internasional"],
+          [11, 20, "Hari Anak Sedunia"],
+          [11, 25, "Hari Penghapusan Kekerasan terhadap Perempuan"],
+          [12, 10, "Hari Hak Asasi Manusia"],
+          [12, 18, "Hari Migran Internasional"],
+        ];
+        return annualDays.map(([month, day, label]) => ({
+          date: year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0"),
+          label,
+        }));
+      }
+
+      function renderSidebarCalendarLists(ev) {
+        const monthTarget = getSidebarCalendarMonth(ev);
+        const year = monthTarget.getFullYear();
+        const month = monthTarget.getMonth();
+        const monthKey = year + "-" + String(month + 1).padStart(2, "0");
+        const dateLabel = (date) =>
+          new Date(date + "T00:00:00").toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "short",
+          });
+        const internationalDays = getInternationalObservanceList(year).filter(
+          (item) => item.date.startsWith(monthKey),
+        );
+        const firstDate = monthKey + "-01";
+        const lastDate =
+          monthKey + "-" + String(new Date(year, month + 1, 0).getDate()).padStart(2, "0");
+        const academicEvents = eventsData
+          .filter((item) => {
+            const endDate = getEventEndDate(item);
+            return item.tanggal && item.tanggal <= lastDate && endDate >= firstDate;
+          })
+          .sort((a, b) => a.tanggal.localeCompare(b.tanggal));
+
+        const internationalContainer = document.getElementById("sidebarInternationalDays");
+        if (internationalContainer) {
+          internationalContainer.innerHTML = [
+            '<div class="mb-3 flex items-center justify-between gap-2 border-b border-slate-200 pb-2">',
+            '<h3 class="text-xs font-extrabold uppercase tracking-wider text-navy">Hari Resmi Internasional</h3>',
+            "</div>",
+            '<div class="max-h-52 space-y-2 overflow-y-auto pr-1">',
+            internationalDays.map((item) =>
+              '<div class="flex items-start gap-2 rounded-xl bg-slate-50 px-2.5 py-2">' +
+              '<span class="min-w-[3.25rem] rounded-lg border border-rose-200 bg-rose-100 px-1.5 py-1 text-center text-[10px] font-extrabold text-rose-800">' + dateLabel(item.date) + "</span>" +
+              '<span class="text-[11px] font-semibold leading-snug text-slate-700">' + item.label + "</span></div>",
+            ).join("") ||
+              '<p class="text-[11px] italic text-slate-400">Tidak ada tanggal internasional yang dicatat pada bulan ini.</p>',
+            "</div>",
+          ].join("");
+        }
+
+        const academicContainer = document.getElementById("sidebarAcademicCalendar");
+        if (academicContainer) {
+          academicContainer.innerHTML = [
+            '<div class="mb-3 flex items-center justify-between gap-2 border-b border-slate-200 pb-2">',
+            '<h3 class="text-xs font-extrabold uppercase tracking-wider text-navy">Kalender Akademik</h3>',
+            "</div>",
+            '<div class="max-h-52 space-y-2 overflow-y-auto pr-1">',
+            academicEvents.map((item) =>
+              '<div class="flex items-start gap-2 rounded-xl bg-slate-50 px-2.5 py-2">' +
+              '<span class="min-w-[3.25rem] rounded-lg bg-blue-900 px-1.5 py-1 text-center text-[10px] font-extrabold text-white">' + dateLabel(item.tanggal) + "</span>" +
+              '<span class="text-[11px] font-semibold leading-snug text-slate-700">' + item.nama + "</span></div>",
+            ).join("") ||
+              '<p class="text-[11px] italic text-slate-400">Belum ada agenda event pada bulan ini.</p>',
+            "</div>",
+          ].join("");
+        }
       }
 
       function renderOverviewCalendar(ev) {
@@ -3566,10 +3981,8 @@
         const holidayMap = new Map(
           getNationalHolidayList(year).map((h) => [h.date, h.label]),
         );
-        const eventDates = new Map(
-          eventsData
-            .filter((item) => item.tanggal)
-            .map((item) => [item.tanggal, item.nama]),
+        const internationalMap = new Map(
+          getInternationalObservanceList(year).map((item) => [item.date, item.label]),
         );
 
         const cells = [];
@@ -3582,15 +3995,24 @@
         for (let day = 1; day <= totalDays; day++) {
           const dateValue = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const holidayLabel = holidayMap.get(dateValue);
-          const eventLabel = eventDates.get(dateValue);
+          const internationalLabel = internationalMap.get(dateValue);
+          const eventIndex = eventsData.findIndex((item) =>
+            eventOccursOnDate(item, dateValue),
+          );
+          const eventLabel = eventIndex >= 0 ? eventsData[eventIndex].nama : "";
           const isEvent = !!eventLabel;
           const isHoliday = !!holidayLabel;
+          const isInternational = !!internationalLabel;
           const isToday = dateValue === new Date().toISOString().slice(0, 10);
 
           let className =
             "h-20 rounded-xl border text-left p-2 flex flex-col justify-between ";
-          if (isEvent) {
-            className += "border-amber-400 bg-amber-50 text-navy";
+          if (isInternational && isEvent) {
+            className += "border-rose-300 bg-white text-slate-700 ring-1 ring-inset ring-blue-900";
+          } else if (isInternational) {
+            className += "border-rose-300 bg-white text-slate-700";
+          } else if (isEvent) {
+            className += "border-blue-900 bg-white text-slate-700";
           } else if (isHoliday) {
             className += "border-rose-300 bg-rose-50 text-rose-800";
           } else if (isToday) {
@@ -3603,10 +4025,10 @@
             <div class="${className}">
               <div class="flex justify-between items-center">
                 <span class="text-[11px] font-black">${day}</span>
-                ${isEvent ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-900">Event</span>' : isHoliday ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-200 text-rose-800">Libur</span>' : ""}
+                ${isInternational ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-800">Internasional</span>' : isEvent ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full border border-blue-900 bg-white text-blue-900">Event</span>' : isHoliday ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full bg-rose-200 text-rose-800">Libur</span>' : ""}
               </div>
               <div class="text-[9px] leading-tight font-semibold">
-                ${eventLabel ? eventLabel : holidayLabel ? holidayLabel : ""}
+                ${eventLabel ? eventLabel : internationalLabel ? internationalLabel : holidayLabel ? holidayLabel : ""}
               </div>
             </div>
           `);
@@ -3620,7 +4042,7 @@
               <div class="flex items-center justify-between gap-2 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-[11px]">
                 <div>
                   <div class="font-black text-navy">${item.nama}</div>
-                  <div class="text-slate-500">${item.tanggal}</div>
+                  <div class="text-slate-500">${formatEventDateRange(item)}</div>
                 </div>
                 <span class="px-2 py-1 rounded-full bg-amber-100 text-amber-800 font-extrabold text-[10px]">${item.kategori || "Event"}</span>
               </div>
@@ -3708,14 +4130,21 @@
 
         const statusEl = document.getElementById("ovStatusAntiBoncos");
         if (estSurplus >= 0) {
-          statusEl.textContent = `✅ Dana Aman (+${formatRp(estSurplus)})`;
+          animateDashboardText(statusEl, [estSurplus], ([value]) =>
+            `✅ Dana Aman (+${formatRp(Math.max(0, Math.round(value)))})`,
+          );
           statusEl.className = "text-lg font-black mt-1 text-emerald-600";
         } else {
-          statusEl.textContent = `⚠️ Dana Minus (${formatRp(estSurplus)})`;
+          animateDashboardText(statusEl, [estSurplus], ([value]) =>
+            `⚠️ Dana Minus (${formatRp(Math.min(0, Math.round(value)))})`,
+          );
           statusEl.className = "text-lg font-black mt-1 text-rose-600";
         }
-        document.getElementById("ovBepInfo").textContent =
-          `BEP HTM Minimal: ${formatRp(bepHtm)} / peserta`;
+        animateDashboardText(
+          document.getElementById("ovBepInfo"),
+          [bepHtm],
+          ([value]) => `BEP HTM Minimal: ${formatRp(Math.round(value))} / peserta`,
+        );
 
         const activePeserta = (ev.participants || []).filter(
           (p) => p.statusAktif !== false,
@@ -3733,14 +4162,27 @@
         const totalRiilMasuk = kasMasukManual + incomeFromPeserta;
         const sisaSaldo = totalRiilMasuk - kasKeluarManual;
 
-        document.getElementById("ovTotalMasuk").textContent =
-          formatRp(totalRiilMasuk);
-        document.getElementById("ovSubsidiAndPeserta").textContent =
-          `Kas Masuk: ${formatRp(kasMasukManual)} + Tiket Peserta: ${formatRp(incomeFromPeserta)}`;
-        document.getElementById("ovTotalKeluar").textContent =
-          formatRp(kasKeluarManual);
-        document.getElementById("ovSisaSaldo").textContent =
-          `Saldo Kas: ${formatRp(sisaSaldo)}`;
+        animateDashboardText(
+          document.getElementById("ovTotalMasuk"),
+          [totalRiilMasuk],
+          ([value]) => formatRp(Math.round(value)),
+        );
+        animateDashboardText(
+          document.getElementById("ovSubsidiAndPeserta"),
+          [kasMasukManual, incomeFromPeserta],
+          ([manual, tickets]) =>
+            `Kas Masuk: ${formatRp(Math.round(manual))} + Tiket Peserta: ${formatRp(Math.round(tickets))}`,
+        );
+        animateDashboardText(
+          document.getElementById("ovTotalKeluar"),
+          [kasKeluarManual],
+          ([value]) => formatRp(Math.round(value)),
+        );
+        animateDashboardText(
+          document.getElementById("ovSisaSaldo"),
+          [sisaSaldo],
+          ([value]) => `Saldo Kas: ${formatRp(Math.round(value))}`,
+        );
 
         let allTasks = 0;
         let doneTasks = 0;
@@ -3756,10 +4198,10 @@
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-bold">
                             <span class="text-navy">${d.name} <span class="text-slate-400 font-normal">(${d.pic})</span></span>
-                            <span class="text-slate-700">${dCount}/${tCount} Tugas (${pct}%)</span>
+                            <span data-progress-number data-done="${dCount}" data-total="${tCount}" data-percent="${pct}" class="text-slate-700">0/${tCount} Tugas (0%)</span>
                         </div>
                         <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden">
-                            <div class="h-full ${theme.bar} transition-all" style="width: ${pct}%"></div>
+                            <div data-progress-fill data-percent="${pct}" class="h-full ${theme.bar} rounded-full" style="width: 0%"></div>
                         </div>
                     </div>
                 `;
@@ -3768,10 +4210,42 @@
 
         const totalPct =
           allTasks > 0 ? Math.round((doneTasks / allTasks) * 100) : 0;
-        document.getElementById("ovTotalProgress").textContent = `${totalPct}%`;
-        document.getElementById("ovTotalTasksCount").textContent =
-          `${doneTasks} dari ${allTasks} poin tugas selesai`;
-        document.getElementById("ovSectionProgressBars").innerHTML = barsHtml;
+        animateDashboardText(
+          document.getElementById("ovTotalProgress"),
+          [totalPct],
+          ([value]) => `${Math.round(value)}%`,
+        );
+        animateDashboardText(
+          document.getElementById("ovTotalTasksCount"),
+          [doneTasks, allTasks],
+          ([done, total]) =>
+            `${Math.round(done)} dari ${Math.round(total)} poin tugas selesai`,
+        );
+        const sectionProgressBars = document.getElementById("ovSectionProgressBars");
+        sectionProgressBars.innerHTML = barsHtml;
+        sectionProgressBars.querySelectorAll("[data-progress-number]").forEach((label) => {
+          const done = Number(label.dataset.done) || 0;
+          const total = Number(label.dataset.total) || 0;
+          const percent = Number(label.dataset.percent) || 0;
+          animateDashboardText(label, [done, percent], ([currentDone, currentPercent]) =>
+            `${Math.round(currentDone)}/${total} Tugas (${Math.round(currentPercent)}%)`,
+          );
+        });
+        const reducedProgressMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        sectionProgressBars.querySelectorAll("[data-progress-fill]").forEach((fill) => {
+          const percent = Number(fill.dataset.percent) || 0;
+          if (!window.gsap || reducedProgressMotion) {
+            fill.style.width = `${percent}%`;
+            return;
+          }
+          window.gsap.fromTo(fill, { width: "0%" }, {
+            width: `${percent}%`,
+            duration: 0.9,
+            delay: 0.08,
+            ease: "power2.out",
+            overwrite: true,
+          });
+        });
 
         document.getElementById("ovFinanceComparisonBox").innerHTML = `
                 <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
@@ -4059,7 +4533,7 @@
                         </div>
                         <div class="p-4 rounded-2xl bg-slate-50 border">
                             <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
-                            <input type="number" value="${ev.htmPeserta}" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
+                            <input type="text" inputmode="numeric" value="${formatThousands(ev.htmPeserta)}" oninput="formatRupiahField(this)" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
                         </div>
                         <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300">
                             <span class="text-[11px] font-bold text-amber-800 block">${isProfitEvent ? "Rekomendasi BEP HTM Minimal" : "Status BEP"}</span>
@@ -4072,7 +4546,6 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-extrabold text-navy">1. Tabel Unit Economics (Per Peserta)</h4>
-                                    <p class="text-[11px] text-slate-500">Total per Peserta: <b>${formatRp(unitSum)}</b> (x ${ev.targetPeserta} = ${formatRp(totalVar)})</p>
                                 </div>
                             </div>
 
@@ -4081,7 +4554,7 @@
                                 ? `
                                 <div class="flex gap-2">
                                     <input type="text" id="ueItemInput" placeholder="Nama Benefit (Mis: Makan Siang)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                    <input type="number" id="ueCostInput" placeholder="Harga Satuan (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <input type="text" inputmode="numeric" id="ueCostInput" oninput="formatRupiahField(this)" placeholder="Harga Satuan (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
                                     <button onclick="saveUnitEconomicItem()" id="ueSubmitBtn" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah</button>
                                 </div>
                             `
@@ -4127,13 +4600,19 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-3">
+                                <div>
+                                    <p class="text-xs font-bold text-blue-700">Total per Peserta</p>
+                                    <p class="text-lg font-black text-blue-800">${formatRp(unitSum)}</p>
+                                </div>
+                                <p class="text-right text-[11px] font-semibold text-blue-700">${ev.targetPeserta} peserta <span class="font-black">= ${formatRp(totalVar)}</span></p>
+                            </div>
                         </div>
 
                         <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-extrabold text-navy">2. Tabel Biaya Operasional</h4>
-                                    <p class="text-[11px] text-slate-500">Total Biaya Operasional: <b>${formatRp(opSum)}</b></p>
                                 </div>
                             </div>
 
@@ -4142,7 +4621,7 @@
                                 ? `
                                 <div class="flex gap-2">
                                     <input type="text" id="boItemInput" placeholder="Biaya Lain (Mis: Honor Pemateri)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
-                                    <input type="number" id="boCostInput" placeholder="Nominal (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                    <input type="text" inputmode="numeric" id="boCostInput" oninput="formatRupiahField(this)" placeholder="Nominal (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
                                     <button onclick="saveBiayaOperasionalItem()" id="boSubmitBtn" class="px-4 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Biaya Lain</button>
                                 </div>
                             `
@@ -4188,6 +4667,10 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div class="flex items-center justify-between gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3.5 py-3">
+                                <p class="text-xs font-bold text-blue-700">Total Biaya Operasional</p>
+                                <p class="text-lg font-black text-blue-800">${formatRp(opSum)}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4203,7 +4686,7 @@
           );
           return;
         }
-        ev[field] = Number(val) || 0;
+        ev[field] = field === "htmPeserta" ? parseRupiah(val) : Number(val) || 0;
         syncToCloud();
         renderAll();
         showToast("Parameter dasar keuangan diperbarui.");
@@ -4226,14 +4709,14 @@
           const target = ev.unitEconomics.find((u) => u.id === editUeId);
           if (target) {
             target.item = itemEl.value.trim();
-            target.cost = Number(costEl.value) || 0;
+            target.cost = parseRupiah(costEl.value);
           }
           editUeId = null;
         } else {
           ev.unitEconomics.push({
             id: "ue_" + Date.now(),
             item: itemEl.value.trim(),
-            cost: Number(costEl.value) || 0,
+            cost: parseRupiah(costEl.value),
           });
         }
         itemEl.value = "";
@@ -4253,7 +4736,7 @@
         const submitBtn = document.getElementById("ueSubmitBtn");
         editUeId = id;
         if (itemEl) itemEl.value = target.item;
-        if (costEl) costEl.value = target.cost;
+        if (costEl) costEl.value = formatThousands(target.cost);
         if (submitBtn) submitBtn.textContent = "Update";
       }
 
@@ -4281,14 +4764,14 @@
           const target = ev.biayaOperasional.find((b) => b.id === editBoId);
           if (target) {
             target.item = itemEl.value.trim();
-            target.cost = Number(costEl.value) || 0;
+            target.cost = parseRupiah(costEl.value);
           }
           editBoId = null;
         } else {
           ev.biayaOperasional.push({
             id: "bo_" + Date.now(),
             item: itemEl.value.trim(),
-            cost: Number(costEl.value) || 0,
+            cost: parseRupiah(costEl.value),
           });
         }
         itemEl.value = "";
@@ -4308,7 +4791,7 @@
         const submitBtn = document.getElementById("boSubmitBtn");
         editBoId = id;
         if (itemEl) itemEl.value = target.item;
-        if (costEl) costEl.value = target.cost;
+        if (costEl) costEl.value = formatThousands(target.cost);
         if (submitBtn) submitBtn.textContent = "Update";
       }
 
@@ -4365,7 +4848,7 @@
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Nominal (Rp)</label>
-                                <input type="number" id="kasNominal" placeholder="Contoh: 350000" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                <input type="text" inputmode="numeric" id="kasNominal" oninput="formatRupiahField(this)" placeholder="Contoh: 350.000" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Uraian Keperluan</label>
@@ -4383,7 +4866,7 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">PIC Panitia (Dikelompokkan)</label>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">PIC Panitia</label>
                                     <select id="kasPic" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
                                         ${buildGroupedSdmOptionsHtml(currentUser.name, false)}
                                     </select>
@@ -4480,7 +4963,7 @@
           id: "kas_" + Date.now(),
           tanggal: document.getElementById("kasTanggal").value,
           tipe: document.getElementById("kasTipe").value,
-          nominal: Number(document.getElementById("kasNominal").value) || 0,
+          nominal: parseRupiah(document.getElementById("kasNominal").value),
           uraian: document.getElementById("kasUraian").value.trim(),
           seksi: seksiVal,
           pic: picVal,
@@ -4537,7 +5020,7 @@
                                     <span>${checkinOpen ? "Tutup Check-in" : "Buka Check-in"}</span>
                                 </button>
                                 <button type="button" onclick="${checkinOpen ? "openRealQRScanner('peserta')" : "return false;"}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-2xl ${checkinOpen ? "bg-slate-950/90 hover:bg-slate-900 border border-slate-300/50 text-amber-200 shadow-[0_10px_24px_rgba(15,23,42,0.12)]" : "bg-slate-200/70 text-slate-500 cursor-not-allowed border border-slate-200/50"} font-black text-[11px] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0" ${checkinOpen ? "" : "disabled"}>
-                                    <span>📷</span>
+                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 9V5a1 1 0 0 1 1-1h4m6 0h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4m-6 0H5a1 1 0 0 1-1-1v-4M8 8h3v3H8zM15 8h1v1h-1zM14 11h2v2h-2zM8 15h3v3H8zM17 15h1v1h-1zM16 18h2"/></svg>
                                     <span>Scan QR</span>
                                 </button>
                                 <input type="text" id="qrScanTicketInput" placeholder="Kode tiket..." class="px-3 py-2 rounded-2xl border border-white/60 bg-white/70 backdrop-blur-md text-[11px] font-semibold text-slate-700 w-32 shadow-[0_8px_20px_rgba(15,23,42,0.04)] focus:outline-none focus:ring-2 focus:ring-sky-200" ${checkinOpen ? "" : "disabled"}>
@@ -4766,15 +5249,47 @@
         const canEdit =
           currentUser.role === "sc" || currentUser.role === "koordinator";
         const container = document.getElementById("dashContentRundown");
+        const startDate = ev.tanggal || "";
+        const endDate = getEventEndDate(ev);
+        const eventDays = [];
+        if (startDate && endDate) {
+          const cursor = new Date(`${startDate}T00:00:00Z`);
+          const lastDay = new Date(`${endDate}T00:00:00Z`);
+          while (cursor <= lastDay && eventDays.length < 366) {
+            eventDays.push(cursor.toISOString().slice(0, 10));
+            cursor.setUTCDate(cursor.getUTCDate() + 1);
+          }
+        }
+        if (!eventDays.length) eventDays.push("");
+        if (!eventDays.includes(selectedRundownDay)) {
+          selectedRundownDay = eventDays[0];
+        }
+        const selectedDayIndex = eventDays.indexOf(selectedRundownDay);
+        const dayRundown = (ev.rundown || [])
+          .filter((row) => (row.tanggal || eventDays[0]) === selectedRundownDay)
+          .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+        const selectedDayLabel = selectedRundownDay
+          ? new Date(`${selectedRundownDay}T00:00:00`).toLocaleDateString("id-ID", {
+              weekday: "long", day: "numeric", month: "long", year: "numeric",
+            })
+          : "Hari acara";
 
         container.innerHTML = `
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
                     <div class="flex items-center justify-between border-b border-slate-200 pb-4">
                         <div>
-                            <h3 class="text-xl font-black text-navy">⏱️ Tabel Rundown Acara</h3>
+                            <h3 class="text-xl font-black text-navy">Tabel Rundown Acara</h3>
                             <p class="text-xs text-slate-500">Susunan waktu pelaksanaan acara dari awal hingga penutupan menggunakan Time Picker.</p>
                         </div>
                     </div>
+
+                    ${eventDays.length > 1 ? `
+                      <div class="flex items-center justify-between gap-3">
+                        <button type="button" onclick="changeRundownDay(-1)" ${selectedDayIndex <= 0 ? "disabled" : ""} class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-navy font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed">‹ Hari Sebelumnya</button>
+                        <div class="text-center"><div class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Hari ${selectedDayIndex + 1} dari ${eventDays.length}</div><div class="text-sm font-extrabold text-navy">${selectedDayLabel}</div></div>
+                        <button type="button" onclick="changeRundownDay(1)" ${selectedDayIndex >= eventDays.length - 1 ? "disabled" : ""} class="px-4 py-2 rounded-xl border border-slate-200 bg-white text-navy font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed">Hari Berikutnya ›</button>
+                      </div>
+                    ` : ""}
 
                     ${
                       canEdit
@@ -4797,7 +5312,7 @@
                                 <input type="text" id="rdPic" placeholder="Contoh: Seksi Acara" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
                             </div>
                             <div class="flex items-end gap-2">
-                                <input type="text" id="rdRuangan" placeholder="Ruangan..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
+                                <input type="text" id="rdRuangan" placeholder="Keterangan..." class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white">
                                 <button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shrink-0">+ Sesi</button>
                             </div>
                         </form>
@@ -4813,12 +5328,12 @@
                                     <th class="p-3">Durasi</th>
                                     <th class="p-3">Sesi Kegiatan</th>
                                     <th class="p-3">PIC Lapangan</th>
-                                    <th class="p-3">Ruangan</th>
+                                    <th class="p-3">Keterangan</th>
                                     ${canEdit ? `<th class="p-3 rounded-r-xl text-right">Aksi</th>` : ""}
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${(ev.rundown || [])
+                                ${dayRundown
                                   .map(
                                     (r) => `
                                     <tr>
@@ -4830,7 +5345,10 @@
                                         ${
                                           canEdit
                                             ? `
-                                            <td class="p-3 text-right">
+                                            <td class="p-3 text-right whitespace-nowrap">
+                                                <button onclick="editRundownRow('${r.id}')" title="Edit Sesi" aria-label="Edit sesi ${r.kegiatan}" class="p-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 mr-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m16.862 4.487 2.651 2.651M4 20l4.5-1 11.013-11.013a1.875 1.875 0 0 0-2.652-2.652L5.848 16.348 4 20Z"/></svg>
+                                                </button>
                                                 <button onclick="deleteRundownRow('${r.id}')" title="Hapus Sesi" class="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                 </button>
@@ -4866,10 +5384,73 @@
           kegiatan: document.getElementById("rdKegiatan").value.trim(),
           pic: document.getElementById("rdPic").value.trim(),
           ruangan: document.getElementById("rdRuangan").value.trim(),
+          tanggal: selectedRundownDay || getActiveEvent().tanggal || "",
         });
         syncToCloud();
         renderAll();
         showToast("Sesi rundown berhasil ditambahkan!");
+      }
+
+      function changeRundownDay(offset) {
+        const ev = getActiveEvent();
+        const start = ev.tanggal || "";
+        const end = getEventEndDate(ev);
+        if (!start || !end) return;
+        const date = new Date(`${selectedRundownDay || start}T00:00:00Z`);
+        date.setUTCDate(date.getUTCDate() + offset);
+        const next = date.toISOString().slice(0, 10);
+        if (next < start || next > end) return;
+        selectedRundownDay = next;
+        renderAll();
+      }
+
+      function editRundownRow(id) {
+        const ev = getActiveEvent();
+        const row = (ev.rundown || []).find((item) => item.id === id);
+        if (!row) return;
+        const start = prompt("Edit Waktu Mulai (HH:MM):", row.start || "");
+        if (start === null) return;
+        const end = prompt("Edit Waktu Selesai (HH:MM):", row.end || "");
+        if (end === null) return;
+        const kegiatan = prompt("Edit Nama Sesi / Kegiatan:", row.kegiatan || "");
+        if (kegiatan === null) return;
+        const pic = prompt("Edit PIC / Penanggung Jawab:", row.pic || "");
+        if (pic === null) return;
+        const keterangan = prompt("Edit Keterangan:", row.ruangan || "");
+        if (keterangan === null) return;
+        const tanggal = prompt("Edit Tanggal (YYYY-MM-DD):", row.tanggal || ev.tanggal || "");
+        if (tanggal === null) return;
+        const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (!timePattern.test(start.trim()) || !timePattern.test(end.trim())) {
+          showToast("Format waktu harus HH:MM.");
+          return;
+        }
+        const editedDate = tanggal.trim();
+        const eventStartDate = ev.tanggal || "";
+        const eventEndDate = getEventEndDate(ev);
+        if (editedDate && !datePattern.test(editedDate)) {
+          showToast("Format tanggal harus YYYY-MM-DD.");
+          return;
+        }
+        if (editedDate && eventStartDate && eventEndDate && (editedDate < eventStartDate || editedDate > eventEndDate)) {
+          showToast("Tanggal sesi harus berada dalam rentang tanggal event.");
+          return;
+        }
+        const [sh, sm] = start.trim().split(":").map(Number);
+        const [eh, em] = end.trim().split(":").map(Number);
+        const diff = Math.max(0, eh * 60 + em - (sh * 60 + sm));
+        row.start = start.trim();
+        row.end = end.trim();
+        row.durasi = `${diff} Menit`;
+        row.kegiatan = kegiatan.trim();
+        row.pic = pic.trim();
+        row.ruangan = keterangan.trim();
+        row.tanggal = editedDate || ev.tanggal || "";
+        selectedRundownDay = row.tanggal;
+        syncToCloud();
+        renderAll();
+        showToast("Sesi rundown berhasil diperbarui.");
       }
 
       function deleteRundownRow(id) {
@@ -4902,11 +5483,15 @@
                       isSc
                         ? `
                         <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-                            <h3 class="text-lg font-black text-navy">📅 Buat Schedule Meeting Baru</h3>
+                            <h3 class="text-lg font-black text-navy">Buat Schedule Meeting Baru</h3>
                             <form onsubmit="createNewMeetingSchedule(event)" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3.5">
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Agenda Rapat *</label>
-                                    <input type="text" id="mtgAgenda" placeholder="Contoh: Rapat Koordinasi H-3" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold" required>
+                                    <select id="mtgAgendaSelect" onchange="toggleMtgCustomAgenda()" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                        ${eventsData.filter((event) => event.nama?.trim()).map((event) => `<option value="${event.nama}" ${event.id === ev.id ? "selected" : ""}>${event.nama}</option>`).join("")}
+                                        <option value="__custom__">+ Tulis Agenda Sendiri...</option>
+                                    </select>
+                                    <input type="text" id="mtgAgendaCustom" placeholder="Contoh: Rapat Koordinasi H-3" class="hidden mt-2 w-full px-3.5 py-2 rounded-xl border border-amber-400 text-xs font-semibold">
                                 </div>
                                 <div>
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Rapat (Date Picker) *</label>
@@ -4920,16 +5505,19 @@
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Tempat / Ruangan Meeting *</label>
                                     <select id="mtgTempatSelect" onchange="toggleMtgCustomTempat()" class="w-full px-3.5 py-2 rounded-xl border text-xs font-semibold bg-white">
                                         <option value="Ruang Rapat Utama STIT">Ruang Rapat Utama STIT</option>
-                                        <option value="Aula Lt. 2 Kampus STIT">Aula Lt. 2 Kampus STIT</option>
-                                        <option value="Online via Google Meet / Zoom">Online via Google Meet / Zoom</option>
+                                        <option value="Ruang Rapat Litbang">Ruang Rapat Litbang</option>
+                                        <option value="Ruang Pimpinan Ketua STIT">Ruang Pimpinan Ketua STIT</option>
+                                        <option value="Ruang Kantor Dosen STIT">Ruang Kantor Dosen STIT</option>
+                                        <option value="Ruang Aula STIT">Ruang Aula STIT</option>
+                                        <option value="Online Zoom/Gmeet">Online Zoom/Gmeet</option>
                                         <option value="__custom__">+ Tulis Tempat Baru...</option>
                                     </select>
                                     <input type="text" id="mtgTempatCustom" placeholder="Ketik tempat rapat..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold">
                                 </div>
                                 <div>
-                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Foto Meeting (Opsional)</label>
-                                    <input type="file" id="mtgPhotoInput" accept="image/*" class="w-full px-2.5 py-2 rounded-xl border text-[10px] font-semibold bg-white file:mr-2 file:rounded-lg file:border-0 file:bg-navy file:text-amber-400 file:px-2 file:py-1">
-                                    <p class="mt-1 text-[10px] text-slate-500">Diunggah oleh: <span class="font-bold text-navy">${currentUser.name}</span></p>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Foto Meeting (Nonaktif)</label>
+                                    <input type="file" id="mtgPhotoInput" accept="image/*" disabled aria-disabled="true" title="Upload foto meeting dinonaktifkan" class="w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-2.5 py-2 text-[10px] font-semibold text-slate-400 opacity-80 file:mr-2 file:cursor-not-allowed file:rounded-lg file:border-0 file:bg-slate-300 file:px-2 file:py-1 file:text-slate-500">
+                                    <p class="mt-1 text-[10px] text-slate-400">Upload foto dinonaktifkan.</p>
                                 </div>
                                 <div class="sm:col-span-2 xl:col-span-5 flex justify-end">
                                     <button type="submit" class="px-5 py-2.5 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs shadow">+ Simpan Jadwal Meeting</button>
@@ -5091,30 +5679,40 @@
       function toggleMtgCustomTempat() {
         const sel = document.getElementById("mtgTempatSelect");
         const inp = document.getElementById("mtgTempatCustom");
-        if (sel.value === "__custom__") inp.classList.remove("hidden");
-        else inp.classList.add("hidden");
+        const isCustom = sel.value === "__custom__";
+        inp.classList.toggle("hidden", !isCustom);
+        inp.required = isCustom;
+        inp.disabled = !isCustom;
       }
 
-      async function createNewMeetingSchedule(e) {
+      function toggleMtgCustomAgenda() {
+        const sel = document.getElementById("mtgAgendaSelect");
+        const inp = document.getElementById("mtgAgendaCustom");
+        const isCustom = sel.value === "__custom__";
+        inp.classList.toggle("hidden", !isCustom);
+        inp.required = isCustom;
+        inp.disabled = !isCustom;
+      }
+
+      function createNewMeetingSchedule(e) {
         e.preventDefault();
         const sel = document.getElementById("mtgTempatSelect");
         const cust = document.getElementById("mtgTempatCustom");
-        const photoInput = document.getElementById("mtgPhotoInput");
+        const agendaSelect = document.getElementById("mtgAgendaSelect");
+        const agendaCustom = document.getElementById("mtgAgendaCustom");
+        const agenda = agendaSelect.value === "__custom__"
+          ? agendaCustom.value.trim()
+          : agendaSelect.value;
         const tempat =
           sel.value === "__custom__" ? cust.value.trim() : sel.value;
 
         const ev = getActiveEvent();
         const code = "MTG-" + Math.floor(100 + Math.random() * 900);
-        let uploadedPhoto = "";
-
-        if (photoInput && photoInput.files && photoInput.files[0]) {
-          uploadedPhoto = await readFileAsDataUrl(photoInput.files[0]);
-        }
 
         ev.meetings.unshift({
           id: "mtg_" + Date.now(),
           code: code,
-          agenda: document.getElementById("mtgAgenda").value.trim(),
+          agenda,
           tanggal: document.getElementById("mtgTanggal").value,
           waktu: document.getElementById("mtgWaktu").value,
           tempat: tempat || "Ruang Rapat STIT",
@@ -5122,7 +5720,7 @@
           isOpen: false,
           createdBy: currentUser.name,
           uploadedBy: currentUser.name,
-          photo: uploadedPhoto,
+          photo: "",
           attendees: [],
           notulensi: "",
         });
@@ -5279,17 +5877,18 @@
         container.innerHTML = `
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
                     <div class="border-b border-slate-200 pb-4">
-                        <h3 class="text-xl font-black text-navy">📂 Arsip Dokumen, SK, Proposal & Booklet</h3>
+                        <h3 class="text-xl font-black text-navy">Arsip Dokumen, SK, Proposal & Booklet</h3>
                         <p class="text-xs text-slate-500">Pusat penyimpanan tautan dokumen resmi kepanitiaan.</p>
                     </div>
 
                     ${
                       !isVip
                         ? `
-                        <form onsubmit="addDocumentItem(event)" class="p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3.5">
+                        <form onsubmit="addDocumentItem(event)" class="min-w-0 p-5 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+                            <input type="hidden" id="docEditId" value="">
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Dokumen *</label>
-                                <input type="text" id="docTitle" placeholder="Contoh: SK Kepanitiaan Resmi" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                    <input type="text" id="docTitle" placeholder="Contoh: SK Kepanitiaan Resmi" class="min-w-0 w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Kategori Dokumen *</label>
@@ -5304,16 +5903,19 @@
                                 <input type="text" id="docCategoryCustom" placeholder="Ketik kategori..." class="hidden mt-2 w-full px-3 py-2 rounded-xl border border-amber-400 text-xs font-semibold bg-white">
                             </div>
                             <div>
-                                <label class="block text-[11px] font-bold text-slate-600 mb-1">Diunggah Oleh (Dikelompokkan) *</label>
-                                <select id="docUploader" class="w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                                    ${buildGroupedSdmOptionsHtml(currentUser.name, false)}
-                                </select>
-                            </div>
+                                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Folder Penyimpanan</label>
+                                    <a href="https://drive.google.com/drive/folders/1cmwcKCUmYLUSJgfLiZZCyh-TcrIPgWNs?usp=sharing" target="_blank" rel="noopener noreferrer" class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm transition hover:bg-blue-700">Buka Drive</a>
+                                    <p class="mt-1 text-[10px] leading-relaxed text-slate-500">Unggah file ke folder ini, lalu salin link file dan tempel di kolom sebelah.</p>
+                                </div>
                             <div>
                                 <label class="block text-[11px] font-bold text-slate-600 mb-1">Link Google Drive / Cloud *</label>
-                                <div class="flex gap-2">
-                                    <input type="url" id="docUrl" placeholder="https://drive.google.com/..." class="flex-1 px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
-                                    <button type="submit" class="px-4 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs">+ Arsip</button>
+                                <div class="flex min-w-0 flex-col gap-2">
+                                    <input type="url" id="docUrl" placeholder="https://drive.google.com/..." class="min-w-0 w-full px-3 py-2 rounded-xl border text-xs font-semibold bg-white" required>
+                                    <p class="text-[10px] leading-relaxed text-slate-500">Tanggal upload dicatat otomatis saat arsip disimpan.</p>
+                                    <div class="flex flex-wrap justify-end gap-2">
+                                        <button type="submit" id="docSubmitBtn" class="max-w-full px-3 py-2 rounded-xl bg-grad-navy text-amber-400 font-extrabold text-xs">+ Arsip</button>
+                                        <button type="button" id="docCancelEditBtn" onclick="cancelEditDoc()" class="hidden max-w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-600 font-bold text-xs">Batal</button>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -5330,13 +5932,17 @@
                                 <div class="space-y-1">
                                     <span class="px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 font-extrabold text-[10px] uppercase">${d.category}</span>
                                     <h4 class="text-sm font-extrabold text-navy">${d.title}</h4>
-                                    <p class="text-[11px] text-slate-500">Diunggah oleh: <b>${d.uploader}</b></p>
+                                    <p class="text-[11px] text-slate-500">Diunggah oleh: <b>${d.uploader || d.createdBy || "—"}</b></p>
+                                    <p class="text-[11px] text-slate-500">Tanggal upload: <b>${formatDocumentUploadDate(d)}</b></p>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <a href="${d.url}" target="_blank" class="px-3.5 py-2 rounded-xl bg-navy text-amber-400 font-bold text-xs">Buka File</a>
                                     ${
                                       !isVip
                                         ? `
+                                        <button onclick="startEditDoc('${d.id}')" title="Edit Dokumen" aria-label="Edit dokumen ${d.title}" class="p-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-700">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m16.5 5.5 2 2M4 20l4.5-.8L19 8.7a2.1 2.1 0 0 0-3-3L5.5 16.2 4 20Z"/></svg>
+                                        </button>
                                         <button onclick="deleteDocItem('${d.id}')" title="Hapus Dokumen" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                         </button>
@@ -5358,8 +5964,22 @@
       function toggleDocCustomCategory() {
         const sel = document.getElementById("docCategorySelect");
         const inp = document.getElementById("docCategoryCustom");
-        if (sel.value === "__custom__") inp.classList.remove("hidden");
-        else inp.classList.add("hidden");
+        const isCustom = sel.value === "__custom__";
+        inp.classList.toggle("hidden", !isCustom);
+        inp.required = isCustom;
+        inp.disabled = !isCustom;
+      }
+
+      function formatDocumentUploadDate(documentItem) {
+        const value = documentItem.uploadedAt || documentItem.createdAt || "";
+        if (!value) return "Tidak tersedia";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "Tidak tersedia";
+        return date.toLocaleDateString("id-ID", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
       }
 
       function addDocumentItem(e) {
@@ -5369,16 +5989,78 @@
         const cat = sel.value === "__custom__" ? cust.value.trim() : sel.value;
 
         const ev = getActiveEvent();
-        ev.documents.unshift({
-          id: "doc_" + Date.now(),
-          title: document.getElementById("docTitle").value.trim(),
-          category: cat || "Dokumen",
-          uploader: document.getElementById("docUploader").value,
-          url: document.getElementById("docUrl").value.trim(),
-        });
+        const editId = document.getElementById("docEditId").value;
+        const title = document.getElementById("docTitle").value.trim();
+        const url = document.getElementById("docUrl").value.trim();
+        if (editId) {
+          const item = (ev.documents || []).find((doc) => doc.id === editId);
+          if (!item) {
+            showToast("Dokumen yang akan diedit tidak ditemukan.", "error");
+            return;
+          }
+          const linkChanged = url !== item.url;
+          item.title = title;
+          item.category = cat || "Dokumen";
+          item.url = url;
+          if (!item.uploadedAt || linkChanged) {
+            item.uploadedAt = new Date().toISOString();
+          }
+          showToast("Perubahan dokumen berhasil disimpan.");
+        } else {
+          ev.documents.unshift({
+            id: "doc_" + Date.now(),
+            title,
+            category: cat || "Dokumen",
+            uploader: currentUser.name,
+            uploadedAt: new Date().toISOString(),
+            url,
+          });
+          showToast("Dokumen berhasil diarsipkan!");
+        }
         syncToCloud();
         renderAll();
-        showToast("Dokumen berhasil diarsipkan!");
+      }
+
+      function startEditDoc(id) {
+        const ev = getActiveEvent();
+        const item = (ev.documents || []).find((doc) => doc.id === id);
+        if (!item) return;
+
+        document.getElementById("docEditId").value = item.id;
+        document.getElementById("docTitle").value = item.title || "";
+        document.getElementById("docUrl").value = item.url || "";
+        const categorySelect = document.getElementById("docCategorySelect");
+        const categoryCustom = document.getElementById("docCategoryCustom");
+        const standardCategories = Array.from(categorySelect.options).map((option) => option.value);
+        if (standardCategories.includes(item.category)) {
+          categorySelect.value = item.category;
+          categoryCustom.value = "";
+        } else {
+          categorySelect.value = "__custom__";
+          categoryCustom.value = item.category || "";
+        }
+        toggleDocCustomCategory();
+        document.getElementById("docSubmitBtn").textContent = "Simpan Perubahan";
+        document.getElementById("docCancelEditBtn").classList.remove("hidden");
+        document.getElementById("docTitle").scrollIntoView({ behavior: "smooth", block: "center" });
+        document.getElementById("docTitle").focus({ preventScroll: true });
+      }
+
+      function cancelEditDoc() {
+        const form = document.querySelector('#dashContentDokumen form[onsubmit="addDocumentItem(event)"]');
+        if (form) form.reset();
+        const editId = document.getElementById("docEditId");
+        if (editId) editId.value = "";
+        const customCategory = document.getElementById("docCategoryCustom");
+        if (customCategory) {
+          customCategory.value = "";
+          customCategory.classList.add("hidden");
+          customCategory.required = false;
+          customCategory.disabled = true;
+        }
+        const submit = document.getElementById("docSubmitBtn");
+        if (submit) submit.textContent = "+ Arsip";
+        document.getElementById("docCancelEditBtn")?.classList.add("hidden");
       }
 
       function deleteDocItem(id) {
@@ -5391,9 +6073,20 @@
       // ==========================================
       // WIZARD BUAT & EDIT EVENT BARU
       // ==========================================
+      function syncWizardEventDateRange() {
+        const startInput = document.getElementById("wizTanggal");
+        const endInput = document.getElementById("wizTanggalSelesai");
+        if (!startInput || !endInput) return;
+        endInput.min = startInput.value;
+        if (startInput.value && (!endInput.value || endInput.value < startInput.value)) {
+          endInput.value = startInput.value;
+        }
+      }
+
       function openEventModal(mode) {
         wizardMode = mode;
         const modal = document.getElementById("eventWizardModal");
+        const chairSelect = document.getElementById("wizKetuaPanitia");
         document.getElementById("wizardModalTitle").textContent =
           mode === "edit"
             ? "Edit & Kelola Konfigurasi Event"
@@ -5401,6 +6094,7 @@
 
         if (mode === "edit") {
           const ev = getActiveEvent();
+          chairSelect.innerHTML = buildChairpersonOptionsHtml(ev.ketuaPanitia || "");
           wizardDraftRegistrationMode = getEventRegistrationMode(ev);
           wizardDraftProfitMode = getEventProfitMode(ev);
           document.getElementById("wizDivisi").value = ev.divisi;
@@ -5409,14 +6103,18 @@
           document.getElementById("wizTema").value = ev.tema;
           document.getElementById("wizDeskripsi").value = ev.deskripsi;
           document.getElementById("wizTanggal").value = ev.tanggal;
+          document.getElementById("wizTanggalSelesai").value =
+            ev.tanggalSelesai || ev.tanggal;
+          syncWizardEventDateRange();
           document.getElementById("wizJamMulai").value = ev.jamMulai;
           document.getElementById("wizJamSelesai").value = ev.jamSelesai;
 
           const locSel = document.getElementById("wizLokasiSelect");
           const presetLocs = [
-            "Aula Utama Lt. 2 Kampus STIT",
-            "Ruang Auditorium Terpadu STIT",
-            "Hall Serbaguna / Zoom Hybrid STIT",
+            "Aula STIT, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat",
+            "Masjid Al-Kuwait Lantai 2, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat",
+            "Masjid Nidaul Islam, Kampus-B Al Wafi IIBS, Pengasinan, Sawangan, Depok, Jawa Barat",
+            "Online Zoom/Gmeet",
           ];
           if (presetLocs.includes(ev.lokasi)) {
             locSel.value = ev.lokasi;
@@ -5429,7 +6127,7 @@
           }
 
           document.getElementById("wizTargetPeserta").value = ev.targetPeserta;
-          document.getElementById("wizHtm").value = ev.htmPeserta;
+          document.getElementById("wizHtm").value = formatThousands(ev.htmPeserta);
           const radioProfit = document.querySelector(
             `input[name="eventProfitMode"][value="${wizardDraftProfitMode}"]`,
           );
@@ -5443,8 +6141,12 @@
           );
           wizardTempDivisions = JSON.parse(JSON.stringify(ev.divisions || []));
         } else {
+          chairSelect.innerHTML = buildChairpersonOptionsHtml("");
           wizardDraftRegistrationMode = "umum";
           wizardDraftProfitMode = "profit";
+          document.getElementById("wizLokasiSelect").selectedIndex = 0;
+          document.getElementById("wizLokasiCustom").value = "";
+          document.getElementById("wizLokasiCustom").classList.add("hidden");
           const radioProfitDefault = document.querySelector(
             'input[name="eventProfitMode"][value="profit"]',
           );
@@ -5454,10 +6156,12 @@
           document.getElementById("wizTema").value = "";
           document.getElementById("wizDeskripsi").value = "";
           document.getElementById("wizTanggal").value = "2026-11-20";
+          document.getElementById("wizTanggalSelesai").value = "2026-11-20";
+          syncWizardEventDateRange();
           document.getElementById("wizJamMulai").value = "08:00";
           document.getElementById("wizJamSelesai").value = "15:00";
           document.getElementById("wizTargetPeserta").value = 60;
-          document.getElementById("wizHtm").value = 75000;
+          document.getElementById("wizHtm").value = formatThousands(75000);
 
           wizardTempSpeakers = [
             { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
@@ -5661,7 +6365,7 @@
                             <div class="text-xs font-bold text-navy">Terpilih (${d.members.length}): <span class="font-normal text-slate-700">${d.members.join(", ") || "Belum ada"}</span></div>
                             <div class="flex items-center gap-2">
                                 <input type="text" id="wizCustomMember_${idx}" placeholder="Tambah Personil Baru..." class="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-semibold bg-white">
-                                <button type="button" onclick="addWizCustomMember(${idx})" class="px-3 py-1.5 rounded-xl bg-navy text-amber-400 font-bold text-xs">+ Tambah Personil Baru</button>
+                                <button type="button" onclick="addWizCustomMember(${idx})" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 border border-sky-300/70 text-white shadow-[0_8px_18px_rgba(14,165,233,0.18)] font-bold text-xs transition-all">+ Tambah Personil Baru</button>
                             </div>
                         </div>
                     </div>
@@ -5753,6 +6457,22 @@
           showToast("Nama Event wajib diisi!", "error");
           return;
         }
+        const ketuaPanitia = document.getElementById("wizKetuaPanitia").value;
+        if (wizardMode === "create" && !ketuaPanitia) {
+          showToast("Pilih Ketua Panitia terlebih dahulu!", "error");
+          document.getElementById("wizKetuaPanitia").focus();
+          return;
+        }
+        const tanggalMulai = document.getElementById("wizTanggal").value;
+        const tanggalSelesai =
+          document.getElementById("wizTanggalSelesai").value || tanggalMulai;
+        if (!tanggalMulai || !tanggalSelesai || tanggalSelesai < tanggalMulai) {
+          showToast(
+            "Tanggal selesai harus sama dengan atau setelah tanggal mulai.",
+            "error",
+          );
+          return;
+        }
         const locSel = document.getElementById("wizLokasiSelect").value;
         const lokasi =
           locSel === "__custom__"
@@ -5766,12 +6486,14 @@
 
         if (wizardMode === "edit") {
           const ev = getActiveEvent();
+          ev.ketuaPanitia = ketuaPanitia || ev.ketuaPanitia || "";
           ev.divisi = document.getElementById("wizDivisi").value;
           ev.kategori = document.getElementById("wizKategori").value;
           ev.nama = nama;
           ev.tema = document.getElementById("wizTema").value.trim();
           ev.deskripsi = document.getElementById("wizDeskripsi").value.trim();
-          ev.tanggal = document.getElementById("wizTanggal").value;
+          ev.tanggal = tanggalMulai;
+          ev.tanggalSelesai = tanggalSelesai;
           ev.jamMulai = document.getElementById("wizJamMulai").value;
           ev.jamSelesai = document.getElementById("wizJamSelesai").value;
           ev.lokasi = lokasi || "Kampus STIT";
@@ -5780,7 +6502,7 @@
           ev.targetPeserta =
             Number(document.getElementById("wizTargetPeserta").value) || 50;
           ev.subsidiKampus = 0;
-          ev.htmPeserta = Number(htmInput?.value || ev.htmPeserta || 0);
+          ev.htmPeserta = parseRupiah(htmInput?.value || ev.htmPeserta || 0);
           ev.isProfitEvent = isProfitEvent;
           ev.formConfigSaved =
             registrationMode === "mahasiswa" || registrationMode === "internal"
@@ -5796,7 +6518,7 @@
           }
         } else {
           const newId = "evt_" + Date.now();
-          const htm = Number(document.getElementById("wizHtm").value) || 75000;
+          const htm = parseRupiah(document.getElementById("wizHtm").value) || 75000;
           const draftMode = wizardDraftRegistrationMode || "umum";
           const studentYear =
             document.querySelector('input[name="studentYearChoice"]:checked')
@@ -5804,6 +6526,7 @@
 
           const newEvent = {
             id: newId,
+            ketuaPanitia: ketuaPanitia,
             divisi: document.getElementById("wizDivisi").value,
             kategori: document.getElementById("wizKategori").value,
             nama: nama,
@@ -5813,7 +6536,8 @@
             deskripsi:
               document.getElementById("wizDeskripsi").value.trim() ||
               "Kegiatan resmi STIT.",
-            tanggal: document.getElementById("wizTanggal").value,
+            tanggal: tanggalMulai,
+            tanggalSelesai: tanggalSelesai,
             jamMulai: document.getElementById("wizJamMulai").value,
             jamSelesai: document.getElementById("wizJamSelesai").value,
             lokasi: lokasi || "Kampus STIT",
@@ -5822,7 +6546,7 @@
             targetPeserta:
               Number(document.getElementById("wizTargetPeserta").value) || 60,
             subsidiKampus: 0,
-            htmPeserta: Number(htmInput?.value || htm || 0),
+            htmPeserta: parseRupiah(htmInput?.value || htm || 0),
             isProfitEvent: isProfitEvent,
             registrationMode: draftMode,
             studentYear: draftMode === "mahasiswa" ? studentYear : "",
@@ -5877,6 +6601,13 @@
           activeEventId = newId;
         }
 
+        if (currentUser) {
+          const updatedRole = evaluateUserRoleForActiveEvent(currentUser.name);
+          currentUser.role = updatedRole.role;
+          currentUser.roleLabel = updatedRole.roleLabel;
+          currentUser.coordDivisionId = updatedRole.coordDivisionId;
+        }
+        sidebarCalendarMonth = null;
         closeEventModal();
         syncToCloud();
         renderAll();
@@ -6101,7 +6832,7 @@
             (p, idx) => `
                 <div class="flex items-center gap-2">
                     <input type="text" value="${p.name}" oninput="tempPackagesConfig[${idx}].name = this.value" placeholder="Nama Paket (Mis: Paket-A)" class="flex-1 px-3 py-2 rounded-xl border text-xs font-bold">
-                    <input type="number" value="${p.price}" oninput="tempPackagesConfig[${idx}].price = Number(this.value)" placeholder="Harga (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-bold">
+                    <input type="text" inputmode="numeric" value="${formatThousands(p.price)}" oninput="formatRupiahField(this); tempPackagesConfig[${idx}].price = parseRupiah(this.value)" placeholder="Harga (Rp)" class="w-36 px-3 py-2 rounded-xl border text-xs font-bold">
                     ${
                       tempPackagesConfig.length > 1
                         ? `
@@ -6169,7 +6900,8 @@
         }
         document.getElementById("pubEventTitle").textContent = ev.nama;
         document.getElementById("pubEventTheme").textContent = `"${ev.tema}"`;
-        document.getElementById("pubEventDate").textContent = ev.tanggal;
+        document.getElementById("pubEventDate").textContent =
+          formatEventDateRange(ev);
         document.getElementById("pubEventTime").textContent =
           `${ev.jamMulai} - ${ev.jamSelesai} WIB`;
         document.getElementById("pubEventLocation").textContent = ev.lokasi;
@@ -6614,7 +7346,12 @@
           780,
         );
         ctx.fillText(
-          ev.tanggal + " • " + ev.jamMulai + "–" + ev.jamSelesai + " WIB",
+          formatEventDateRange(ev) +
+            " • " +
+            ev.jamMulai +
+            "–" +
+            ev.jamSelesai +
+            " WIB",
           60,
           1000,
           780,
@@ -6675,6 +7412,14 @@
           document.getElementById("viewPublicLanding").classList.add("hidden");
         }
         initLoginDropdown();
+        if (localEditModeRequested && !publicEventId) {
+          const roleInfo = evaluateUserRoleForActiveEvent(SUPER_ADMIN_NAME);
+          currentUser = { name: SUPER_ADMIN_NAME, ...roleInfo };
+          activeDashTab = "overview";
+          document.getElementById("viewLogin").classList.add("hidden");
+          document.getElementById("viewApp").classList.remove("hidden");
+          renderAll();
+        }
         initFirebaseConnection();
         openPublicRouteIfRequested();
       });
