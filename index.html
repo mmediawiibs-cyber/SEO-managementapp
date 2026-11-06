@@ -3476,6 +3476,23 @@
       let isFirebaseActive = false;
       let cloudStateLoaded = false;
 
+      function removeKnownDemoEvents(list) {
+        if (!Array.isArray(list)) return [];
+        const demoIds = new Set(["evt_1", "evt_2"]);
+        const demoNames = new Set([
+          "Workshop Nasional Metodologi Penelitian & Publikasi Ilmiah 2026",
+          "Ta'aruf & Orientasi Akademik Mahasiswa Baru Prodi MPI 2026",
+        ]);
+        return list.filter(
+          (event) =>
+            !(
+              event &&
+              (demoIds.has(String(event.id || "")) ||
+                demoNames.has(String(event.nama || "")))
+            ),
+        );
+      }
+
       function migrateLegacyAfghaniName() {
         let changed = false;
         const rename = (value) => {
@@ -3522,7 +3539,11 @@
             // Fallback penyimpanan lokal browser jika apiKey belum diganti
             const savedLocal = localStorage.getItem("seo_stit_events_backup");
             if (savedLocal) {
-              eventsData = JSON.parse(savedLocal);
+              eventsData = removeKnownDemoEvents(JSON.parse(savedLocal));
+              localStorage.setItem(
+                "seo_stit_events_backup",
+                JSON.stringify(eventsData),
+              );
               const savedUsers = localStorage.getItem(
                 "seo_stit_users_directory",
               );
@@ -3556,6 +3577,13 @@
       }
 
       async function syncToCloud() {
+        // Pastikan record demo lama tidak ikut tersimpan kembali.
+        eventsData = removeKnownDemoEvents(eventsData);
+        if (
+          activeEventId &&
+          !eventsData.some((event) => event.id === activeEventId)
+        )
+          activeEventId = eventsData[0]?.id || null;
         // Simpan cadangan ke LocalStorage juga agar selalu aman
         try {
           localStorage.setItem(
@@ -3588,7 +3616,16 @@
             if (doc.exists) {
               const cloudData = doc.data();
               if (cloudData && cloudData.eventsData) {
-                eventsData = cloudData.eventsData;
+                const rawCloudEvents = cloudData.eventsData;
+                eventsData = removeKnownDemoEvents(rawCloudEvents);
+                const removedDemoEvents =
+                  eventsData.length !==
+                  (Array.isArray(rawCloudEvents) ? rawCloudEvents.length : 0);
+                if (
+                  activeEventId &&
+                  !eventsData.some((event) => event.id === activeEventId)
+                )
+                  activeEventId = eventsData[0]?.id || null;
                 const needsDirectoryBootstrap = !Array.isArray(
                   cloudData.usersDirectory,
                 );
@@ -3598,7 +3635,12 @@
                 if (!currentUser) initLoginDropdown();
                 const cloudMigrated =
                   migrateLegacyAfghaniName() | migrateStudentParticipantData();
-                if (cloudMigrated || needsDirectoryBootstrap) syncToCloud();
+                if (
+                  cloudMigrated ||
+                  needsDirectoryBootstrap ||
+                  removedDemoEvents
+                )
+                  syncToCloud();
                 cloudStateLoaded = true;
                 if (currentUser) {
                   const updatedRole = evaluateUserRoleForActiveEvent(
@@ -3963,16 +4005,8 @@
         "Muhammad Bakri Rahimin, Lc., M.E.",
       ];
 
-      const DUMMY_SPEAKERS = [
-        "Dr. Ali Saman Hasan, Lc., M.A.",
-        "Yusuf Utsman Baisa, Lc.",
-        "Prof. Taufik Kasturi, P.Si., M.Si, Ph.D.",
-        "Ustadz Kartiko Adi Pramono, Dipl. Ing. HTL., ACMC., M.Pd.",
-        "Dr. Mhd Saleh, M.Pd.",
-        "Suworo, S.Si., M.M.",
-        "Zikra Juninawan, M.Ed.",
-        "Muhammad Bakri Rahimin, Lc., M.E.",
-      ];
+      // Tidak ada daftar pemateri dummy. Pemateri diisi sesuai kegiatan sebenarnya.
+      const DUMMY_SPEAKERS = [];
 
       const PROVINSI_KOTA = {
         "Jawa Barat": [
@@ -4092,6 +4126,16 @@
         },
       ];
 
+      // Koordinator default tiap seksi dipertahankan sebagai template awal.
+      // Nama ini hanya menjadi nilai awal; pengelola dapat menggantinya per kegiatan.
+      const DEFAULT_SECTION_COORDINATORS = {
+        "Seksi Acara": "Yusuf Abdullah, M.Pd.",
+        "Seksi Konsumsi": "Sumarni, S.Ag., M.Pd.",
+        "Seksi Logistik / Perlengkapan": "Muhamad Zacky Haidar, B.A.",
+        "Seksi Humas & Sponsorship": "Said Imanullah, S.Ag.",
+        "Seksi Dokumentasi & Publikasi": "Afghani, S.Ikom",
+      };
+
       // 2. 10 TUGAS DEFAULT PER SEKSI
       function getDefault10Tasks(sectionName, defaultPic) {
         const templates = {
@@ -4179,379 +4223,8 @@
       }
 
       // 3. INITIAL EVENTS DATABASE (2 EVENT AWAL)
-      let eventsData = [
-        {
-          id: "evt_1",
-          divisi: "LP2M",
-          kategori: "Workshop",
-          nama: "Workshop Nasional Metodologi Penelitian & Publikasi Ilmiah 2026",
-          tema: "Membangun Ekosistem Riset Dosen & Mahasiswa STIT yang Bereputasi",
-          deskripsi:
-            "Program kerja unggulan LP2M STIT untuk membekali civitas akademika dan peserta umum dalam penulisan karya ilmiah terindeks.",
-          tanggal: "2026-11-15",
-          jamMulai: "08:00",
-          jamSelesai: "15:30",
-          lokasi: "Aula Utama Lt. 2 Kampus STIT",
-          speakers: [
-            {
-              name: "Prof. Dr. H. Mahmud Yunus, M.A.",
-              topic:
-                "Strategi Tembus Jurnal Bereputasi Nasional & Internasional",
-            },
-            {
-              name: "Dr. Mhd Saleh, M.Pd.",
-              topic: "Metodologi Riset Pendidikan Islam Kontemporer",
-            },
-          ],
-          targetPeserta: 60,
-          subsidiKampus: 2500000,
-          htmPeserta: 85000,
-          unitEconomics: [
-            { id: "ue1", item: "Makan Siang Box", cost: 25000 },
-            { id: "ue2", item: "Snack Coffee Break", cost: 10000 },
-            {
-              id: "ue3",
-              item: "Seminar Kit (Totebag & Notebook)",
-              cost: 20000,
-            },
-            { id: "ue4", item: "E-Sertifikat & Modul Materi", cost: 10000 },
-          ],
-          biayaOperasional: [
-            { id: "bo1", item: "Honorarium 2 Pemateri Utama", cost: 2000000 },
-            {
-              id: "bo2",
-              item: "Cetak Backdrop & Dekorasi Panggung",
-              cost: 450000,
-            },
-            { id: "bo3", item: "Kebersihan & Operasional Sound", cost: 350000 },
-          ],
-          divisions: [
-            {
-              id: "div_1",
-              name: "Seksi Acara",
-              pic: "Yusuf Abdullah, M.Pd.",
-              members: [
-                "Rizky Pratama (2025)",
-                "Aisyah Putri (2025)",
-                "Aufa Zaki (2026)",
-              ],
-              tasks: getDefault10Tasks("Seksi Acara", "Rizky Pratama (2025)"),
-            },
-            {
-              id: "div_2",
-              name: "Seksi Konsumsi",
-              pic: "Sumarni, S.Ag., M.Pd.",
-              members: [
-                "Muhammad Ilham (2025)",
-                "Siti Nurhaliza (2025)",
-                "Zahra Amalia (2026)",
-              ],
-              tasks: getDefault10Tasks(
-                "Seksi Konsumsi",
-                "Siti Nurhaliza (2025)",
-              ),
-            },
-            {
-              id: "div_3",
-              name: "Seksi Logistik / Perlengkapan",
-              pic: "Muhamad Zacky Haidar, B.A.",
-              members: [
-                "Fajar Ramadhan (2025)",
-                "Luthfi Halim (2026)",
-                "Budiman",
-              ],
-              tasks: getDefault10Tasks(
-                "Seksi Logistik / Perlengkapan",
-                "Fajar Ramadhan (2025)",
-              ),
-            },
-            {
-              id: "div_4",
-              name: "Seksi Humas & Sponsorship",
-              pic: "Said Imanullah, S.Ag.",
-              members: ["Dewi Sartika (2025)", "Khansa Humaira (2026)"],
-              tasks: getDefault10Tasks(
-                "Seksi Humas & Sponsorship",
-                "Dewi Sartika (2025)",
-              ),
-            },
-            {
-              id: "div_5",
-              name: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Ikom",
-              members: [
-                "Reza Pahlevi (2025)",
-                "Salman Alfarisi (2026)",
-                "Iqbal",
-              ],
-              tasks: getDefault10Tasks(
-                "Seksi Dokumentasi & Publikasi",
-                "Reza Pahlevi (2025)",
-              ),
-            },
-          ],
-          kasTransactions: [
-            {
-              id: "k1",
-              tanggal: "2026-10-25",
-              tipe: "masuk",
-              uraian: "Pencairan Dana Subsidi Awal Kampus STIT",
-              nominal: 2500000,
-              seksi: "Pengelola Inti",
-              pic: "Nurhalisa, M.Pd.",
-              notaUrl: "https://drive.google.com",
-            },
-            {
-              id: "k2",
-              tanggal: "2026-10-28",
-              tipe: "keluar",
-              uraian: "DP Katering Makan Siang & Snack Peserta",
-              nominal: 1000000,
-              seksi: "Seksi Konsumsi",
-              pic: "Sumarni, S.Ag., M.Pd.",
-              notaUrl: "https://drive.google.com",
-            },
-            {
-              id: "k3",
-              tanggal: "2026-10-29",
-              tipe: "keluar",
-              uraian: "Cetak Banner Backdrop & Spanduk",
-              nominal: 450000,
-              seksi: "Seksi Dokumentasi & Publikasi",
-              pic: "Afghani, S.Ikom",
-              notaUrl: "https://drive.google.com",
-            },
-          ],
-          participants: [
-            {
-              id: "p1",
-              ticketCode: "SEO-2026-881",
-              nama: "Ahmad Fauzi, S.Pd.",
-              gender: "Laki-laki",
-              wa: "081288990011",
-              email: "ahmad@stit.ac.id",
-              provinsi: "Jawa Barat",
-              kota: "Kab. Bekasi",
-              afiliasi: "Mahasiswa",
-              instansi: "STIT Hidayatunnajah - Bekasi",
-              paket: "Paket-A (Reguler + Seminar Kit)",
-              htmPaid: 85000,
-              checkedIn: true,
-              lunas: true,
-              checkInTime: "07:52 WIB",
-              statusAktif: true,
-            },
-            {
-              id: "p2",
-              ticketCode: "SEO-2026-882",
-              nama: "Dr. Siti Rahmah, M.Ag.",
-              gender: "Perempuan",
-              wa: "081377665544",
-              email: "rahmah@kampus.ac.id",
-              provinsi: "DKI Jakarta",
-              kota: "Jakarta Selatan",
-              afiliasi: "Dosen",
-              instansi: "UIN Syarif Hidayatullah - Jakarta",
-              paket: "Paket-B (VIP + Buku Prosiding)",
-              htmPaid: 125000,
-              checkedIn: false,
-              lunas: false,
-              checkInTime: "-",
-              statusAktif: true,
-            },
-            {
-              id: "p3",
-              ticketCode: "SEO-2026-883",
-              nama: "Budi Santoso",
-              gender: "Laki-laki",
-              wa: "085711223344",
-              email: "budi@umum.com",
-              provinsi: "Jawa Barat",
-              kota: "Kota Depok",
-              afiliasi: "Peserta Umum",
-              instansi: "Yayasan Pendidikan Islam - Depok",
-              paket: "Paket-A (Reguler + Seminar Kit)",
-              htmPaid: 85000,
-              checkedIn: false,
-              lunas: false,
-              checkInTime: "-",
-              statusAktif: true,
-            },
-          ],
-          rundown: [
-            {
-              id: "r1",
-              start: "07:30",
-              end: "08:15",
-              durasi: "45 Menit",
-              kegiatan: "Registrasi Peserta & Scan QR E-Tiket",
-              pic: "Seksi Humas & Sponsorship",
-              ruangan: "Lobby Aula Lt. 2",
-            },
-            {
-              id: "r2",
-              start: "08:15",
-              end: "08:45",
-              durasi: "30 Menit",
-              kegiatan: "Pembukaan, Tilawah Al-Quran & Sambutan Ketua STIT",
-              pic: "Seksi Acara",
-              ruangan: "Aula Utama Lt. 2",
-            },
-            {
-              id: "r3",
-              start: "08:45",
-              end: "11:30",
-              durasi: "165 Menit",
-              kegiatan: "Sesi Materi 1: Strategi Publikasi Jurnal Bereputasi",
-              pic: "Yusuf Abdullah, M.Pd.",
-              ruangan: "Aula Utama Lt. 2",
-            },
-            {
-              id: "r4",
-              start: "11:30",
-              end: "13:00",
-              durasi: "90 Menit",
-              kegiatan: "ISHOMA & Pembagian Konsumsi Makan Siang",
-              pic: "Seksi Konsumsi",
-              ruangan: "Area Prasmanan",
-            },
-          ],
-          meetings: [
-            {
-              id: "m1",
-              code: "MTG-STIT-101",
-              agenda: "Rapat Pleno Fiksasi Persiapan H-7 Workshop LP2M",
-              tanggal: "2026-11-08",
-              waktu: "13:30",
-              tempat: "Ruang Rapat Utama STIT",
-              isOpen: true,
-              attendees: [
-                { name: "Afghani, S.Ikom", time: "13:25 WIB" },
-                { name: "Yusuf Abdullah, M.Pd.", time: "13:28 WIB" },
-                { name: "Sumarni, S.Ag., M.Pd.", time: "13:30 WIB" },
-              ],
-              notulensi:
-                "1. Seluruh seksi wajib menyelesaikan minimal 70% jobdesk pada H-3.\n2. Seksi Konsumsi memastikan kuota tambahan 10 box cadangan.\n3. Gladi bersih dilaksanakan sehari sebelum acara pukul 14.00 WIB.",
-            },
-          ],
-          documents: [
-            {
-              id: "d1",
-              title: "SK Kepanitiaan Resmi Workshop LP2M 2026",
-              category: "SK Kepanitiaan",
-              uploader: "Afghani, S.Ikom",
-              url: "https://drive.google.com",
-            },
-            {
-              id: "d2",
-              title: "TOR & Proposal Anggaran Kegiatan",
-              category: "Proposal & TOR",
-              uploader: "Yusuf Abdullah, M.Pd.",
-              url: "https://drive.google.com",
-            },
-          ],
-          participantCheckinOpen: false,
-          formConfig: {
-            useGender: true,
-            useWa: true,
-            useEmail: true,
-            useDomisili: true,
-            useAfiliasi: true,
-            usePaket: true,
-            packages: [
-              { name: "Paket-A (Reguler + Seminar Kit)", price: 85000 },
-              { name: "Paket-B (VIP + Buku Prosiding)", price: 125000 },
-            ],
-          },
-        },
-        {
-          id: "evt_2",
-          divisi: "Kaprodi MPI",
-          kategori: "Orientasi Mahasiswa Baru",
-          nama: "Ta'aruf & Orientasi Akademik Mahasiswa Baru Prodi MPI 2026",
-          tema: "Membentuk Pemimpin Pendidikan Islam yang Unggul & Beradab",
-          deskripsi:
-            "Kegiatan pengenalan sistem akademik, budaya kampus, dan keprodian bagi seluruh mahasiswa baru angkatan 2026.",
-          tanggal: "2026-12-05",
-          jamMulai: "07:30",
-          jamSelesai: "16:00",
-          lokasi: "Ruang Auditorium Terpadu STIT",
-          speakers: [
-            {
-              name: "Suworo, S.Si., M.M.",
-              topic: "Visi Misi & Budaya Akademik Kampus STIT",
-            },
-          ],
-          targetPeserta: 100,
-          subsidiKampus: 3000000,
-          htmPeserta: 65000,
-          unitEconomics: [
-            { id: "ue21", item: "Makan Siang & Snack", cost: 30000 },
-            { id: "ue22", item: "Atribut & ID Card Ta'aruf", cost: 20000 },
-          ],
-          biayaOperasional: [
-            { id: "bo21", item: "Dekorasi & Spanduk Utama", cost: 600000 },
-          ],
-          divisions: [
-            {
-              id: "div2_1",
-              name: "Seksi Acara",
-              pic: "Siti Salwa, M.Pd.",
-              members: ["Dimas Anggara (2025)", "Putri Marino (2025)"],
-              tasks: getDefault10Tasks("Seksi Acara", "Dimas Anggara (2025)"),
-            },
-            {
-              id: "div2_2",
-              name: "Seksi Konsumsi",
-              pic: "Rahmawati, M.Pd.",
-              members: ["Nabila Syakieb (2025)"],
-              tasks: getDefault10Tasks(
-                "Seksi Konsumsi",
-                "Nabila Syakieb (2025)",
-              ),
-            },
-          ],
-          kasTransactions: [
-            {
-              id: "k21",
-              tanggal: "2026-11-01",
-              tipe: "masuk",
-              uraian: "Subsidi Prodi MPI",
-              nominal: 3000000,
-              seksi: "Pengelola Inti",
-              pic: "Mhd Saleh, M.Pd.",
-              notaUrl: "https://drive.google.com",
-            },
-          ],
-          participants: [],
-          rundown: [
-            {
-              id: "r21",
-              start: "07:30",
-              end: "08:30",
-              durasi: "60 Menit",
-              kegiatan: "Apel Pagi & Pengenalan Panitia",
-              pic: "Siti Salwa, M.Pd.",
-              ruangan: "Lapangan Utama",
-            },
-          ],
-          meetings: [],
-          documents: [],
-          participantCheckinOpen: false,
-          formConfig: {
-            useGender: true,
-            useWa: true,
-            useEmail: true,
-            useDomisili: true,
-            useAfiliasi: true,
-            usePaket: true,
-            packages: [
-              { name: "Paket-A (Mahasiswa Baru)", price: 65000 },
-              { name: "Paket-B (Panitia/Pendamping)", price: 50000 },
-            ],
-          },
-        },
-      ];
+      // Data kegiatan dimulai kosong. Event hanya muncul setelah dibuat atau dimuat dari database.
+      let eventsData = [];
 
       // MASTER USER DIRECTORY — dikelola melalui halaman Super Admin.
       // Status nonaktif disimpan sebagai soft-delete agar riwayat event tetap utuh.
@@ -4560,7 +4233,7 @@
 
       // STATE APLIKASI AKTIF
       let currentUser = null;
-      let activeEventId = "evt_1";
+      let activeEventId = null;
       let renderedSidebarEventId = null;
       let sidebarCalendarMonth = null;
       let selectedRundownDay = "";
@@ -4880,17 +4553,16 @@
       }
 
       function deleteEvent(eventId) {
-        if (eventsData.length <= 1) {
+        if (eventsData.length < 1) {
           closeCustomModal();
-          showToast("Minimal harus ada satu event.", "error");
           return;
         }
         const removedEvent = eventsData.find((item) => item.id === eventId);
         if (!removedEvent) return;
         eventsData = eventsData.filter((item) => item.id !== eventId);
         if (activeEventId === eventId) {
-          activeEventId = eventsData[0].id;
-          if (currentUser) {
+          activeEventId = eventsData[0]?.id || null;
+          if (currentUser && activeEventId) {
             const updatedRole = evaluateUserRoleForActiveEvent(
               currentUser.name,
             );
@@ -5225,13 +4897,19 @@
         if (!sel) return;
         const selected = sel.value;
         sel.innerHTML = `<option value="">-- Pilih Nama Pengguna --</option>`;
+        const roleOrder = { "Super Admin": 0, SC: 1, Anggota: 2, Guest: 3 };
         getActiveDirectoryUsers()
           .filter(
-            (user) =>
-              user.role !== "Guest" &&
-              user.group !== "student" &&
-              user.group !== "support",
+            (user) => user.group !== "student" && user.group !== "support",
           )
+          .sort((a, b) => {
+            const roleDiff =
+              (roleOrder[a.role] ?? 4) - (roleOrder[b.role] ?? 4);
+            return (
+              roleDiff ||
+              String(a.name || "").localeCompare(String(b.name || ""), "id")
+            );
+          })
           .forEach((user) => {
             const authName = directoryAuthName(user);
             if (!authName || authName === "Guest-User") return;
@@ -5250,7 +4928,7 @@
 
       function buildChairpersonOptionsHtml(selectedValue = "") {
         const candidates = getActiveDirectoryUsers().filter(
-          (user) => user.group !== "student" && user.role !== "Super Admin",
+          (user) => user.role === "Anggota",
         );
         return [
           '<option value="">-- Pilih Nama Personil --</option>',
@@ -5299,6 +4977,20 @@
         return html;
       }
 
+      function buildAnggotaOptionsHtml(selectedValue = "") {
+        const candidates = getActiveDirectoryUsers().filter(
+          (user) => user.role === "Anggota",
+        );
+        return [
+          '<option value="">-- Pilih Anggota --</option>',
+          ...candidates.map((user) => {
+            const value = directoryAuthName(user);
+            const selected = value === selectedValue ? "selected" : "";
+            return `<option value="${escapePrintHtml(value)}" ${selected}>${escapePrintHtml(user.name)}</option>`;
+          }),
+        ].join("");
+      }
+
       function evaluateUserRoleForActiveEvent(userName) {
         const ev = getActiveEvent();
         const directoryUser = findDirectoryUser(userName);
@@ -5312,7 +5004,7 @@
         const isScManager = directoryUser
           ? directoryUser.role === "SC"
           : SC_MANAGERS.includes(userName) || isAdmin;
-        const coordDiv = (ev.divisions || []).find((d) => d.pic === userName);
+        const coordDiv = (ev?.divisions || []).find((d) => d.pic === userName);
 
         if (isSuperAdmin) {
           return {
@@ -5321,7 +5013,7 @@
             coordDivisionId: coordDiv ? coordDiv.id : null,
           };
         }
-        if (ev.ketuaPanitia === userName) {
+        if (ev?.ketuaPanitia === userName) {
           return {
             role: "sc",
             roleLabel: "Ketua Panitia / SC",
@@ -5699,6 +5391,33 @@
         }
 
         const cardList = document.getElementById("sidebarEventCards");
+        if (!ev) {
+          cardList.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-xs text-slate-500">Belum ada kegiatan. ${currentUser.role === "sc" ? "Gunakan tombol + untuk membuat kegiatan pertama." : "Menunggu kegiatan dibuat oleh SC."}</div>`;
+          const main = document.querySelector("#viewApp main");
+          const empty = document.getElementById("emptyEventWorkspaceState");
+          if (empty) empty.remove();
+          if (main)
+            main.insertAdjacentHTML(
+              "afterbegin",
+              `<section id="emptyEventWorkspaceState" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 9h18M8 13h3m-3 4h8"/></svg></div><h2 class="text-lg font-black text-slate-800">Belum Ada Kegiatan</h2><p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Data contoh telah dibersihkan. Silakan buat kegiatan baru untuk mulai menggunakan Workspace SEO.</p>${currentUser.role === "sc" ? `<button type="button" onclick="openEventModal('create')" class="mt-5 rounded-xl bg-amber-400 px-5 py-3 text-sm font-extrabold text-navy shadow hover:bg-amber-300">+ Buat Kegiatan Pertama</button>` : ""}</section>`,
+            );
+          const headline = document.getElementById("eventHeadlineSection");
+          const dashboard = document.getElementById(
+            "dashboardWorkspaceSection",
+          );
+          const member = document.getElementById("memberWorkspaceSection");
+          if (headline) headline.classList.add("hidden");
+          if (dashboard) dashboard.classList.add("hidden");
+          if (member) member.classList.add("hidden");
+          if (financeSwitchButton) financeSwitchButton.classList.add("hidden");
+          return;
+        }
+        const emptyState = document.getElementById("emptyEventWorkspaceState");
+        if (emptyState) emptyState.remove();
+        const headline = document.getElementById("eventHeadlineSection");
+        const dashboard = document.getElementById("dashboardWorkspaceSection");
+        if (headline) headline.classList.remove("hidden");
+        if (dashboard) dashboard.classList.remove("hidden");
         cardList.innerHTML = eventsData
           .map((item) => {
             const isActive = item.id === activeEventId;
@@ -6057,9 +5776,32 @@
                 ? user.group === "student"
                 : user.group !== "student",
             )
-            .sort((a, b) =>
-              String(a.name || "").localeCompare(String(b.name || ""), "id"),
-            )
+            .sort((a, b) => {
+              if (groupKey === "students") {
+                const yearOf = (user) =>
+                  String(
+                    user.angkatan ||
+                      (user.note || "").match(/20\d{2}/)?.[0] ||
+                      "9999",
+                  );
+                const yearDiff = yearOf(a).localeCompare(yearOf(b));
+                if (yearDiff) return yearDiff;
+              } else {
+                const roleOrder = {
+                  "Super Admin": 0,
+                  SC: 1,
+                  Anggota: 2,
+                  Guest: 3,
+                };
+                const roleDiff =
+                  (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2);
+                if (roleDiff) return roleDiff;
+              }
+              return String(a.name || "").localeCompare(
+                String(b.name || ""),
+                "id",
+              );
+            })
             .map((user) => {
               const isProtected =
                 user.name === SUPER_ADMIN_NAME ||
@@ -6074,7 +5816,7 @@
               <tr data-user-row="${escapePrintHtml(user.id)}" class="${statusActive ? "" : "bg-rose-50/60 opacity-80"}">
                 <td class="p-2.5 min-w-[210px]">
                   <input data-user-field="name" value="${escapePrintHtml(user.name || "")}" class="w-full min-w-[190px] rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs font-bold text-slate-800" ${isProtected ? "readonly title='Nama akun utama diproteksi'" : ""}>
-                  <div class="mt-1 text-[10px] text-slate-400">${escapePrintHtml(user.group === "student" ? user.loginName || "" : user.group || "Anggota")}</div>
+                  <div class="mt-1 text-[10px] text-slate-400">${escapePrintHtml(user.group === "student" ? `Mahasiswa (${user.angkatan || (user.note || "").match(/20\d{2}/)?.[0] || "Lainnya"})` : user.group || "Anggota")}</div>
                 </td>
                 <td class="p-2.5 min-w-[170px]"><input data-user-field="position" value="${escapePrintHtml(user.position || "")}" placeholder="Jabatan / Posisi" class="w-full min-w-[150px] rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700"></td>
                 <td class="p-2.5 whitespace-nowrap"><span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${statusActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700"}">${statusActive ? "Aktif" : "Nonaktif"}</span></td>
@@ -6124,8 +5866,8 @@
             </form>
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex flex-wrap gap-2" role="tablist" aria-label="Kelompok master pengguna">
-                <button id="directoryTabStaff" type="button" onclick="switchDirectoryGroup('staff')" class="rounded-xl bg-navy px-4 py-2 text-xs font-extrabold text-white">Dosen &amp; Staff</button>
-                <button id="directoryTabStudents" type="button" onclick="switchDirectoryGroup('students')" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-extrabold text-slate-600">Mahasiswa</button>
+                <button id="directoryTabStaff" type="button" onclick="switchDirectoryGroup('staff')" class="rounded-xl bg-navy px-4 py-2 text-xs font-extrabold text-white">Dosen &amp; Staff <span id="directoryCountStaff" class="ml-1 rounded-full bg-white/20 px-2 py-0.5">${usersDirectory.filter((user) => user.group !== "student").length}</span></button>
+                <button id="directoryTabStudents" type="button" onclick="switchDirectoryGroup('students')" class="rounded-xl bg-slate-100 px-4 py-2 text-xs font-extrabold text-slate-600">Mahasiswa <span id="directoryCountStudents" class="ml-1 rounded-full bg-slate-200 px-2 py-0.5">${usersDirectory.filter((user) => user.group === "student").length}</span></button>
               </div>
               <input id="directorySearch" type="search" oninput="filterDirectoryTable(this.value)" placeholder="Cari nama, posisi, role..." class="w-full sm:w-72 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs">
             </div>
@@ -6503,19 +6245,22 @@
 
       function filterDirectoryTable(value) {
         const term = normalizeDirectoryName(value);
-        ["directoryTableBodyStaff", "directoryTableBodyStudents"].forEach(
-          (id) => {
-            document
-              .querySelectorAll(`#${id} tr[data-user-row]`)
-              .forEach((row) => {
-                row.classList.toggle(
-                  "hidden",
-                  !!term &&
-                    !normalizeDirectoryName(row.textContent).includes(term),
-                );
-              });
-          },
-        );
+        const updateGroup = (bodyId, countId) => {
+          const rows = [
+            ...document.querySelectorAll(`#${bodyId} tr[data-user-row]`),
+          ];
+          let visibleCount = 0;
+          rows.forEach((row) => {
+            const visible =
+              !term || normalizeDirectoryName(row.textContent).includes(term);
+            row.classList.toggle("hidden", !visible);
+            if (visible) visibleCount++;
+          });
+          const count = document.getElementById(countId);
+          if (count) count.textContent = visibleCount;
+        };
+        updateGroup("directoryTableBodyStaff", "directoryCountStaff");
+        updateGroup("directoryTableBodyStudents", "directoryCountStudents");
       }
 
       // ==========================================
@@ -7229,7 +6974,7 @@
         if (isSc) {
           addBar.classList.remove("hidden");
           const sel = document.getElementById("newSectionPicSelect");
-          sel.innerHTML = buildGroupedSdmOptionsHtml("", true);
+          sel.innerHTML = buildAnggotaOptionsHtml();
         } else {
           addBar.classList.add("hidden");
         }
@@ -7238,6 +6983,7 @@
         grid.innerHTML = ev.divisions
           .map((d, idx) => {
             const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+            if (!picCandidates.includes(d.pic)) d.pic = picCandidates[0] || "";
             const doneCount = d.tasks.filter((t) => t.done).length;
             const totalCount = d.tasks.length;
             const pct =
@@ -9649,9 +9395,7 @@
           applyProfitModeState();
 
           wizardTempSpeakers = JSON.parse(
-            JSON.stringify(
-              ev.speakers || [{ name: DUMMY_SPEAKERS[0], topic: "" }],
-            ),
+            JSON.stringify(ev.speakers || [{ name: "", topic: "" }]),
           );
           wizardTempDivisions = JSON.parse(JSON.stringify(ev.divisions || []));
         } else {
@@ -9686,32 +9430,23 @@
           document.getElementById("wizNamaEvent").value = "";
           document.getElementById("wizTema").value = "";
           document.getElementById("wizDeskripsi").value = "";
-          document.getElementById("wizTanggal").value = "2026-11-20";
-          document.getElementById("wizTanggalSelesai").value = "2026-11-20";
+          document.getElementById("wizTanggal").value = "";
+          document.getElementById("wizTanggalSelesai").value = "";
           syncWizardEventDateRange();
           document.getElementById("wizJamMulai").value = "08:00";
           document.getElementById("wizJamSelesai").value = "15:00";
-          document.getElementById("wizTargetPeserta").value = 60;
-          document.getElementById("wizHtm").value = formatThousands(75000);
+          document.getElementById("wizTargetPeserta").value = "";
+          document.getElementById("wizHtm").value = "";
 
-          wizardTempSpeakers = [
-            { name: DUMMY_SPEAKERS[0], topic: "Topik Utama Kegiatan" },
-          ];
-          const activeStaffForWizard = getActiveDirectoryNames(["staff"]);
-          const activePicForWizard = (preferred, index) =>
-            isUserActive(preferred)
-              ? preferred
-              : activeStaffForWizard[
-                  index % Math.max(1, activeStaffForWizard.length)
-                ] || "";
-          const wizardPic1 = activePicForWizard("Yusuf Abdullah, M.Pd.", 0);
-          const wizardPic2 = activePicForWizard("Sumarni, S.Ag., M.Pd.", 1);
-          const wizardPic3 = activePicForWizard(
-            "Muhamad Zacky Haidar, B.A.",
-            2,
-          );
-          const wizardPic4 = activePicForWizard("Said Imanullah, S.Ag.", 3);
-          const wizardPic5 = activePicForWizard("Afghani, S.Ikom", 4);
+          wizardTempSpeakers = [{ name: "", topic: "" }];
+          const wizardPic1 = DEFAULT_SECTION_COORDINATORS["Seksi Acara"];
+          const wizardPic2 = DEFAULT_SECTION_COORDINATORS["Seksi Konsumsi"];
+          const wizardPic3 =
+            DEFAULT_SECTION_COORDINATORS["Seksi Logistik / Perlengkapan"];
+          const wizardPic4 =
+            DEFAULT_SECTION_COORDINATORS["Seksi Humas & Sponsorship"];
+          const wizardPic5 =
+            DEFAULT_SECTION_COORDINATORS["Seksi Dokumentasi & Publikasi"];
           wizardTempDivisions = [
             {
               id: "wdiv_1",
@@ -9787,6 +9522,7 @@
                         <div class="sm:col-span-5">
                             <label class="block text-[10px] font-bold text-slate-500">Pemateri ${idx + 1} (5 Opsi + Tulis Baru)</label>
                             <select onchange="handleWizSpeakerSelect(${idx}, this.value)" class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
+                                <option value="" ${!s.name ? "selected" : ""}>-- Pilih / tulis nama pemateri --</option>
                                 ${DUMMY_SPEAKERS.map((ds) => `<option value="${ds}" ${s.name === ds ? "selected" : ""}>${ds}</option>`).join("")}
                                 <option value="__custom__" ${isCustom ? "selected" : ""}>+ Tulis Nama Pemateri Baru...</option>
                             </select>
@@ -9823,7 +9559,7 @@
       }
 
       function addSpeakerRowInWizard() {
-        wizardTempSpeakers.push({ name: DUMMY_SPEAKERS[0], topic: "" });
+        wizardTempSpeakers.push({ name: "", topic: "" });
         renderWizardSpeakers();
       }
 
@@ -9834,11 +9570,10 @@
 
       function renderWizardDivisions() {
         const container = document.getElementById("wizDivisionsContainer");
-        const picCandidates = getActiveDirectoryNames([
-          "staff",
-          "support",
-          "other",
-        ]).filter((name) => name !== SUPER_ADMIN_NAME && name !== "Guest-User");
+        const picCandidates = getActiveDirectoryUsers()
+          .filter((user) => user.role === "Anggota")
+          .map(directoryAuthName)
+          .filter(Boolean);
 
         container.innerHTML = wizardTempDivisions
           .map((d, idx) => {
@@ -9861,8 +9596,6 @@
               (name) =>
                 name.endsWith("(2026)") && !usedInOtherSections.has(name),
             );
-            const isCustomPic = d.pic && !picCandidates.includes(d.pic);
-
             return `
                     <div class="p-5 rounded-3xl border-2 ${theme.bg} ${theme.border} space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -9874,9 +9607,7 @@
                                 <label class="text-xs font-bold text-navy">PIC Koordinator:</label>
                                 <select onchange="handleWizDivPicChange(${idx}, this.value)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
                                     ${picCandidates.map((p) => `<option value="${p}" ${d.pic === p ? "selected" : ""}>${p}</option>`).join("")}
-                                    <option value="__custom__" ${isCustomPic ? "selected" : ""}>+ Tulis Sendiri...</option>
                                 </select>
-                                <input type="text" id="wizDivPicCustom_${idx}" value="${isCustomPic ? d.pic : ""}" oninput="wizardTempDivisions[${idx}].pic = this.value" placeholder="Nama PIC..." class="${isCustomPic ? "" : "hidden"} px-3 py-2 rounded-xl border border-amber-400 text-xs font-bold bg-white">
                                 <button type="button" onclick="removeWizardDivisionCard(${idx})" title="Hapus Seksi Ini" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
@@ -9921,14 +9652,10 @@
       }
 
       function handleWizDivPicChange(idx, val) {
-        const cust = document.getElementById(`wizDivPicCustom_${idx}`);
-        if (val === "__custom__") {
-          cust.classList.remove("hidden");
-          wizardTempDivisions[idx].pic = cust.value;
-        } else {
-          cust.classList.add("hidden");
-          wizardTempDivisions[idx].pic = val;
-        }
+        const isAllowed = getActiveDirectoryUsers().some(
+          (user) => user.role === "Anggota" && directoryAuthName(user) === val,
+        );
+        if (isAllowed) wizardTempDivisions[idx].pic = val;
       }
 
       function toggleWizMember(divIdx, memberName) {
