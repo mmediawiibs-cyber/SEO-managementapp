@@ -14106,6 +14106,13 @@
             ${financeKpi("coins", "Sisa Anggaran", financeRp(remaining), `${budget ? ((remaining / budget) * 100).toLocaleString("id-ID", { maximumFractionDigits: 1 }) : 0}% tersisa`, "gold")}
             ${financeKpi("calendar", "Total Kegiatan", financeCount + " Kegiatan", "Lintas program STIT", "violet")}
           </div>
+          <section class="finance-card finance-panel mt-3">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div><h3 class="finance-section-title">Ringkasan Pengajuan Dana · Google Sheets</h3><p class="text-[10px] text-slate-500 mt-1">Akumulasi seluruh data pada tab Data PP, kolom Q dan V.</p></div>
+              <button type="button" class="finance-link text-[11px]" onclick="financeRefreshPPData()">↻ Perbarui data</button>
+            </div>
+            <div id="financePPOverviewHost"><div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"><div class="finance-pp-mini"><span>Total Nominal Pengajuan · Kolom Q</span><strong>Memuat data…</strong></div><div class="finance-pp-mini"><span>Total Transfer · Kolom V</span><strong>Memuat data…</strong></div></div></div>
+          </section>
           <div class="finance-overview-grid">
             <section class="finance-card finance-panel"><h3 class="finance-section-title">Realisasi per Seksi</h3>${financeBuildDonut()}</section>
             <section class="finance-card finance-panel"><div class="flex flex-wrap items-center justify-between gap-2 mb-2"><h3 class="finance-section-title">Tren Keuangan</h3><span class="text-[10px] text-slate-500">Enam bulan terakhir</span></div><div class="finance-chart-wrap">${financeBuildTrendChart()}</div><div class="finance-chart-legend mt-2"><span><i class="finance-dot" style="background:#d99b0d"></i>Anggaran</span><span><i class="finance-dot" style="background:#1458a6"></i>Realisasi</span><span><i class="finance-dot" style="background:#65aaf7"></i>Pemasukan</span></div></section>
@@ -14549,19 +14556,56 @@
         );
       }
       function financePPParseAmount(value) {
-        if (typeof value === "number") return value;
-        const raw = String(value ?? "")
-          .replace(/[^0-9,.-]/g, "")
-          .trim();
-        if (!raw) return 0;
-        let normalized = raw;
-        if (raw.includes(",") && raw.includes("."))
-          normalized = raw.replace(/\./g, "").replace(",", ".");
-        else if (raw.includes(",")) normalized = raw.replace(/,/g, "");
-        else if ((raw.match(/\./g) || []).length > 1)
-          normalized = raw.replace(/\./g, "");
-        const amount = Number(normalized);
-        return Number.isFinite(amount) ? amount : 0;
+        if (typeof value === "number")
+          return Number.isFinite(value) ? value : 0;
+        const text = String(value ?? "").trim();
+        if (!text || text === "-" || text === "—") return 0;
+        // Nilai pada Data PP adalah Rupiah (bilangan bulat); titik/koma pada
+        // tampilan Google Sheets diperlakukan sebagai pemisah ribuan.
+        const isNegative = /^\s*-/.test(text) || /^\(.*\)$/.test(text);
+        const digits = text.replace(/[^0-9]/g, "");
+        if (!digits) return 0;
+        const amount = Number(digits);
+        return Number.isFinite(amount) ? (isNegative ? -amount : amount) : 0;
+      }
+      function financePPGetAmountTotals(rows = financePPRows) {
+        // Q = Nominal pengajuan (index 16); V = jumlah transfer (index 21).
+        const nominalByHeader = financePPFindColumn(financePPHeaders, [
+          "Nominal",
+        ]);
+        const transferByHeader = financePPFindColumn(financePPHeaders, [
+          "Jumlah TF",
+          "Jumlah Transfer",
+          "Nominal TF",
+          "Nominal Transfer",
+          "Nilai Transfer",
+        ]);
+        const nominalIndex = nominalByHeader >= 0 ? nominalByHeader : 16;
+        const transferIndex = transferByHeader >= 0 ? transferByHeader : 21;
+        const totals = rows.reduce(
+          (acc, row) => {
+            acc.nominal += financePPParseAmount(row?.[nominalIndex]);
+            acc.transfer += financePPParseAmount(row?.[transferIndex]);
+            return acc;
+          },
+          { nominal: 0, transfer: 0 },
+        );
+        return { ...totals, nominalIndex, transferIndex };
+      }
+      function financePPRenderOverviewSummary() {
+        const host = document.getElementById("financePPOverviewHost");
+        if (!host) return;
+        const totals = financePPGetAmountTotals(financePPRows);
+        const syncLabel = financePPLastSync
+          ? `Diperbarui ${financePPLastSync.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+          : financePPIsLoading
+            ? "Mengambil data dari Google Sheets…"
+            : "Menunggu sinkronisasi pertama";
+        if (financePPError && !financePPLastSync) {
+          host.innerHTML = `<div class="finance-empty"><strong>Data Data PP belum dapat dimuat</strong><span>${financeEscape(financePPError)}</span><button type="button" class="finance-link mt-2" onclick="financeRefreshPPData()">Coba lagi ↻</button></div>`;
+          return;
+        }
+        host.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"><div class="finance-pp-mini"><span>Total Nominal Pengajuan · Kolom Q</span><strong>${financeRp(totals.nominal)}</strong><span class="block mt-1 text-[9px] font-medium text-slate-400">Akumulasi ${financePPRows.length.toLocaleString("id-ID")} baris Data PP</span></div><div class="finance-pp-mini"><span>Total Transfer · Kolom V</span><strong>${financeRp(totals.transfer)}</strong><span class="block mt-1 text-[9px] font-medium text-slate-400">Jumlah transfer yang tercatat di Data PP</span></div></div><div class="finance-pp-source-note mt-2">Sumber: Google Sheets · Data PP · ${syncLabel}</div>`;
       }
       function financePPStatusClass(value) {
         const status = String(value || "").toLowerCase();
@@ -14685,6 +14729,7 @@
             financePPParseAmount(nominalIndex >= 0 ? row[nominalIndex] : 0),
           0,
         );
+        const totals = financePPGetAmountTotals(rows);
         const unpaid = rows.filter(
           (row) =>
             statusIndex >= 0 &&
@@ -14716,7 +14761,7 @@
                 .join("")}</tr>`,
           )
           .join("");
-        host.innerHTML = `<div class="grid grid-cols-2 xl:grid-cols-4 gap-2.5 mb-3"><div class="finance-pp-mini"><span>Jumlah Pengajuan</span><strong>${rows.length.toLocaleString("id-ID")}</strong></div><div class="finance-pp-mini"><span>Total Nominal</span><strong>${financeRp(amount)}</strong></div><div class="finance-pp-mini"><span>Belum / Tidak Dibayar</span><strong>${unpaid.toLocaleString("id-ID")}</strong></div><div class="finance-pp-mini"><span>Sudah Dibayar</span><strong>${paid.toLocaleString("id-ID")}</strong></div></div><div class="finance-pp-scroll"><table class="finance-pp-table"><thead><tr>${header}</tr></thead><tbody>${body || `<tr><td colspan="${Math.max(financePPHeaders.length, 1)}" class="text-center py-10 text-slate-400">${financePPRows.length ? "Tidak ada data yang sesuai pencarian/periode." : "Belum ada baris Data PP yang dikirim oleh Apps Script."}</td></tr>`}</tbody></table></div><div class="finance-pp-source-note mt-2">Menampilkan ${rows.length.toLocaleString("id-ID")} dari ${financePPRows.length.toLocaleString("id-ID")} baris Data PP · hanya-baca.</div>`;
+        host.innerHTML = `<div class="grid grid-cols-2 xl:grid-cols-5 gap-2.5 mb-3"><div class="finance-pp-mini"><span>Jumlah Pengajuan</span><strong>${rows.length.toLocaleString("id-ID")}</strong></div><div class="finance-pp-mini"><span>Total Nominal · Q</span><strong>${financeRp(amount)}</strong></div><div class="finance-pp-mini"><span>Total Transfer · V</span><strong>${financeRp(totals.transfer)}</strong></div><div class="finance-pp-mini"><span>Belum / Tidak Dibayar</span><strong>${unpaid.toLocaleString("id-ID")}</strong></div><div class="finance-pp-mini"><span>Sudah Dibayar</span><strong>${paid.toLocaleString("id-ID")}</strong></div></div><div class="finance-pp-scroll"><table class="finance-pp-table"><thead><tr>${header}</tr></thead><tbody>${body || `<tr><td colspan="${Math.max(financePPHeaders.length, 1)}" class="text-center py-10 text-slate-400">${financePPRows.length ? "Tidak ada data yang sesuai pencarian/periode." : "Belum ada baris Data PP yang dikirim oleh Apps Script."}</td></tr>`}</tbody></table></div><div class="finance-pp-source-note mt-2">Menampilkan ${rows.length.toLocaleString("id-ID")} dari ${financePPRows.length.toLocaleString("id-ID")} baris Data PP · hanya-baca.</div>`;
       }
       function financePPFetchJsonp() {
         return new Promise((resolve, reject) => {
@@ -14799,6 +14844,7 @@
             financePPRefreshPromise = null;
             financePPRenderStatus();
             financePPRenderTable();
+            financePPRenderOverviewSummary();
             const btn = document.getElementById("financePPRefreshBtn");
             if (btn) {
               btn.disabled = false;
@@ -14814,7 +14860,7 @@
           financePPPollingTimer = setInterval(() => {
             const root = document.getElementById("viewFinancialDashboard");
             if (
-              financeCurrentRoute === "requests" &&
+              ["requests", "overview"].includes(financeCurrentRoute) &&
               document.visibilityState !== "hidden" &&
               root &&
               !root.classList.contains("hidden")
@@ -14900,10 +14946,16 @@
         else if (financeCurrentRoute === "settings")
           content = financeRenderSettings();
         document.getElementById("financialContent").innerHTML = content;
-        if (financeCurrentRoute === "requests") {
+        if (["requests", "overview"].includes(financeCurrentRoute)) {
           financeStartPPDataSync();
           financePPRenderStatus();
-          if (financePPLastSync || financePPRows.length) financePPRenderTable();
+          if (
+            financeCurrentRoute === "requests" &&
+            (financePPLastSync || financePPRows.length)
+          )
+            financePPRenderTable();
+          if (financeCurrentRoute === "overview")
+            financePPRenderOverviewSummary();
         } else {
           financeStopPPDataSync();
         }
