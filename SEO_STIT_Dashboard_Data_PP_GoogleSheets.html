@@ -969,7 +969,60 @@
         background: rgba(18, 34, 55, 0.94) !important;
         border-color: #30445e !important;
       }
-    </style>
+    
+      /* HOMEBASE STIT — navigasi aktif dan interaksi akademik */
+      .homebase-internal-nav { isolation: isolate; }
+      .homebase-nav-btn { min-height: 40px; padding: 0.65rem 1.1rem; border-radius: 9999px; color: rgba(255,255,255,.94); font-size: 11px; font-weight: 800; white-space: nowrap; transition: color .25s ease, transform .25s ease; }
+      .homebase-nav-btn:hover { color: #fcd977; transform: translateY(-1px); }
+      .homebase-nav-btn.is-active { color: #0a192f; }
+      .homebase-nav-indicator { position: absolute; z-index: 0; top: 0; left: 0; width: 0; height: 40px; border-radius: 9999px; pointer-events: none; background: linear-gradient(120deg,#f6c84d 0%,#e9ad27 55%,#d4a128 100%); box-shadow: 0 7px 18px rgba(212,175,55,.24), inset 0 1px 0 rgba(255,255,255,.45); will-change: transform,width,height; }
+      /* HOMEBASE: full viewport shell; scroll is isolated to content only */
+      body.homebase-open { overflow: hidden !important; }
+      #viewHomebaseSTIT:not(.hidden) { position: fixed !important; inset: 0 !important; display: flex !important; flex-direction: column !important; width: 100% !important; height: 100dvh !important; min-height: 0 !important; overflow: hidden !important; }
+      #viewHomebaseSTIT > header { position: relative !important; inset: auto !important; flex: 0 0 auto !important; }
+      #viewHomebaseSTIT > main { display: flex !important; flex: 1 1 auto !important; flex-direction: column !important; min-height: 0 !important; width: 100% !important; max-width: none !important; overflow: hidden !important; }
+      #viewHomebaseSTIT > main > section:first-child { flex: 0 0 auto !important; }
+      #homebaseContent { scroll-margin-top: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+      #viewHomebaseSTIT > footer { position: relative !important; inset: auto !important; flex: 0 0 auto !important; margin: 0 !important; }
+      #viewHomebaseSTIT > footer > div:first-child { padding-top: 0.7rem !important; padding-bottom: 0.7rem !important; }
+      #viewHomebaseSTIT > footer > div:last-child { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
+      .homebase-embed-frame { display: block; width: 100%; min-height: 68vh; border: 0; background: #fff; }
+      .homebase-embed-shell { overflow: hidden; border: 1px solid #dce5f1; border-radius: 1rem; background: #fff; box-shadow: 0 12px 30px rgba(15,23,42,.07); }
+      .homebase-embed-note { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; padding:.75rem 1rem; border-top:1px solid #e8edf4; background:#f8fafc; font-size:11px; color:#64748b; }
+      @media (max-height: 680px) { #viewHomebaseSTIT > main { padding-top: .5rem !important; padding-bottom: .5rem !important; } #viewHomebaseSTIT > main > section:first-child { padding-top: .7rem !important; padding-bottom: .7rem !important; } #viewHomebaseSTIT > main > section:first-child h1 { font-size: 1.35rem !important; } #viewHomebaseSTIT > footer > div:first-child { padding-top: .35rem !important; padding-bottom: .35rem !important; } #viewHomebaseSTIT > footer img { width: 2rem !important; height: 2rem !important; } }
+      @media (max-width: 640px) { #viewHomebaseSTIT > main > section:first-child { border-radius: 1rem !important; } #homebaseInternalNav { width: 100%; } .homebase-nav-btn { padding-left: .75rem; padding-right: .75rem; font-size: 10px; } #viewHomebaseSTIT > footer > div:first-child { gap: .5rem !important; } }
+      #homebaseContent { scroll-margin-top: 94px; }
+      #homebaseManageOverlay input { box-sizing: border-box; }
+      @media (prefers-reduced-motion: reduce) { .homebase-nav-btn, .homebase-nav-indicator { transition: none !important; } }
+    
+      /* GOOGLE SHEETS — DATA PP */
+      .finance-pp-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:13px; }
+      .finance-pp-scroll { width:100%; overflow:auto; max-height:calc(100dvh - 390px); border:1px solid #e0e7f1; border-radius:12px; }
+      .finance-pp-table { width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; font-size:10px; }
+      .finance-pp-table th { position:sticky; top:0; z-index:2; background:#eaf0f7; color:#1b3558; padding:10px 11px; font-size:9px; font-weight:900; white-space:nowrap; text-align:left; border-bottom:1px solid #d7e0ec; }
+      .finance-pp-table td { padding:9px 11px; border-bottom:1px solid #edf1f6; color:#253b59; vertical-align:top; max-width:300px; min-width:75px; }
+      .finance-pp-table tbody tr:nth-child(even) td { background:#f8fafd; }
+      .finance-pp-table tbody tr:hover td { background:#eef5ff; }
+      .finance-pp-status { display:inline-flex; align-items:center; border-radius:99px; padding:4px 8px; font-size:9px; font-weight:900; white-space:nowrap; background:#fff4dc; color:#99660b; }
+      .finance-pp-status.is-paid { background:#dcfce7; color:#166534; }
+      .finance-pp-status.is-progress { background:#dbeafe; color:#1d4ed8; }
+      .finance-pp-mini { background:#fff; border:1px solid #e1e8f1; border-radius:13px; padding:13px 15px; min-width:0; }
+      .finance-pp-mini span { display:block; color:#64748b; font-size:10px; font-weight:700; }
+      .finance-pp-mini strong { display:block; color:#10284c; font-size:17px; font-weight:900; margin-top:4px; overflow-wrap:anywhere; }
+      .finance-pp-refresh { display:inline-flex; align-items:center; gap:7px; border-radius:9px; background:#0b2a50; color:#fff; padding:9px 12px; font-size:10px; font-weight:800; }
+      .finance-pp-refresh:disabled { opacity:.55; cursor:wait; }
+      .finance-pp-source-note { color:#64748b; font-size:10px; }
+      .finance-pp-error { border:1px solid #fecaca; background:#fff7f7; color:#991b1b; border-radius:12px; padding:12px 14px; font-size:11px; line-height:1.55; }
+      .finance-pp-loading { color:#64748b; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:12px; padding:22px; text-align:center; font-size:11px; }
+      .finance-dark .finance-pp-scroll { border-color:#293d56; }
+      .finance-dark .finance-pp-table th { background:#1b2b40; color:#e1eaf5; border-color:#2a3c53; }
+      .finance-dark .finance-pp-table td { color:#dce5f0; border-color:#27384e; }
+      .finance-dark .finance-pp-table tbody tr:nth-child(even) td { background:#14243a; }
+      .finance-dark .finance-pp-table tbody tr:hover td { background:#1c3552; }
+      .finance-dark .finance-pp-mini { background:#121f32; border-color:#293b53; }
+      .finance-dark .finance-pp-mini strong { color:#f2f6fc; }
+      @media(max-width:760px) { .finance-pp-scroll { max-height:calc(100dvh - 340px); } }
+</style>
   </head>
   <body
     class="min-h-screen flex flex-col selection:bg-amber-200 selection:text-navy"
@@ -1233,6 +1286,15 @@
                 />
               </svg>
               <span>Dashboard Keuangan</span>
+            </button>
+            <button
+              id="btnOpenHomebaseSTIT"
+              type="button"
+              onclick="openHomebaseSTIT()"
+              class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-extrabold border border-white/20 shadow-sm transition"
+            >
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/><path d="M8 21v-5h8v5"/></svg>
+              <span>Homebase STIT</span>
             </button>
             <div
               class="flex items-center gap-3 bg-white/10 border border-white/15 px-3.5 py-2 rounded-2xl"
@@ -2419,6 +2481,61 @@
       </main>
     </div>
 
+    <!-- HOMEBASE STIT: academic home and campus links -->
+    <div id="viewHomebaseSTIT" class="hidden fixed inset-0 z-[85] h-[100dvh] min-h-0 w-full overflow-hidden flex flex-col bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.10),transparent_32%),linear-gradient(135deg,#f8fafc_0%,#eef3fb_52%,#f8fafc_100%)] text-slate-800">
+      <header class="relative z-40 flex-none border-b border-white/50 bg-grad-navy text-white shadow-lg">
+        <div class="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+          <div class="flex items-center gap-3">
+            <img src="logo-stit.png" alt="Logo STIT Al Wafi" class="h-11 w-11 object-contain" />
+            <div><div class="text-base font-black tracking-tight">HOMEBASE <span class="text-amber-300">STIT</span></div><div class="text-[11px] text-slate-300">STIT Al Wafi Bogor</div></div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="homebaseUserName" class="hidden text-xs font-bold text-white/85 sm:inline"></span>
+            <button type="button" onclick="closeHomebaseSTIT()" class="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-xs font-extrabold text-white transition hover:bg-white/20">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h12"/></svg>Kembali ke Dashboard
+            </button>
+          </div>
+        </div>
+      </header>
+      <main class="mx-auto flex min-h-0 w-full max-w-none flex-1 flex-col overflow-hidden px-4 py-4 sm:px-6 sm:py-5">
+        <section class="relative isolate flex-none overflow-hidden rounded-2xl border border-white/70 bg-grad-navy px-5 py-4 text-white shadow-[0_14px_34px_rgba(15,23,42,0.14)] sm:px-8 sm:py-5">
+          <div class="pointer-events-none absolute -right-16 -top-24 -z-10 h-72 w-72 rounded-full bg-blue-400/20 blur-3xl"></div>
+          <div class="max-w-3xl"><span class="inline-flex rounded-full border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-amber-200">STIT Al Wafi Bogor</span><h1 class="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Ruang informasi akademik</h1><p class="mt-2 max-w-2xl text-xs leading-relaxed text-slate-200 sm:text-sm">Akses jadwal kuliah, kalender akademik, berita kampus, jurnal, dan penerimaan mahasiswa baru dari satu tempat.</p></div>
+          <div class="mt-4 flex flex-wrap items-center gap-3">
+            <div id="homebaseInternalNav" class="homebase-internal-nav relative inline-flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Menu Homebase STIT">
+              <span id="homebaseNavIndicator" class="homebase-nav-indicator" aria-hidden="true"></span>
+              <button id="homebaseNavCalendar" type="button" role="tab" aria-selected="false" data-homebase-tab="calendar" onclick="setHomebaseTab('calendar')" class="homebase-nav-btn relative z-10">Kalender Akademik</button>
+              <button id="homebaseNavSchedule" type="button" role="tab" aria-selected="true" data-homebase-tab="schedule" onclick="setHomebaseTab('schedule')" class="homebase-nav-btn relative z-10">Jadwal Kuliah</button>
+              <button id="homebaseNavHome" type="button" role="tab" aria-selected="false" data-homebase-tab="home" onclick="setHomebaseTab('home')" class="homebase-nav-btn relative z-10">Home</button>
+              <button id="homebaseNavNews" type="button" role="tab" aria-selected="false" data-homebase-tab="news" onclick="setHomebaseTab('news')" class="homebase-nav-btn relative z-10">Portal Berita</button>
+              <button id="homebaseNavJournal" type="button" role="tab" aria-selected="false" data-homebase-tab="journal" onclick="setHomebaseTab('journal')" class="homebase-nav-btn relative z-10">Jurnal</button>
+              <button id="homebaseNavPmb" type="button" role="tab" aria-selected="false" data-homebase-tab="pmb" onclick="setHomebaseTab('pmb')" class="homebase-nav-btn relative z-10">Penerimaan Mahasiswa Baru</button>
+            </div>
+          </div>
+        </section>
+        <section id="homebaseContent" class="homebase-scroll-area mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-5 custom-scroll" tabindex="0" aria-live="polite"></section>
+      </main>
+      <footer class="relative z-40 mt-0 flex-none border-t border-slate-200/80 bg-[#08182f] text-white shadow-[0_-8px_24px_rgba(8,24,47,0.08)]">
+        <div class="mx-auto grid w-full max-w-none grid-cols-1 items-center gap-4 px-4 py-3 sm:px-6 md:grid-cols-[0.9fr_1.4fr] md:gap-5">
+          <div>
+            <div class="flex items-center gap-3"><img src="logo-stit.png" alt="Logo STIT Al Wafi" class="h-12 w-12 object-contain"/><div><div class="text-base font-black tracking-tight">STIT Al Wafi Bogor</div><div class="mt-0.5 text-xs text-slate-300">Informasi dan layanan akademik</div></div></div>
+            <p class="mt-3 text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-300">Ikuti Media Sosial Kami</p>
+            <div class="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[11px] font-bold text-slate-200">
+              <a class="inline-flex items-center gap-2 transition hover:text-amber-300" href="https://www.youtube.com/@STITAlWafiTVOficial" target="_blank" rel="noopener noreferrer"><svg class="h-4 w-4 text-amber-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z"/></svg>YouTube</a>
+              <a class="inline-flex items-center gap-2 transition hover:text-amber-300" href="https://www.instagram.com/stitalwafiofficial?mdxt=MXhlODczZWVhOXdnOQ==" target="_blank" rel="noopener noreferrer"><svg class="h-4 w-4 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5h.01" stroke-width="3" stroke-linecap="round"/></svg>Instagram</a>
+              <a class="inline-flex items-center gap-2 transition hover:text-amber-300" href="https://web.facebook.com/profile.php?id=61572783230109" target="_blank" rel="noopener noreferrer"><svg class="h-4 w-4 text-amber-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V8c0-.9.3-1.5 1.6-1.5h1.7V3.7c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2H7.3V13h2.8v8h3.4Z"/></svg>Facebook</a>
+            </div>
+          </div>
+          <div class="grid gap-3 text-[11px] leading-relaxed sm:grid-cols-3">
+            <div class="flex items-start gap-3 border-b border-white/15 pb-4 sm:border-b-0 sm:border-l sm:pl-5 sm:pt-1"><svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7l.5 2.8a2 2 0 0 1-.6 1.7L7.7 9.5a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 1.7-.6l2.8.5a2 2 0 0 1 1.5 2.8Z"/></svg><div><div class="font-extrabold text-amber-200">WhatsApp</div><a href="https://wa.me/628111351044" target="_blank" rel="noopener noreferrer" aria-label="Chat WhatsApp STIT Al Wafi di nomor 0811-135-1044" class="mt-1 inline-block text-slate-200 hover:text-amber-300">0811-135-1044</a></div></div>
+            <div class="flex items-start gap-3 border-b border-white/15 pb-4 sm:border-b-0 sm:border-l sm:pl-5 sm:pt-1"><svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3 6 9 7 9-7"/></svg><div><div class="font-extrabold text-amber-200">Email</div><a href="mailto:pmb@alwafi.ac.id" aria-label="Kirim email ke pmb@alwafi.ac.id" class="mt-1 inline-block text-slate-200 hover:text-amber-300">pmb@alwafi.ac.id</a></div></div>
+            <div class="flex items-start gap-3 sm:border-l sm:pl-5 sm:pt-1"><svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><div><div class="font-extrabold text-amber-200">Alamat Kampus</div><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.441678%2C106.742658" target="_blank" rel="noopener noreferrer" aria-label="Buka lokasi Kampus A STIT Al Wafi di Google Maps" class="mt-1 inline-block text-slate-200 transition hover:text-amber-300 hover:underline">Jl. Raya Arco No. 1, Ragamukti, Citayam, Tajurhalang, Bogor 16320 <span aria-hidden="true">↗</span></a></div></div>
+          </div>
+        </div>
+        <div class="border-t border-white/10 px-4 py-2 text-center text-[9px] tracking-wide text-slate-400">© <span id="homebaseYear"></span> STIT Al Wafi Bogor</div>
+      </footer>
+    </div>
+
     <!-- ==========================================
          4. VIEW LANDING PAGE PENDAFTARAN PUBLIK (FULLSCREEN MANDIRI)
          ========================================== -->
@@ -2889,7 +3006,7 @@
               <p
                 class="text-xs font-extrabold uppercase tracking-wider text-navy"
               >
-                Kelompok A — Program Kerja Divisi & Identitas Acara
+                Program Kerja Divisi & Identitas Acara
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -3005,7 +3122,7 @@
               <p
                 class="text-xs font-extrabold uppercase tracking-wider text-navy"
               >
-                Kelompok B — Waktu & Tempat Pelaksanaan
+                Waktu & Tempat Pelaksanaan
               </p>
               <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <div>
@@ -3100,7 +3217,7 @@
                 <p
                   class="text-xs font-extrabold uppercase tracking-wider text-navy"
                 >
-                  Kelompok D — Daftar Pemateri & Topik Pembahasan
+                  Daftar Pemateri & Topik Pembahasan
                 </p>
                 <button
                   type="button"
@@ -3476,7 +3593,6 @@
       let isFirebaseActive = false;
       let cloudStateLoaded = false;
 
-
       function removeKnownDemoEvents(list) {
         if (!Array.isArray(list)) return [];
         const demoIds = new Set(["evt_1", "evt_2"]);
@@ -3484,8 +3600,13 @@
           "Workshop Nasional Metodologi Penelitian & Publikasi Ilmiah 2026",
           "Ta'aruf & Orientasi Akademik Mahasiswa Baru Prodi MPI 2026",
         ]);
-        return list.filter((event) =>
-          !(event && (demoIds.has(String(event.id || "")) || demoNames.has(String(event.nama || ""))))
+        return list.filter(
+          (event) =>
+            !(
+              event &&
+              (demoIds.has(String(event.id || "")) ||
+                demoNames.has(String(event.nama || "")))
+            ),
         );
       }
 
@@ -3517,6 +3638,19 @@
       }
 
       function initFirebaseConnection() {
+        // Gunakan cache lokal sebagai data awal agar sesi yang tersimpan dapat
+        // dipulihkan segera. Snapshot Firestore tetap menjadi sumber data terbaru.
+        try {
+          const cachedEvents = localStorage.getItem("seo_stit_events_backup");
+          if (cachedEvents) eventsData = removeKnownDemoEvents(JSON.parse(cachedEvents));
+          const cachedUsers = localStorage.getItem("seo_stit_users_directory");
+          if (cachedUsers) usersDirectory = JSON.parse(cachedUsers);
+          const cachedSpeakers = localStorage.getItem("seo_stit_custom_speakers");
+          if (cachedSpeakers) customSpeakerNames = JSON.parse(cachedSpeakers);
+          ensureUserDirectoryCoverage();
+        } catch (cacheError) {
+          console.warn("Cache lokal tidak dapat dipulihkan:", cacheError);
+        }
         try {
           if (
             typeof firebase !== "undefined" &&
@@ -3536,7 +3670,10 @@
             const savedLocal = localStorage.getItem("seo_stit_events_backup");
             if (savedLocal) {
               eventsData = removeKnownDemoEvents(JSON.parse(savedLocal));
-              localStorage.setItem("seo_stit_events_backup", JSON.stringify(eventsData));
+              localStorage.setItem(
+                "seo_stit_events_backup",
+                JSON.stringify(eventsData),
+              );
               const savedUsers = localStorage.getItem(
                 "seo_stit_users_directory",
               );
@@ -3572,7 +3709,10 @@
       async function syncToCloud() {
         // Pastikan record demo lama tidak ikut tersimpan kembali.
         eventsData = removeKnownDemoEvents(eventsData);
-        if (activeEventId && !eventsData.some((event) => event.id === activeEventId))
+        if (
+          activeEventId &&
+          !eventsData.some((event) => event.id === activeEventId)
+        )
           activeEventId = eventsData[0]?.id || null;
         // Simpan cadangan ke LocalStorage juga agar selalu aman
         try {
@@ -3584,6 +3724,10 @@
             "seo_stit_users_directory",
             JSON.stringify(usersDirectory),
           );
+          localStorage.setItem(
+            "seo_stit_custom_speakers",
+            JSON.stringify(customSpeakerNames || []),
+          );
         } catch (e) {}
 
         if (!isFirebaseActive || !db) return;
@@ -3591,6 +3735,12 @@
           await db.collection("seo_app_state").doc("main_data").set({
             eventsData: eventsData,
             usersDirectory: usersDirectory,
+            customSpeakers: customSpeakerNames || [],
+            homebaseAcademic: {
+              schedules: HOMEBASE_SCHEDULE_DATA,
+              calendar: HOMEBASE_CALENDAR_DATA,
+              customFlags: HOMEBASE_CUSTOM_FLAGS,
+            },
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           });
         } catch (err) {
@@ -3608,20 +3758,63 @@
               if (cloudData && cloudData.eventsData) {
                 const rawCloudEvents = cloudData.eventsData;
                 eventsData = removeKnownDemoEvents(rawCloudEvents);
-                const removedDemoEvents = eventsData.length !== (Array.isArray(rawCloudEvents) ? rawCloudEvents.length : 0);
-                if (activeEventId && !eventsData.some((event) => event.id === activeEventId))
+                const removedDemoEvents =
+                  eventsData.length !==
+                  (Array.isArray(rawCloudEvents) ? rawCloudEvents.length : 0);
+                if (
+                  activeEventId &&
+                  !eventsData.some((event) => event.id === activeEventId)
+                )
                   activeEventId = eventsData[0]?.id || null;
                 const needsDirectoryBootstrap = !Array.isArray(
                   cloudData.usersDirectory,
                 );
+                const needsHomebaseBootstrap = !cloudData.homebaseAcademic;
+                const needsSpeakerBootstrap = !Array.isArray(cloudData.customSpeakers);
                 if (Array.isArray(cloudData.usersDirectory))
                   usersDirectory = cloudData.usersDirectory;
+                if (Array.isArray(cloudData.customSpeakers))
+                  customSpeakerNames = cloudData.customSpeakers;
+                if (cloudData.homebaseAcademic) {
+                  const academic = cloudData.homebaseAcademic;
+                  if (academic.schedules && typeof academic.schedules === "object")
+                    HOMEBASE_SCHEDULE_DATA = academic.schedules;
+                  HOMEBASE_PRODI.forEach((prodi) => {
+                    if (!HOMEBASE_SCHEDULE_DATA[prodi.key])
+                      HOMEBASE_SCHEDULE_DATA[prodi.key] = { 1: [], 2: [], 3: [], 4: [] };
+                    [1, 2, 3, 4].forEach((semester) => {
+                      if (!Array.isArray(HOMEBASE_SCHEDULE_DATA[prodi.key][semester]))
+                        HOMEBASE_SCHEDULE_DATA[prodi.key][semester] = [];
+                    });
+                  });
+                  if (Array.isArray(academic.calendar))
+                    HOMEBASE_CALENDAR_DATA = academic.calendar;
+                  if (academic.customFlags && typeof academic.customFlags === "object")
+                    HOMEBASE_CUSTOM_FLAGS = academic.customFlags;
+                  try {
+                    localStorage.setItem("stitHomebaseSchedulesV1", JSON.stringify(HOMEBASE_SCHEDULE_DATA));
+                    localStorage.setItem("stitHomebaseCalendarV1", JSON.stringify(HOMEBASE_CALENDAR_DATA));
+                    localStorage.setItem("stitHomebaseCustomFlagsV1", JSON.stringify(HOMEBASE_CUSTOM_FLAGS));
+                  } catch (storageError) {
+                    console.warn("Cache Homebase tidak dapat diperbarui:", storageError);
+                  }
+                  if (!document.getElementById("viewHomebaseSTIT")?.classList.contains("hidden"))
+                    renderHomebasePage();
+                }
                 ensureUserDirectoryCoverage();
                 if (!currentUser) initLoginDropdown();
                 const cloudMigrated =
                   migrateLegacyAfghaniName() | migrateStudentParticipantData();
-                if (cloudMigrated || needsDirectoryBootstrap || removedDemoEvents) syncToCloud();
+                if (
+                  cloudMigrated ||
+                  needsDirectoryBootstrap ||
+                  needsHomebaseBootstrap ||
+                  needsSpeakerBootstrap ||
+                  removedDemoEvents
+                )
+                  syncToCloud();
                 cloudStateLoaded = true;
+                if (!currentUser && !publicEventId) restoreRememberedLoginSession();
                 if (currentUser) {
                   const updatedRole = evaluateUserRoleForActiveEvent(
                     currentUser.name,
@@ -3645,6 +3838,7 @@
             } else {
               cloudStateLoaded = true;
               syncToCloud();
+              if (!currentUser && !publicEventId) restoreRememberedLoginSession();
               openPublicRouteIfRequested();
             }
           });
@@ -3985,8 +4179,46 @@
         "Muhammad Bakri Rahimin, Lc., M.E.",
       ];
 
-      // Tidak ada daftar pemateri dummy. Pemateri diisi sesuai kegiatan sebenarnya.
-      const DUMMY_SPEAKERS = [];
+      // Daftar pemateri resmi yang tersedia pada dropdown saat pembuatan event.
+      const DEFAULT_SPEAKERS = [
+        "Dr. Ali Saman Hasan, Lc., LL.M., M.A",
+        "Dr. Marullah Marzuq, M.Ag., LL.M",
+        "Kartiko Adi Pramono, Dipl.Ing.HTL.ACMC",
+        "Muhammad Bakri Rahimin, Lc., M.E",
+        "Suworo, M.M",
+        "Dr.(c) Fortin Sri Haryani, M.Pd",
+      ];
+      let customSpeakerNames = [];
+
+      function getSpeakerOptions() {
+        const custom = Array.isArray(customSpeakerNames) ? customSpeakerNames : [];
+        return [
+          ...DEFAULT_SPEAKERS,
+          ...[...new Set(custom.map((name) => String(name || "").trim()).filter(Boolean))]
+            .filter((name) => !DEFAULT_SPEAKERS.includes(name))
+            .sort((a, b) => a.localeCompare(b, "id")),
+        ];
+      }
+
+      function rememberCustomSpeakerName(value, persist = true) {
+        const name = String(value || "").trim();
+        if (!name || DEFAULT_SPEAKERS.includes(name)) return false;
+        if (!Array.isArray(customSpeakerNames)) customSpeakerNames = [];
+        const before = customSpeakerNames.length;
+        if (!customSpeakerNames.some((item) => item.toLocaleLowerCase("id-ID") === name.toLocaleLowerCase("id-ID"))) {
+          customSpeakerNames.push(name);
+        }
+        const changed = customSpeakerNames.length !== before;
+        if (changed && persist) {
+          try { localStorage.setItem("seo_stit_custom_speakers", JSON.stringify(customSpeakerNames)); } catch (error) {}
+          syncToCloud();
+        }
+        return changed;
+      }
+
+      function rememberDraftSpeakers() {
+        (wizardTempSpeakers || []).forEach((speaker) => rememberCustomSpeakerName(speaker?.name, false));
+      }
 
       const PROVINSI_KOTA = {
         "Jawa Barat": [
@@ -4109,6 +4341,8 @@
       // Koordinator default tiap seksi dipertahankan sebagai template awal.
       // Nama ini hanya menjadi nilai awal; pengelola dapat menggantinya per kegiatan.
       const DEFAULT_SECTION_COORDINATORS = {
+        "Seksi Kesekretariatan": "Nurhalisa, M.Pd.",
+        "Seksi Bendahara": "Muhamad Zacky Haidar, B.A.",
         "Seksi Acara": "Yusuf Abdullah, M.Pd.",
         "Seksi Konsumsi": "Sumarni, S.Ag., M.Pd.",
         "Seksi Logistik / Perlengkapan": "Muhamad Zacky Haidar, B.A.",
@@ -4179,6 +4413,30 @@
             "Mengunggah seluruh file dokumentasi ke Google Drive Arsip STIT",
             "Mempublikasikan rilis berita pasca-acara di kanal resmi kampus",
           ],
+          "Seksi Bendahara": [
+            "Menyusun Rencana Anggaran Biaya (RAB) kegiatan bersama ketua panitia",
+            "Menyiapkan format pencatatan kas masuk dan kas keluar",
+            "Mencatat seluruh pemasukan peserta, sponsor, dan sumber dana lainnya",
+            "Memverifikasi setiap pengajuan dan bukti pengeluaran seksi",
+            "Mengatur pencairan dana sesuai persetujuan dan kebutuhan kegiatan",
+            "Menyimpan nota, kuitansi, invoice, dan bukti transaksi secara teratur",
+            "Memantau realisasi anggaran dibandingkan dengan RAB",
+            "Membuat rekapitulasi saldo kas secara berkala",
+            "Menyusun laporan keuangan akhir kegiatan secara transparan",
+            "Menyerahkan LPJ keuangan beserta seluruh bukti transaksi",
+          ],
+          "Seksi Kesekretariatan": [
+            "Menyusun draf SK kepanitiaan dan meminta pengesahan pimpinan",
+            "Menyiapkan surat undangan untuk pemateri, tamu, dan mitra",
+            "Mengelola pencatatan surat masuk dan surat keluar kegiatan",
+            "Menyiapkan daftar hadir panitia, peserta, dan tamu undangan",
+            "Membuat notulensi rapat dan mendistribusikan hasilnya",
+            "Menyiapkan template administrasi dan formulir kebutuhan panitia",
+            "Mengumpulkan dan mengarsipkan dokumen setiap seksi",
+            "Memutakhirkan data administrasi dan daftar kontak kepanitiaan",
+            "Menyiapkan dokumen sertifikat, surat tugas, dan surat keterangan",
+            "Menyusun laporan administrasi dan arsip akhir kegiatan",
+          ],
         };
 
         const list = templates[sectionName] || [
@@ -4200,6 +4458,103 @@
           pic: defaultPic || "",
           done: false,
         }));
+      }
+
+      function buildDefaultEventDivisions(idPrefix = "wdiv") {
+        const assignedPics = new Set();
+        return Object.entries(DEFAULT_SECTION_COORDINATORS).map(([name, defaultPic], index) => {
+          const picKey = String(defaultPic || "").trim().toLowerCase();
+          // Satu orang hanya boleh menjadi PIC pada satu seksi.
+          // Urutan seksi menjadi prioritas penetapan PIC default.
+          const pic = picKey && !assignedPics.has(picKey) ? defaultPic : "";
+          if (picKey && pic) assignedPics.add(picKey);
+          return {
+            id: `${idPrefix}_${Date.now()}_${index + 1}`,
+            name,
+            pic,
+            members: [],
+            tasks: getDefault10Tasks(name, pic),
+          };
+        });
+      }
+
+      // Event lama yang belum mempunyai struktur panitia dipulihkan agar
+      // tab Progres Jobdesk tidak kosong. Setiap seksi memiliki 10 tugas awal.
+      function ensureEventDivisionStructure(event) {
+        if (!event) return false;
+        let changed = false;
+        if (!Array.isArray(event.divisions) || event.divisions.length === 0) {
+          event.divisions = buildDefaultEventDivisions(`div_${event.id || Date.now()}`);
+          changed = true;
+        } else {
+          // Tambahkan dua seksi default baru pada event lama yang sebelumnya
+          // sudah memakai struktur standar lima seksi.
+          const legacyDefaultNames = [
+            "Seksi Acara",
+            "Seksi Konsumsi",
+            "Seksi Logistik / Perlengkapan",
+            "Seksi Humas & Sponsorship",
+            "Seksi Dokumentasi & Publikasi",
+          ];
+          const hasLegacyDefaultStructure = event.divisions.some((division) =>
+            legacyDefaultNames.includes(division.name),
+          );
+          if (hasLegacyDefaultStructure) {
+            ["Seksi Bendahara", "Seksi Kesekretariatan"].forEach((sectionName) => {
+              if (!event.divisions.some((division) => division.name === sectionName)) {
+                const pic = DEFAULT_SECTION_COORDINATORS[sectionName];
+                event.divisions.push({
+                  id: `div_${event.id || Date.now()}_${sectionName.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+                  name: sectionName,
+                  pic,
+                  members: [],
+                  tasks: getDefault10Tasks(sectionName, pic),
+                });
+                changed = true;
+              }
+            });
+          }
+        }
+        // Urutan seksi default konsisten pada event baru maupun event lama.
+        const sectionPriority = new Map(
+          Object.keys(DEFAULT_SECTION_COORDINATORS).map((name, index) => [name, index]),
+        );
+        const previousSectionOrder = event.divisions.map((division) => division.name).join("|");
+        event.divisions.sort((a, b) =>
+          (sectionPriority.get(a.name) ?? 999) - (sectionPriority.get(b.name) ?? 999),
+        );
+        if (previousSectionOrder !== event.divisions.map((division) => division.name).join("|")) {
+          changed = true;
+        }
+
+        // Migrasi data lama yang mungkin memiliki PIC rangkap.
+        // PIC pada seksi dengan urutan lebih awal dipertahankan; PIC rangkap berikutnya dikosongkan.
+        const assignedPicKeys = new Set();
+        event.divisions.forEach((division) => {
+          const pic = String(division.pic || "").trim();
+          const picKey = pic.toLowerCase();
+          if (picKey && assignedPicKeys.has(picKey)) {
+            division.pic = "";
+            (division.tasks || []).forEach((task) => {
+              if (String(task.pic || "").trim().toLowerCase() === picKey) task.pic = "";
+            });
+            changed = true;
+          } else if (picKey) {
+            assignedPicKeys.add(picKey);
+          }
+        });
+
+        event.divisions.forEach((division) => {
+          if (!Array.isArray(division.members)) {
+            division.members = [];
+            changed = true;
+          }
+          if (!Array.isArray(division.tasks) || division.tasks.length === 0) {
+            division.tasks = getDefault10Tasks(division.name, division.pic);
+            changed = true;
+          }
+        });
+        return changed;
       }
 
       // 3. INITIAL EVENTS DATABASE (2 EVENT AWAL)
@@ -4692,6 +5047,22 @@
         );
       }
 
+      function isAdminUser(name = currentUser?.name) {
+        const user = findDirectoryUser(name);
+        return ADMIN_ROLE_NAMES.includes(name) || user?.role === "Admin";
+      }
+
+      function getSectionPicCandidates() {
+        return getActiveDirectoryUsers()
+          .filter((user) => ["Anggota", "Admin"].includes(user.role))
+          .map(directoryAuthName)
+          .filter(Boolean);
+      }
+
+      function getDefaultSectionPic() {
+        return getSectionPicCandidates()[0] || "";
+      }
+
       function getActiveDirectoryUsers() {
         return (usersDirectory || [])
           .filter((user) => user.status !== "inactive")
@@ -4749,8 +5120,9 @@
             name,
             loginName: name,
             group: "staff",
-            role:
-              SC_MANAGERS.includes(name) || ADMIN_ROLE_NAMES.includes(name)
+            role: ADMIN_ROLE_NAMES.includes(name)
+              ? "Admin"
+              : SC_MANAGERS.includes(name)
                 ? "SC"
                 : "Anggota",
           }),
@@ -4782,6 +5154,14 @@
           group: "other",
           role: "Guest",
           note: "Akses tamu",
+        });
+
+        // Migrasi role: dua pemegang hak Admin ditetapkan sebagai Admin,
+        // bukan SC, sambil tetap memakai izin internal setara SC.
+        ADMIN_ROLE_NAMES.forEach((adminName) => {
+          const adminUser = findDirectoryUser(adminName);
+          if (adminUser && !["Admin", "Super Admin", "Guest"].includes(adminUser.role))
+            adminUser.role = "Admin";
         });
 
         // Mahasiswa dan supporting selalu berstatus Guest, bukan akun login.
@@ -4877,17 +5257,18 @@
         if (!sel) return;
         const selected = sel.value;
         sel.innerHTML = `<option value="">-- Pilih Nama Pengguna --</option>`;
-        const roleOrder = { "Super Admin": 0, SC: 1, Anggota: 2, Guest: 3 };
-          getActiveDirectoryUsers()
+        const roleOrder = { "Super Admin": 0, SC: 1, Admin: 1.5, Anggota: 2, Guest: 3 };
+        getActiveDirectoryUsers()
           .filter(
-            (user) =>
-              user.group !== "student" && user.group !== "support",
+            (user) => user.group !== "student" && user.group !== "support",
           )
           .sort((a, b) => {
             const roleDiff =
               (roleOrder[a.role] ?? 4) - (roleOrder[b.role] ?? 4);
-            return roleDiff ||
-              String(a.name || "").localeCompare(String(b.name || ""), "id");
+            return (
+              roleDiff ||
+              String(a.name || "").localeCompare(String(b.name || ""), "id")
+            );
           })
           .forEach((user) => {
             const authName = directoryAuthName(user);
@@ -4970,6 +5351,29 @@
         ].join("");
       }
 
+      function buildSectionPicOptionsHtml(selectedValue = "") {
+        const activeEvent = getActiveEvent();
+        const usedPicKeys = new Set(
+          (activeEvent?.divisions || [])
+            .map((division) => String(division.pic || "").trim().toLowerCase())
+            .filter((value) => value && value !== String(selectedValue || "").trim().toLowerCase()),
+        );
+        const candidates = getActiveDirectoryUsers().filter((user) => {
+          if (!["Anggota", "Admin"].includes(user.role)) return false;
+          const value = directoryAuthName(user);
+          return value === selectedValue || !usedPicKeys.has(String(value || "").trim().toLowerCase());
+        });
+        return [
+          '<option value="">-- Pilih PIC Seksi --</option>',
+          ...candidates.map((user) => {
+            const value = directoryAuthName(user);
+            const selected = value === selectedValue ? "selected" : "";
+            return `<option value="${escapePrintHtml(value)}" ${selected}>${escapePrintHtml(user.name)}${user.role === "Admin" ? " · Admin" : ""}</option>`;
+          }),
+          '<option value="__custom__">+ Tulis Nama PIC Baru...</option>',
+        ].join("");
+      }
+
       function evaluateUserRoleForActiveEvent(userName) {
         const ev = getActiveEvent();
         const directoryUser = findDirectoryUser(userName);
@@ -4977,18 +5381,26 @@
         const isGuest = userName === "Guest-User";
         // SC assignment is a standing institutional permission. Chairperson,
         // coordinator, and member assignments are resolved against this event only.
-        const isAdmin = ADMIN_ROLE_NAMES.includes(userName);
+        const isAdmin = isAdminUser(userName);
         const isStitStaff =
           directoryUser?.group === "staff" || SDM_STIT.includes(userName);
-        const isScManager = directoryUser
-          ? directoryUser.role === "SC"
-          : SC_MANAGERS.includes(userName) || isAdmin;
+        const isScManager =
+          isAdmin || (directoryUser
+            ? directoryUser.role === "SC"
+            : SC_MANAGERS.includes(userName));
         const coordDiv = (ev?.divisions || []).find((d) => d.pic === userName);
 
         if (isSuperAdmin) {
           return {
             role: "sc",
             roleLabel: "Super Admin",
+            coordDivisionId: coordDiv ? coordDiv.id : null,
+          };
+        }
+        if (isAdmin) {
+          return {
+            role: "sc",
+            roleLabel: "Admin",
             coordDivisionId: coordDiv ? coordDiv.id : null,
           };
         }
@@ -5066,6 +5478,69 @@
           : "mt-2 text-[11px] font-semibold text-slate-500";
       }
 
+      const REMEMBERED_SESSION_KEY = "seo_stit_remembered_session_v1";
+
+      function saveRememberedLoginSession(userName) {
+        try {
+          localStorage.setItem(
+            REMEMBERED_SESSION_KEY,
+            JSON.stringify({ version: 1, userName: String(userName || ""), savedAt: Date.now() }),
+          );
+        } catch (error) {
+          console.warn("Sesi login tidak dapat disimpan pada perangkat ini:", error);
+        }
+      }
+
+      function clearRememberedLoginSession() {
+        try { localStorage.removeItem(REMEMBERED_SESSION_KEY); } catch (error) {}
+      }
+
+      // Memulihkan sesi pada browser/perangkat yang sama. Password tidak disimpan;
+      // sesi hanya berakhir ketika pengguna Logout atau akun dinonaktifkan.
+      function restoreRememberedLoginSession() {
+        if (currentUser || publicEventId || localEditModeRequested) return false;
+        let remembered = null;
+        try {
+          remembered = JSON.parse(localStorage.getItem(REMEMBERED_SESSION_KEY) || "null");
+        } catch (error) {
+          clearRememberedLoginSession();
+          return false;
+        }
+        const name = remembered?.version === 1 ? String(remembered.userName || "") : "";
+        if (!name || name === "Guest-User" || !isUserActive(name)) {
+          if (remembered) clearRememberedLoginSession();
+          return false;
+        }
+        const directoryUser = findDirectoryUser(name);
+        if (directoryUser && (
+          directoryUser.role === "Guest" ||
+          directoryUser.group === "student" ||
+          directoryUser.group === "support"
+        )) {
+          clearRememberedLoginSession();
+          return false;
+        }
+        const roleInfo = evaluateUserRoleForActiveEvent(name);
+        currentUser = { name, ...roleInfo };
+        document.getElementById("viewLogin")?.classList.add("hidden");
+        if (isFinancialDashboardPath() && canAccessFinancialDashboard()) {
+          enterFinancialDashboardFromCurrentPath();
+        } else {
+          document.getElementById("viewFinancialDashboard")?.classList.add("hidden");
+          document.getElementById("viewHomebaseSTIT")?.classList.add("hidden");
+          document.getElementById("viewApp")?.classList.remove("hidden");
+          if (currentUser.role === "koordinator") activeDashTab = "coord_section";
+          else if (currentUser.role === "anggota") activeDashTab = "rundown";
+          else activeDashTab = "overview";
+          renderAll();
+          if (isFinancialDashboardPath() && !canAccessFinancialDashboard()) {
+            history.replaceState({}, "", getWorkspaceUrl());
+          }
+        }
+        showToast(`Sesi dipulihkan. Selamat datang kembali, ${name}.`);
+        return true;
+      }
+
       function handleLogin(e) {
         e.preventDefault();
         const name = document.getElementById("loginName").value;
@@ -5101,11 +5576,12 @@
           return;
         }
         const isSuperAdmin = isSuperAdminUser(name);
-        const isAdmin = ADMIN_ROLE_NAMES.includes(name);
+        const isAdmin = isAdminUser(name);
         const isSc =
           (directoryUser
-            ? directoryUser.role === "SC"
-            : SC_MANAGERS.includes(name) || isAdmin) ||
+            ? ["SC", "Admin"].includes(directoryUser.role)
+            : SC_MANAGERS.includes(name)) ||
+          isAdmin ||
           isSuperAdmin ||
           eventsData.some((ev) => ev.ketuaPanitia === name);
         const isStit =
@@ -5124,6 +5600,7 @@
 
         const roleInfo = evaluateUserRoleForActiveEvent(name);
         currentUser = { name, ...roleInfo };
+        saveRememberedLoginSession(name);
         document.getElementById("viewLogin").classList.add("hidden");
 
         // Direct financial URL is opened after login only for SC / Super Admin.
@@ -5153,12 +5630,15 @@
       }
 
       function handleLogout() {
+        clearRememberedLoginSession();
         currentUser = null;
         const password = document.getElementById("loginPassword");
         if (password) password.value = "";
         document.getElementById("viewApp").classList.add("hidden");
         const finance = document.getElementById("viewFinancialDashboard");
         if (finance) finance.classList.add("hidden");
+        const homebase = document.getElementById("viewHomebaseSTIT");
+        if (homebase) homebase.classList.add("hidden");
         document.getElementById("viewLogin").classList.remove("hidden");
         history.replaceState({}, "", getWorkspaceUrl());
       }
@@ -5375,9 +5855,15 @@
           const main = document.querySelector("#viewApp main");
           const empty = document.getElementById("emptyEventWorkspaceState");
           if (empty) empty.remove();
-          if (main) main.insertAdjacentHTML("afterbegin", `<section id="emptyEventWorkspaceState" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 9h18M8 13h3m-3 4h8"/></svg></div><h2 class="text-lg font-black text-slate-800">Belum Ada Kegiatan</h2><p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Data contoh telah dibersihkan. Silakan buat kegiatan baru untuk mulai menggunakan Workspace SEO.</p>${currentUser.role === "sc" ? `<button type="button" onclick="openEventModal('create')" class="mt-5 rounded-xl bg-amber-400 px-5 py-3 text-sm font-extrabold text-navy shadow hover:bg-amber-300">+ Buat Kegiatan Pertama</button>` : ""}</section>`);
+          if (main)
+            main.insertAdjacentHTML(
+              "afterbegin",
+              `<section id="emptyEventWorkspaceState" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-sm"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 9h18M8 13h3m-3 4h8"/></svg></div><h2 class="text-lg font-black text-slate-800">Belum Ada Kegiatan</h2><p class="mx-auto mt-2 max-w-md text-sm text-slate-500">Data contoh telah dibersihkan. Silakan buat kegiatan baru untuk mulai menggunakan Workspace SEO.</p>${currentUser.role === "sc" ? `<button type="button" onclick="openEventModal('create')" class="mt-5 rounded-xl bg-amber-400 px-5 py-3 text-sm font-extrabold text-navy shadow hover:bg-amber-300">+ Buat Kegiatan Pertama</button>` : ""}</section>`,
+            );
           const headline = document.getElementById("eventHeadlineSection");
-          const dashboard = document.getElementById("dashboardWorkspaceSection");
+          const dashboard = document.getElementById(
+            "dashboardWorkspaceSection",
+          );
           const member = document.getElementById("memberWorkspaceSection");
           if (headline) headline.classList.add("hidden");
           if (dashboard) dashboard.classList.add("hidden");
@@ -5751,15 +6237,30 @@
             )
             .sort((a, b) => {
               if (groupKey === "students") {
-                const yearOf = (user) => String(user.angkatan || (user.note || "").match(/20\d{2}/)?.[0] || "9999");
+                const yearOf = (user) =>
+                  String(
+                    user.angkatan ||
+                      (user.note || "").match(/20\d{2}/)?.[0] ||
+                      "9999",
+                  );
                 const yearDiff = yearOf(a).localeCompare(yearOf(b));
                 if (yearDiff) return yearDiff;
               } else {
-                const roleOrder = { "Super Admin": 0, "SC": 1, "Anggota": 2, "Guest": 3 };
-                const roleDiff = (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2);
+                const roleOrder = {
+                  "Super Admin": 0,
+                  SC: 1,
+                  Admin: 1.5,
+                  Anggota: 2,
+                  Guest: 3,
+                };
+                const roleDiff =
+                  (roleOrder[a.role] ?? 2) - (roleOrder[b.role] ?? 2);
                 if (roleDiff) return roleDiff;
               }
-              return String(a.name || "").localeCompare(String(b.name || ""), "id");
+              return String(a.name || "").localeCompare(
+                String(b.name || ""),
+                "id",
+              );
             })
             .map((user) => {
               const isProtected =
@@ -5770,7 +6271,7 @@
                 user.group === "student" || user.group === "support";
               const roleOptions = isGuestGroup
                 ? ["Guest"]
-                : ["Anggota", "SC", "Super Admin"];
+                : ["Anggota", "Admin", "SC", "Super Admin"];
               return `
               <tr data-user-row="${escapePrintHtml(user.id)}" class="${statusActive ? "" : "bg-rose-50/60 opacity-80"}">
                 <td class="p-2.5 min-w-[210px]">
@@ -6205,10 +6706,13 @@
       function filterDirectoryTable(value) {
         const term = normalizeDirectoryName(value);
         const updateGroup = (bodyId, countId) => {
-          const rows = [...document.querySelectorAll(`#${bodyId} tr[data-user-row]`)];
+          const rows = [
+            ...document.querySelectorAll(`#${bodyId} tr[data-user-row]`),
+          ];
           let visibleCount = 0;
           rows.forEach((row) => {
-            const visible = !term || normalizeDirectoryName(row.textContent).includes(term);
+            const visible =
+              !term || normalizeDirectoryName(row.textContent).includes(term);
             row.classList.toggle("hidden", !visible);
             if (visible) visibleCount++;
           });
@@ -6926,20 +7430,25 @@
       // ==========================================
       function renderStrukturTab(ev) {
         const isSc = currentUser.role === "sc";
+        const structureChanged = ensureEventDivisionStructure(ev);
+        if (structureChanged) syncToCloud();
+        const picCandidates = getSectionPicCandidates();
         const addBar = document.getElementById("strukturAddSectionBar");
         if (isSc) {
           addBar.classList.remove("hidden");
           const sel = document.getElementById("newSectionPicSelect");
-          sel.innerHTML = buildAnggotaOptionsHtml();
+          if (sel) sel.innerHTML = buildSectionPicOptionsHtml();
         } else {
           addBar.classList.add("hidden");
         }
 
         const grid = document.getElementById("strukturDivisionsGrid");
-        grid.innerHTML = ev.divisions
+        grid.innerHTML = (ev.divisions || [])
           .map((d, idx) => {
             const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
-            if (!picCandidates.includes(d.pic)) d.pic = picCandidates[0] || "";
+            if (d.pic && !picCandidates.includes(d.pic)) d.pic = "";
+            d.members = Array.isArray(d.members) ? d.members : [];
+            d.tasks = Array.isArray(d.tasks) ? d.tasks : getDefault10Tasks(d.name, d.pic);
             const doneCount = d.tasks.filter((t) => t.done).length;
             const totalCount = d.tasks.length;
             const pct =
@@ -7047,6 +7556,12 @@
         }
 
         const ev = getActiveEvent();
+        ev.divisions = Array.isArray(ev.divisions) ? ev.divisions : [];
+        const normalizedPic = String(pic || "").trim().toLowerCase();
+        if (ev.divisions.some((division) => String(division.pic || "").trim().toLowerCase() === normalizedPic)) {
+          showToast("PIC tersebut sudah ditugaskan pada seksi lain. Pilih PIC yang berbeda.", "error");
+          return;
+        }
         ev.divisions.push({
           id: "div_" + Date.now(),
           name: name,
@@ -7199,9 +7714,9 @@
                             <label class="text-[11px] font-bold text-slate-500 block">HTM Peserta (Rp)</label>
                             <input type="text" inputmode="numeric" value="${formatThousands(ev.htmPeserta)}" oninput="formatRupiahField(this)" ${isReadOnly ? "disabled" : "onchange=\"updateBasicFinanceParam('htmPeserta', this.value)\""} class="mt-1 w-full px-3 py-2 rounded-xl border text-sm font-black text-navy bg-white">
                         </div>
-                        <div class="p-4 rounded-2xl bg-amber-50 border border-amber-300">
-                            <span class="text-[11px] font-bold text-amber-800 block">${isProfitEvent ? "Rekomendasi BEP HTM Minimal" : "Status BEP"}</span>
-                            <strong class="text-lg font-black text-navy mt-1 block">${formatRp(bep)} / org</strong>
+                        <div class="p-4 rounded-2xl bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 border border-blue-300 shadow-lg shadow-blue-900/10 text-white">
+                            <span class="text-[11px] font-bold text-blue-50 block">${isProfitEvent ? "Rekomendasi BEP HTM Minimal" : "Status BEP"}</span>
+                            <strong class="text-lg font-black text-white mt-1 block">${formatRp(bep)} / org</strong>
                         </div>
                     </div>
 
@@ -7813,6 +8328,64 @@
   .note { margin-top:10px; color:#64748b; font-size:8px; }
   .footer { margin-top:14px; padding-top:7px; border-top:1px solid #cbd5e1; color:#7b8798; font-size:8px; display:flex; justify-content:space-between; }
   @media screen { body { padding:18px; background:#eef2f7; } .sheet { max-width:1200px; margin:0 auto; padding:24px; background:white; box-shadow:0 8px 30px #0f172a18; } }
+
+      /* Embedded Form Finance application for the Pengajuan Dana menu */
+      .finance-request-embed-card {
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid #dce5f0;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 5px 18px rgba(15, 35, 65, 0.07);
+      }
+      .finance-request-embed-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #e5ebf3;
+        background: #fff;
+      }
+      .finance-request-embed-frame {
+        display: block;
+        width: 100%;
+        height: calc(100dvh - 205px);
+        min-height: 620px;
+        border: 0;
+        background: #f4f7fc;
+      }
+      .finance-request-external-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 36px;
+        padding: 8px 12px;
+        border-radius: 9px;
+        background: #0b2a50;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+      .finance-request-external-link:hover { background: #17477f; }
+      .finance-request-embed-note {
+        padding: 9px 14px;
+        color: #64748b;
+        background: #f8fafc;
+        border-top: 1px solid #e5ebf3;
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      @media (max-width: 760px) {
+        .finance-request-embed-frame {
+          height: calc(100dvh - 180px);
+          min-height: 560px;
+        }
+      }
 </style>
 </head>
 <body><main class="sheet">
@@ -9279,6 +9852,7 @@
 
         if (mode === "edit") {
           const ev = getActiveEvent();
+          if (ensureEventDivisionStructure(ev)) syncToCloud();
           chairSelect.innerHTML = buildChairpersonOptionsHtml(
             ev.ketuaPanitia || "",
           );
@@ -9351,11 +9925,11 @@
           applyProfitModeState();
 
           wizardTempSpeakers = JSON.parse(
-            JSON.stringify(
-              ev.speakers || [{ name: "", topic: "" }],
-            ),
+            JSON.stringify(ev.speakers || [{ name: "", topic: "" }]),
           );
           wizardTempDivisions = JSON.parse(JSON.stringify(ev.divisions || []));
+          if (!wizardTempDivisions.length)
+            wizardTempDivisions = buildDefaultEventDivisions("wdiv");
         } else {
           chairSelect.innerHTML = buildChairpersonOptionsHtml("");
           wizardDraftRegistrationMode = "umum";
@@ -9397,54 +9971,7 @@
           document.getElementById("wizHtm").value = "";
 
           wizardTempSpeakers = [{ name: "", topic: "" }];
-          const wizardPic1 = DEFAULT_SECTION_COORDINATORS["Seksi Acara"];
-          const wizardPic2 = DEFAULT_SECTION_COORDINATORS["Seksi Konsumsi"];
-          const wizardPic3 = DEFAULT_SECTION_COORDINATORS["Seksi Logistik / Perlengkapan"];
-          const wizardPic4 = DEFAULT_SECTION_COORDINATORS["Seksi Humas & Sponsorship"];
-          const wizardPic5 = DEFAULT_SECTION_COORDINATORS["Seksi Dokumentasi & Publikasi"];
-          wizardTempDivisions = [
-            {
-              id: "wdiv_1",
-              name: "Seksi Acara",
-              pic: wizardPic1,
-              members: [],
-              tasks: getDefault10Tasks("Seksi Acara", wizardPic1),
-            },
-            {
-              id: "wdiv_2",
-              name: "Seksi Konsumsi",
-              pic: wizardPic2,
-              members: [],
-              tasks: getDefault10Tasks("Seksi Konsumsi", wizardPic2),
-            },
-            {
-              id: "wdiv_3",
-              name: "Seksi Logistik / Perlengkapan",
-              pic: wizardPic3,
-              members: [],
-              tasks: getDefault10Tasks(
-                "Seksi Logistik / Perlengkapan",
-                wizardPic3,
-              ),
-            },
-            {
-              id: "wdiv_4",
-              name: "Seksi Humas & Sponsorship",
-              pic: wizardPic4,
-              members: [],
-              tasks: getDefault10Tasks("Seksi Humas & Sponsorship", wizardPic4),
-            },
-            {
-              id: "wdiv_5",
-              name: "Seksi Dokumentasi & Publikasi",
-              pic: wizardPic5,
-              members: [],
-              tasks: getDefault10Tasks(
-                "Seksi Dokumentasi & Publikasi",
-                wizardPic5,
-              ),
-            },
-          ];
+          wizardTempDivisions = buildDefaultEventDivisions("wdiv");
         }
 
         renderWizardSpeakers();
@@ -9469,19 +9996,20 @@
 
       function renderWizardSpeakers() {
         const container = document.getElementById("wizSpeakersContainer");
+        const speakerOptions = getSpeakerOptions();
         container.innerHTML = wizardTempSpeakers
           .map((s, idx) => {
-            const isCustom = s.name && !DUMMY_SPEAKERS.includes(s.name);
+            const isCustom = s.name && !speakerOptions.includes(s.name);
             return `
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center bg-white/75 p-3 rounded-2xl border border-white/90 shadow-[0_6px_16px_rgba(15,23,42,0.04)]">
                         <div class="sm:col-span-5">
-                            <label class="block text-[10px] font-bold text-slate-500">Pemateri ${idx + 1} (5 Opsi + Tulis Baru)</label>
+                            <label class="block text-[10px] font-bold text-slate-500">Pemateri ${idx + 1}</label>
                             <select onchange="handleWizSpeakerSelect(${idx}, this.value)" class="w-full px-3 py-2 rounded-lg border text-xs font-semibold">
                                 <option value="" ${!s.name ? "selected" : ""}>-- Pilih / tulis nama pemateri --</option>
-                                ${DUMMY_SPEAKERS.map((ds) => `<option value="${ds}" ${s.name === ds ? "selected" : ""}>${ds}</option>`).join("")}
+                                ${speakerOptions.map((name) => `<option value="${escapePrintHtml(name)}" ${s.name === name ? "selected" : ""}>${escapePrintHtml(name)}</option>`).join("")}
                                 <option value="__custom__" ${isCustom ? "selected" : ""}>+ Tulis Nama Pemateri Baru...</option>
                             </select>
-                            <input type="text" id="wizSpkCustom_${idx}" value="${isCustom ? s.name : ""}" oninput="wizardTempSpeakers[${idx}].name = this.value" placeholder="Ketik nama pemateri baru..." class="${isCustom ? "" : "hidden"} mt-1.5 w-full px-3 py-1.5 rounded-lg border border-amber-400 text-xs font-semibold">
+                            <input type="text" id="wizSpkCustom_${idx}" value="${isCustom ? escapePrintHtml(s.name) : ""}" oninput="wizardTempSpeakers[${idx}].name = this.value" onblur="rememberCustomSpeakerName(this.value)" placeholder="Ketik nama pemateri baru..." class="${isCustom ? "" : "hidden"} mt-1.5 w-full px-3 py-1.5 rounded-lg border border-blue-400 text-xs font-semibold">
                         </div>
                         <div class="sm:col-span-6">
                             <label class="block text-[10px] font-bold text-slate-500">Topik Pembahasan (Materi ${idx + 1})</label>
@@ -9525,14 +10053,20 @@
 
       function renderWizardDivisions() {
         const container = document.getElementById("wizDivisionsContainer");
-        const picCandidates = getActiveDirectoryUsers()
-          .filter((user) => user.role === "Anggota")
-          .map(directoryAuthName)
-          .filter(Boolean);
+        const picCandidates = getSectionPicCandidates();
 
         container.innerHTML = wizardTempDivisions
           .map((d, idx) => {
             const theme = SECTION_CARD_THEMES[idx % SECTION_CARD_THEMES.length];
+            const usedCoordinatorKeys = new Set(
+              wizardTempDivisions
+                .filter((otherDiv, otherIdx) => otherIdx !== idx)
+                .map((otherDiv) => String(otherDiv.pic || "").trim().toLowerCase())
+                .filter(Boolean),
+            );
+            const availablePicCandidates = picCandidates.filter((candidate) =>
+              candidate === d.pic || !usedCoordinatorKeys.has(String(candidate || "").trim().toLowerCase()),
+            );
 
             const usedInOtherSections = new Set();
             wizardTempDivisions.forEach((otherDiv, oIdx) => {
@@ -9561,7 +10095,8 @@
                             <div class="flex items-center gap-2">
                                 <label class="text-xs font-bold text-navy">PIC Koordinator:</label>
                                 <select onchange="handleWizDivPicChange(${idx}, this.value)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold bg-white">
-                                    ${picCandidates.map((p) => `<option value="${p}" ${d.pic === p ? "selected" : ""}>${p}</option>`).join("")}
+                                    <option value="" ${!d.pic ? "selected" : ""}>-- Pilih PIC --</option>
+                                    ${availablePicCandidates.map((p) => `<option value="${escapePrintHtml(p)}" ${d.pic === p ? "selected" : ""}>${escapePrintHtml(p)}</option>`).join("")}
                                 </select>
                                 <button type="button" onclick="removeWizardDivisionCard(${idx})" title="Hapus Seksi Ini" class="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -9607,10 +10142,34 @@
       }
 
       function handleWizDivPicChange(idx, val) {
-        const isAllowed = getActiveDirectoryUsers().some(
-          (user) => user.role === "Anggota" && directoryAuthName(user) === val,
-        );
-        if (isAllowed) wizardTempDivisions[idx].pic = val;
+        const division = wizardTempDivisions[idx];
+        if (!division) return;
+        const nextPic = String(val || "").trim();
+        if (nextPic) {
+          const duplicate = wizardTempDivisions.some(
+            (otherDivision, otherIdx) => otherIdx !== idx &&
+              String(otherDivision.pic || "").trim().toLowerCase() === nextPic.toLowerCase(),
+          );
+          if (duplicate) {
+            showToast("PIC tersebut sudah dipilih pada seksi lain. Setiap PIC hanya boleh memegang satu seksi.", "error");
+            renderWizardDivisions();
+            return;
+          }
+          const isAllowed = getActiveDirectoryUsers().some(
+            (user) => ["Anggota", "Admin"].includes(user.role) && directoryAuthName(user) === nextPic,
+          );
+          if (!isAllowed) {
+            showToast("Nama tersebut tidak tersedia sebagai PIC Koordinator.", "error");
+            renderWizardDivisions();
+            return;
+          }
+        }
+        const previousPic = String(division.pic || "").trim();
+        division.pic = nextPic;
+        (division.tasks || []).forEach((task) => {
+          if (!task.pic || String(task.pic).trim() === previousPic) task.pic = nextPic;
+        });
+        renderWizardDivisions();
       }
 
       function toggleWizMember(divIdx, memberName) {
@@ -9637,12 +10196,9 @@
         wizardTempDivisions.push({
           id: "wdiv_" + Date.now(),
           name: newName,
-          pic: getActiveDirectoryNames(["staff", "support"])[0] || "",
+          pic: getDefaultSectionPic(),
           members: [],
-          tasks: getDefault10Tasks(
-            newName,
-            getActiveDirectoryNames(["staff", "support"])[0] || "",
-          ),
+          tasks: getDefault10Tasks(newName, getDefaultSectionPic()),
         });
         renderWizardDivisions();
       }
@@ -9946,6 +10502,15 @@
         const isProfitEvent = profitMode !== "nonprofit";
         const htmInput = document.getElementById("wizHtm");
         const registrationMode = wizardDraftRegistrationMode || "umum";
+        rememberDraftSpeakers();
+        const divisionsToSave = JSON.parse(JSON.stringify(
+          wizardTempDivisions.length ? wizardTempDivisions : buildDefaultEventDivisions("wdiv"),
+        ));
+        divisionsToSave.forEach((division) => {
+          if (!Array.isArray(division.members)) division.members = [];
+          if (!Array.isArray(division.tasks) || division.tasks.length === 0)
+            division.tasks = getDefault10Tasks(division.name, division.pic);
+        });
 
         if (wizardMode === "edit") {
           const ev = getActiveEvent();
@@ -9994,7 +10559,7 @@
             registrationMode === "mahasiswa" || registrationMode === "internal"
               ? true
               : ev.formConfigSaved;
-          ev.divisions = JSON.parse(JSON.stringify(wizardTempDivisions));
+          ev.divisions = divisionsToSave;
           if (ev.registrationMode === "mahasiswa") {
             ev.studentYear = wizardDraftStudentYear || ev.studentYear || "2025";
             if (
@@ -10071,7 +10636,7 @@
                 cost: 1500000,
               },
             ],
-            divisions: JSON.parse(JSON.stringify(wizardTempDivisions)),
+            divisions: divisionsToSave,
             kasTransactions: [],
             participants:
               draftMode === "mahasiswa"
@@ -11116,6 +11681,675 @@
       // READ-ONLY: reuses SEO eventsData; it does not create transactions.
       // ==========================================
       const FINANCE_BASE_PATH = "/financial-dashboard";
+      let homebaseTab = "schedule";
+      let homebaseSemester = 1;
+      let homebaseProdi = "MPI";
+      let homebaseManageType = "schedule";
+      let homebaseManageRows = [];
+
+      const HOMEBASE_PRODI = [
+        { key: "MPI", label: "Manajemen Pendidikan Islam", short: "MPI" },
+        { key: "ES", label: "Ekonomi Syariah", short: "Ekonomi Syariah" },
+        { key: "PBA", label: "Pendidikan Bahasa Arab", short: "PBA" },
+      ];
+      const HOMEBASE_SCHEDULE_DUMMY = {
+        1: [
+          ["Senin", "08.00–09.40", "Pengantar Manajemen Pendidikan", "Dr. Mhd. Saleh, M.Pd.", "Ruang MPI 1"],
+          ["Selasa", "10.00–11.40", "Dasar-Dasar Pendidikan Islam", "Yusuf Abdullah, M.Pd.", "Ruang MPI 1"],
+          ["Rabu", "08.00–09.40", "Bahasa Arab I", "Ust. Zikra Juninawan, M.Ed.", "Ruang Bahasa"],
+          ["Kamis", "13.00–14.40", "Pancasila dan Kewarganegaraan", "Tim Pengajar", "Ruang MPI 1"],
+        ],
+        2: [
+          ["Senin", "08.00–09.40", "Psikologi Pendidikan", "Dr. Mhd. Saleh, M.Pd.", "Ruang MPI 2"],
+          ["Selasa", "10.00–11.40", "Manajemen Peserta Didik", "Suworo, S.Si., M.M.", "Ruang MPI 2"],
+          ["Rabu", "08.00–09.40", "Ulumul Qur’an", "Tim Pengajar", "Ruang MPI 2"],
+          ["Jumat", "08.00–09.40", "Bahasa Inggris I", "Tim Pengajar", "Ruang Bahasa"],
+        ],
+        3: [
+          ["Senin", "10.00–11.40", "Manajemen Kurikulum", "Suworo, S.Si., M.M.", "Ruang MPI 3"],
+          ["Selasa", "08.00–09.40", "Statistik Pendidikan", "Tim Pengajar", "Ruang MPI 3"],
+          ["Rabu", "10.00–11.40", "Metodologi Penelitian", "Dr. Mhd. Saleh, M.Pd.", "Ruang MPI 3"],
+          ["Kamis", "13.00–14.40", "Filsafat Pendidikan Islam", "Yusuf Abdullah, M.Pd.", "Ruang MPI 3"],
+        ],
+        4: [
+          ["Senin", "08.00–09.40", "Supervisi Pendidikan", "Suworo, S.Si., M.M.", "Ruang MPI 4"],
+          ["Selasa", "10.00–11.40", "Evaluasi Program Pendidikan", "Dr. Mhd. Saleh, M.Pd.", "Ruang MPI 4"],
+          ["Rabu", "08.00–09.40", "Teknologi Pendidikan", "Tim Pengajar", "Ruang MPI 4"],
+          ["Kamis", "10.00–11.40", "Manajemen Pembiayaan Pendidikan", "Yusuf Abdullah, M.Pd.", "Ruang MPI 4"],
+        ],
+      };
+      const HOMEBASE_CALENDAR_DUMMY = [
+        ["9–14 Nov 2026", "Ujian Tengah Semester (UTS) — contoh"],
+        ["16–28 Nov 2026", "Perkuliahan dan konsultasi akademik — contoh"],
+        ["21 Des 2026–2 Jan 2027", "Libur akhir semester — contoh"],
+        ["4 Jan 2027", "Awal perkuliahan semester genap — contoh"],
+        ["1–6 Mar 2027", "Ujian Akhir Semester (UAS) — contoh"],
+      ];
+      const HOMEBASE_INITIAL_SCHEDULES = {
+        MPI: HOMEBASE_SCHEDULE_DUMMY,
+        ES: { 1: [], 2: [], 3: [], 4: [] },
+        PBA: { 1: [], 2: [], 3: [], 4: [] },
+      };
+
+      function loadHomebaseStoredData(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(fallback));
+        } catch (error) {
+          console.warn("Data Homebase tidak dapat dibaca:", error);
+          return JSON.parse(JSON.stringify(fallback));
+        }
+      }
+      let HOMEBASE_SCHEDULE_DATA = loadHomebaseStoredData("stitHomebaseSchedulesV1", HOMEBASE_INITIAL_SCHEDULES);
+      let HOMEBASE_CALENDAR_DATA = loadHomebaseStoredData("stitHomebaseCalendarV1", HOMEBASE_CALENDAR_DUMMY);
+      let HOMEBASE_CUSTOM_FLAGS = loadHomebaseStoredData("stitHomebaseCustomFlagsV1", { schedule: false, calendar: false });
+      HOMEBASE_PRODI.forEach((prodi) => {
+        if (!HOMEBASE_SCHEDULE_DATA[prodi.key]) HOMEBASE_SCHEDULE_DATA[prodi.key] = { 1: [], 2: [], 3: [], 4: [] };
+        [1, 2, 3, 4].forEach((semester) => {
+          if (!Array.isArray(HOMEBASE_SCHEDULE_DATA[prodi.key][semester])) HOMEBASE_SCHEDULE_DATA[prodi.key][semester] = [];
+        });
+      });
+      if (!Array.isArray(HOMEBASE_CALENDAR_DATA)) HOMEBASE_CALENDAR_DATA = JSON.parse(JSON.stringify(HOMEBASE_CALENDAR_DUMMY));
+
+      const HOMEBASE_NEWS_ARTICLES = [
+  {
+    "title": "STIT Al Wafi Bogor Bersama KOPIN dan Perhimpunan Al-Irsyad Gelar Pelatihan Musyrif Profesional, Diikuti 300 Peserta dari 70 Lembaga",
+    "date": "27 Okt 2026",
+    "category": "Kabar Kampus",
+    "author": "Yusuf Abdullah",
+    "excerpt": "STIT Al Wafi Bogor, KOPIN, dan Perhimpunan Al-Irsyad menggelar pelatihan musyrif profesional yang diikuti lebih dari 300 peserta dari sekitar 70 lembaga pendidikan Islam.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-bersama-kopin-dan-perhimpunan-al-irsyad-gelar-pelatihan-musyrif-profesional-diikuti-300-peserta-dari-70-lembaga"
+  },
+  {
+    "title": "STIT Al-Wafi Bogor dan Pesantren Darul Wahyain Jajaki Kolaborasi Pendidikan, Beasiswa, dan Pengabdian kepada Masyarakat",
+    "date": "15 Okt 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan silaturahmi menjadi momentum penjajakan kerja sama pendidikan, pengembangan SDM, beasiswa, dan pengabdian kepada masyarakat.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-dan-pesantren-darul-wahyain-jajaki-kolaborasi-pendidikan-beasiswa-dan-pengabdian-kepada-masyarakat",
+    "image": "https://alwafi.ac.id/news/uploads/1792036605_Darul_Wahyain_Kunjungan.jpg"
+  },
+  {
+    "title": "Internasionalisasi Akademik, Kaprodi MPI STIT Al-Wafi Bogor Jadi Peserta dan Moderator Konferensi Internasional di IPIM",
+    "date": "13 Okt 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kaprodi MPI berpartisipasi sebagai peserta dan moderator dalam konferensi internasional yang mempertemukan ulama dan akademisi.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/internasionalisasi-akademik-kaprodi-mpi-stit-al-wafi-bogor-jadi-peserta-dan-moderator-konferensi-internasional-di-ipim",
+    "image": "https://alwafi.ac.id/news/uploads/1791864146_M_Bakri_-_IPIm.jpeg"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Wujudkan Internasionalisasi Pembelajaran melalui Kehadiran Native Speaker Bahasa Arab dalam Perkuliahan Ulumul Quran",
+    "date": "09 Okt 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kehadiran native speaker asal Yaman menghadirkan pengalaman pembelajaran Ulumul Qur’an sepenuhnya menggunakan bahasa Arab.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-wujudkan-internasionalisasi-pembelajaran-melalui-kehadiran-native-speaker-bahasa-arab-dalam-perkuliahan-ulumul-quran",
+    "image": "https://alwafi.ac.id/news/uploads/1791534457_Syaikh_Bawadi.jpeg"
+  },
+  {
+    "title": "Perkuat Kolaborasi Tridarma, STIT Al Wafi Bogor Jalin Kerja Sama Strategis dengan Universitas PTIQ Jakarta",
+    "date": "07 Okt 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan kelembagaan ke Universitas PTIQ Jakarta menjadi langkah penguatan jejaring dan kolaborasi antarperguruan tinggi Islam.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/perkuat-kolaborasi-tridarma-stit-al-wafi-bogor-jalin-kerja-sama-strategis-dengan-universitas-ptiq-jakarta",
+    "image": "https://alwafi.ac.id/news/uploads/1791331890_MOU_PTIQ.png"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Perkuat Mutu dan Tata Kelola melalui Visitasi Monitoring dan Evaluasi Kopertais Wilayah II Jawa Barat",
+    "date": "06 Okt 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Visitasi Kopertais menjadi momentum evaluasi penyelenggaraan perguruan tinggi, mutu akademik, kelembagaan, dan penjaminan mutu.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-perkuat-mutu-dan-tata-kelola-melalui-visitasi-monitoring-dan-evaluasi-kopertais-wilayah-ii-jawa-barat"
+  },
+  {
+    "title": "Dosen STIT Al-Wafi Bogor Laksanakan PKM melalui Penguatan Manajemen Pembelajaran Tajwid bagi Santri Baru Al-Wafi IIBS",
+    "date": "29 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Program PKM menguatkan pembelajaran Tajwid melalui perencanaan, pelaksanaan, monitoring, evaluasi, serta media visual dan permainan edukatif.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/dosen-stit-al-wafi-bogor-laksanakan-pkm-melalui-penguatan-manajemen-pembelajaran-tajwid-bagi-santri-baru-al-wafi-iibs"
+  },
+  {
+    "title": "Waka I STIT Al Wafi Bogor Bekali Guru Baru Al-Wafi IIBS dengan Keterampilan Penelitian Tindakan Kelas",
+    "date": "28 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Pelatihan guru baru membekali peserta dengan pemahaman Penelitian Tindakan Kelas untuk memperbaiki proses pembelajaran.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/waka-i-stit-al-wafi-bogor-bekali-guru-baru-dengan-keterampilan-penelitian-tindakan-kelas"
+  },
+  {
+    "title": "Ratusan Wali Santri Ikuti Sharing Parenting STIT Al Wafi & Al Minhaj IBS: Bersama Al-Qur’an Membangun Keluarga yang Berkah",
+    "date": "28 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Sharing Parenting membahas tarbiyah dari rumah, keteladanan orang tua, pembiasaan Al-Qur’an, dan kesinambungan pendidikan keluarga serta pesantren.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/ratusan-wali-santri-ikuti-sharing-parenting-stit-al-wafi-al-minhaj-ibs-bersama-al-qur-an-membangun-keluarga-yang-berkah"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Gelar ORMABA dan Studium General 2026/2027, Bekali Mahasiswa Baru dengan Wawasan Akademik dan Pengembangan Diri",
+    "date": "21 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "ORMABA dan Studium General memperkenalkan sistem akademik, budaya kampus, organisasi mahasiswa, literasi ilmiah, dan pengembangan diri.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-gelar-ormaba-dan-studium-general-2026-2027-bekali-mahasiswa-baru-dengan-wawasan-akademik-dan-pengembangan-diri"
+  },
+  {
+    "title": "Bangun Kemitraan Pendidikan, STIT Al Wafi Bogor dan Ma'had Tahfizh Al Yusro Bogor Bahas Peluang Kolaborasi",
+    "date": "16 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan ke Ma'had Tahfizh Al Yusro membahas peluang kerja sama pendidikan, penelitian, pengabdian, kaderisasi, dan pengembangan SDM.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/bangun-kemitraan-pendidikan-stit-al-wafi-bogor-dan-ma-had-tahfizh-al-yusro-bogor-bahas-peluang-kolaborasi"
+  },
+  {
+    "title": "Perkuat Budaya Mutu, STIT Al Wafi Bogor Sharing SPMI dan AMI bersama Kepala Pusat LPM Audit Internasional UIN Sunan Gunung Djati Bandung",
+    "date": "14 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Sharing praktik baik SPMI dan AMI dilakukan sebagai bagian dari penguatan budaya mutu dan persiapan akreditasi institusi.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/perkuat-budaya-mutu-stit-al-wafi-bogor-sharing-spmi-dan-ami-bersama-kepala-pusat-lpm-audit-internasional-uin-sunan-gunung-djati-bandung"
+  },
+  {
+    "title": "STIT Al-Wafi Bogor Jalin Silaturahmi dan Sosialisasikan PMB di Pondok Pesantren Ibnu Taimiyah Bogor",
+    "date": "14 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan ke Pondok Pesantren Ibnu Taimiyah mempererat silaturahmi dan memperkenalkan PMB serta Program Studi MPI.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-jalin-silaturahmi-dan-sosialisasikan-pmb-di-pondok-pesantren-ibnu-taimiyah-bogor"
+  },
+  {
+    "title": "Perkuat Sinergi dan Kolaborasi, STIT Al Wafi Kunjungi Ma’had Riyadhul Jannah Bojongsari",
+    "date": "10 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan ke Ma’had Riyadhul Jannah membahas pengembangan pendidikan, pengabdian masyarakat, dan peningkatan kualifikasi tenaga pendidik.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/perkuat-jejaring-pendidikan-islam-stit-al-wafi-kunjungi-ma-had-riyadul-jannah"
+  },
+  {
+    "title": "STIT Al Wafi Perkuat Silaturahmi dan Jejaring Pendidikan melalui Kunjungan ke Pesantren Darussunnah Parung dan Tuhfatul Islam Ciseeng",
+    "date": "10 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan ke dua pesantren memperkuat jejaring dan membuka peluang sinergi dalam pendidikan serta pengembangan SDM.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-perkuat-silaturahmi-dan-jejaring-pendidikan-melalui-kunjungan-ke-pesantren-darussunnah-parung-dan-tuhfatul-islam-ciseeng"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Jalin Silaturahmi dan Sosialisasi Kampus ke Pesantren Darul Wahyain Depok",
+    "date": "09 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Sosialisasi kampus memperkenalkan program pendidikan tinggi, beasiswa kader pesantren, dan peluang kolaborasi dengan Pesantren Darul Wahyain.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-jalin-silaturahmi-dan-sosialisasi-kampus-ke-pesantren-darul-wahyain-citayam"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Kunjungi Pesantren Tahfidzul Quran Al Maa Parung, Sosialisasikan Program dan Beasiswa Kader Pesantren",
+    "date": "07 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan memperkenalkan program studi, profil kampus, dan Beasiswa Kader Pesantren kepada santri serta alumni.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-kunjungi-pesantren-tahfidzul-quran-al-maa-parung-sosialisasikan-program-dan-beasiswa-kader-pesantren"
+  },
+  {
+    "title": "Operator STIT Al Wafi Bogor, Ikuti Workshop Nasional XI FORPTI 2026",
+    "date": "03 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Keikutsertaan operator dalam workshop FORPTI memperkuat kompetensi tata kelola data perguruan tinggi dan pelaporan sistem nasional.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/operator-stit-al-wafi-bogor-ikuti-workshop-nasional-xi-forpti-2026"
+  },
+  {
+    "title": "Ketua LPM STIT Al Wafi Bogor Lulus Pelatihan Audit Mutu Internal (AMI) UGM",
+    "date": "03 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Ketua LPM STIT Al Wafi Bogor dinyatakan lulus Pelatihan Audit Mutu Internal yang diselenggarakan UGM.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/ketua-lpm-stit-al-wafi-bogor-lulus-pelatihan-audit-mutu-internal-ami-ugm"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Terima Kunjungan STIT Madani Yogyakarta, Dorong Kolaborasi Perguruan Tinggi Islam",
+    "date": "03 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Kunjungan STIT Madani Yogyakarta membuka peluang kerja sama antarlembaga perguruan tinggi dalam pelaksanaan Tridarma.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-terima-kunjungan-stit-madani-yogyakarta-dorong-kolaborasi-perguruan-tinggi-islam"
+  },
+  {
+    "title": "STIT Al Wafi Bogor bersama Al Wafi International Islamic Boarding School Turut Meramaikan Dua Pameran Pendidikan Nasional",
+    "date": "02 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "STIT Al Wafi dan Al Wafi IIBS berpartisipasi dalam PULDAPII Muslim Edufest serta EduNation Fest 2026.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-dan-al-wafi-international-islamic-boarding-school-turut-meramaikan-dua-pameran-pendidikan-besar"
+  },
+  {
+    "title": "Dosen STIT Al Wafi Bogor, Ust. Kartiko Adi Pramono, Hadir dalam Bedah Buku Habitual Leadership di EduNation Fest 2026",
+    "date": "02 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Sesi bedah buku Habitual Leadership mengajak peserta membangun kebiasaan positif sebagai fondasi kepemimpinan.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/dosen-stit-al-wafi-bogor-ust-kartiko-adi-pramono-hadir-dalam-bedah-buku-habitual-leadership-di-edunation-fest-2026"
+  },
+  {
+    "title": "STIT Al Wafi Bogor Dorong Pengembangan Program Magister MPI Berorientasi Mutu Internasional",
+    "date": "02 Sep 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Seminar akademik membahas kesiapan dan strategi pengembangan Program Magister Manajemen Pendidikan Islam berorientasi mutu internasional.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/stit-al-wafi-bogor-dorong-pengembangan-program-magister-mpi-berorientasi-mutu-internasional"
+  },
+  {
+    "title": "Ketua STIT Al-Wafi Bogor Sekaligus Ketua KOPIN Tegaskan Komitmen Kolaborasi Pendidikan Islam Berstandar Global",
+    "date": "31 Agu 2026",
+    "category": "News",
+    "author": "Yusuf Abdullah",
+    "excerpt": "Deklarasi KOPIN dan seminar nasional menguatkan komitmen kolaborasi antar-lembaga pendidikan Islam.",
+    "url": "https://alwafi.ac.id/news/Yusuf%20Abdullah/ketua-stit-al-wafi-bogor-sekaligus-ketua-kopin-tegaskan-komitmen-kolaborasi-pendidikan-islam-berstandar-global"
+  },
+  {
+    "title": "Raker STIT Al Wafi Bogor Rumuskan Strategi Penguatan Mutu, Daya Saing Global, dan Pengembangan Institusi",
+    "date": "31 Agu 2026",
+    "category": "News",
+    "author": "admin",
+    "excerpt": "Rapat kerja merumuskan strategi penguatan mutu, daya saing global, pengembangan program studi, branding, dan ekosistem pendidikan Al Wafi.",
+    "url": "https://alwafi.ac.id/news/admin/raker-stit-al-wafi-bogor-rumuskan-strategi-penguatan-mutu-daya-saing-global-dan-pengembangan-institusi"
+  },
+  {
+    "title": "Pertemuan STIT Al-Wafi dan Pesantren Al-Qur’an Al-Hikmah/Mafaza",
+    "date": "19 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "Pertemuan membahas penjajakan kerja sama, pengembangan kader musyrif, kelas hybrid, dan peluang beasiswa tahfidz.",
+    "url": "https://alwafi.ac.id/news/admin/pertemuan-stit-al-wafi-dan-pesantren-al-qur-an-al-hikmah-mafaza"
+  },
+  {
+    "title": "Jurnal J-EMaS Yang Diterbitkan STIT Al Wafi Bogor Resmi Memperoleh E-ISSN Dari Perpusnas",
+    "date": "14 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "J-EMaS memperoleh E-ISSN 3163-9550 dari Perpusnas sebagai penguatan identitas bibliografis dan tata kelola jurnal ilmiah.",
+    "url": "https://alwafi.ac.id/news/admin/j-emas-stit-al-wafi-bogor-resmi-memperoleh-e-issn-dari-perpusnas"
+  },
+  {
+    "title": "STIT Al-Wafi Bogor Gelar Workshop Penguatan Profesionalisme dan Kinerja Dosen",
+    "date": "14 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "Workshop membahas optimalisasi BKD, Tridharma, publikasi ilmiah, dan pengembangan kompetensi akademik dosen.",
+    "url": "https://alwafi.ac.id/news/admin/stit-al-wafi-bogor-gelar-workshop-penguatan-profesionalisme-dan-kinerja-dosen"
+  },
+  {
+    "title": "Al Wafi Siap Jalin Kerja Sama Perguruan Tinggi Bersama STIT Otista Banten",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "Kunjungan ke STIT Otista Banten menjajaki pertukaran pengalaman akademik, kolaborasi kurikulum, penelitian, dan seminar bersama.",
+    "url": "https://alwafi.ac.id/news/admin/al-wafi-siap-jalin-kerja-sama-perguruan-tinggi-bersama-stit-otista-banten"
+  },
+  {
+    "title": "Bersama Menguatkan Komitmen, Berbagi Pengalaman, dan Menghadirkan Inovasi untuk Pendidikan yang Lebih Berkualitas",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "Pelatihan peningkatan kompetensi dosen memperkuat Tridharma, literasi digital, serta inovasi pembelajaran dan pengabdian.",
+    "url": "https://alwafi.ac.id/news/admin/bersama-menguatkan-komitmen-berbagi-pengalaman-dan-menghadirkan-inovasi-untuk-pendidikan-yang-lebih-berkualitas"
+  },
+  {
+    "title": "Bahas Program Training for Trainer di Bidang IT untuk Penguatan Kapasitas Mahasiswa, ITMI–STIT Al Wafi Siap Berkolaborasi",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "STIT Al Wafi dan ITMI menjajaki program Training for Trainer di bidang IT untuk memperkuat kapasitas mahasiswa.",
+    "url": "https://alwafi.ac.id/news/admin/bahas-program-training-for-trainer-di-bidang-it-untuk-penguatan-kapasitas-mahasiswa-itmi-stit-al-wafi-siap-berkolaborasi"
+  },
+  {
+    "title": "Sekolah Islam Siap Melangkah ke Kancah Global: FGD 3 STIT Al Wafi Bahas Strategi Implementasi International Baccalaureate (IB)",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "FGD membahas strategi implementasi International Baccalaureate di sekolah Islam bersama perwakilan berbagai institusi pendidikan.",
+    "url": "https://alwafi.ac.id/news/admin/sekolah-islam-siap-melangkah-ke-kancah-global-fgd-3-stit-al-wafi-bahas-strategi-implementasi-international-baccalaureate-ib"
+  },
+  {
+    "title": "Lebih dari 200 Guru Ikuti Pelatihan Peningkatan Psychological Well-being Siswa di STIT Al Wafi",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "Pelatihan Guru Sebagai Konselor membahas peran guru dalam mendukung kesejahteraan psikologis siswa.",
+    "url": "https://alwafi.ac.id/news/admin/lebih-dari-200-guru-ikuti-pelatihan-peningkatan-psychological-well-being-siswa-di-stit-al-wafi"
+  },
+  {
+    "title": "STIT Al Wafi Jalin Kerjasama dengan Universitas Internasional Afrika",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "STIT Al Wafi menjalin MoU dengan International University of Africa untuk membuka peluang kolaborasi akademik dan beasiswa.",
+    "url": "https://alwafi.ac.id/news/admin/stit-al-wafi-jalin-kerjasama-dengan-universitas-internasional-afrika"
+  },
+  {
+    "title": "FGD STIT Al Wafi Bogor: Peluang dan Tantangan Pendidikan Bertaraf Internasional",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "FGD membahas peluang dan tantangan pendidikan bertaraf internasional serta strategi menghadapi globalisasi pendidikan.",
+    "url": "https://alwafi.ac.id/news/admin/fgd-stit-al-wafi-bogor-peluang-dan-tantangan-pendidikan-bertaraf-internasional"
+  },
+  {
+    "title": "STIT Al Wafi Adakan FGD Bertajuk Peran Strategis Sekolah Islam Internasional dalam Menghadapi Tantangan Globalisasi dan Persaingan dalam Dunia Pendidikan",
+    "date": "13 Agu 2026",
+    "category": "Umum",
+    "author": "admin",
+    "excerpt": "FGD menghadirkan pembahasan kebijakan, regulasi, dan strategi sekolah Islam internasional dalam menghadapi persaingan global.",
+    "url": "https://alwafi.ac.id/news/admin/stit-al-wafi-adakan-fgd-bertajuk-peran-strategis-sekolah-islam-internasional-dalam-menghadapi-tantangan-globalisasi-dan-persaingan-dalam-dunia-pendidikan"
+  }
+];
+
+      function canManageHomebase() {
+        if (!currentUser) return false;
+        const directoryUser = findDirectoryUser(currentUser.name);
+        return isSuperAdminUser() || currentUser.role === "sc" ||
+          ADMIN_ROLE_NAMES.includes(currentUser.name) ||
+          ["Admin", "SC"].includes(directoryUser?.role);
+      }
+
+      function openHomebaseSTIT() {
+        if (!currentUser) return;
+        document.getElementById("viewApp").classList.add("hidden");
+        document.getElementById("viewFinancialDashboard").classList.add("hidden");
+        document.getElementById("viewHomebaseSTIT").classList.remove("hidden");
+        document.getElementById("homebaseUserName").textContent = currentUser.name;
+        document.getElementById("homebaseYear").textContent = new Date().getFullYear();
+        document.body.classList.add("homebase-open");
+        renderHomebasePage();
+        requestAnimationFrame(() => {
+          moveHomebaseNavIndicator();
+          const area = document.getElementById("homebaseContent");
+          if (area) area.scrollTop = 0;
+        });
+      }
+
+      function closeHomebaseSTIT() {
+        document.body.classList.remove("homebase-open");
+        document.getElementById("viewHomebaseSTIT").classList.add("hidden");
+        closeHomebaseManager();
+        if (currentUser) {
+          document.getElementById("viewApp").classList.remove("hidden");
+          renderAll();
+        } else {
+          document.getElementById("viewLogin").classList.remove("hidden");
+        }
+      }
+
+      function moveHomebaseNavIndicator() {
+        const nav = document.getElementById("homebaseInternalNav");
+        const indicator = document.getElementById("homebaseNavIndicator");
+        const button = document.querySelector(`[data-homebase-tab="${homebaseTab}"]`);
+        if (!nav || !indicator || !button) return;
+        const x = button.offsetLeft;
+        const y = button.offsetTop;
+        const width = button.offsetWidth;
+        const height = button.offsetHeight;
+        if (window.gsap) {
+          gsap.to(indicator, { x, y, width, height, duration: 0.42, ease: "power3.out" });
+        } else {
+          indicator.style.transform = `translate(${x}px, ${y}px)`;
+          indicator.style.width = `${width}px`;
+          indicator.style.height = `${height}px`;
+        }
+      }
+
+      function setHomebaseTab(tab) {
+        if (!["schedule", "calendar", "home", "news", "journal", "pmb"].includes(tab)) return;
+        homebaseTab = tab;
+        document.querySelectorAll("[data-homebase-tab]").forEach((button) => {
+          const active = button.dataset.homebaseTab === tab;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        renderHomebasePage();
+        requestAnimationFrame(() => {
+          moveHomebaseNavIndicator();
+          const area = document.getElementById("homebaseContent");
+          if (area) area.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      }
+
+      function setHomebaseSemester(semester) {
+        homebaseSemester = Number(semester) || 1;
+        renderHomebasePage();
+      }
+
+      function setHomebaseProdi(prodi) {
+        if (!HOMEBASE_PRODI.some((item) => item.key === prodi)) return;
+        homebaseProdi = prodi;
+        renderHomebasePage();
+      }
+      window.addEventListener("resize", () => requestAnimationFrame(moveHomebaseNavIndicator));
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !document.getElementById("viewHomebaseSTIT")?.classList.contains("hidden")) {
+          if (!document.getElementById("homebaseManageOverlay")?.classList.contains("hidden")) closeHomebaseManager();
+        }
+      });
+
+      function homebaseSaveLocal(key, data) {
+        try {
+          localStorage.setItem(key, JSON.stringify(data));
+          return true;
+        } catch (error) {
+          console.error("Gagal menyimpan data Homebase:", error);
+          showToast("Data tidak dapat disimpan di browser ini.", "error");
+          return false;
+        }
+      }
+
+      // Hapus artikel ganda sebelum dirender: URL menjadi kunci utama,
+      // judul yang sama juga dianggap duplikat meskipun variasi URL berbeda.
+      const HOMEBASE_NEWS_ARTICLES_UNIQUE = (() => {
+        const seenUrls = new Set();
+        const seenTitles = new Set();
+        return HOMEBASE_NEWS_ARTICLES.filter((article) => {
+          const urlKey = String(article?.url || "")
+            .trim()
+            .replace(/[?#].*$/, "")
+            .replace(/\/+$/, "")
+            .toLowerCase();
+          const titleKey = String(article?.title || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim();
+          if ((urlKey && seenUrls.has(urlKey)) || (titleKey && seenTitles.has(titleKey))) return false;
+          if (urlKey) seenUrls.add(urlKey);
+          if (titleKey) seenTitles.add(titleKey);
+          return !!(urlKey || titleKey);
+        });
+      })();
+
+      // Foto fallback berasal dari aset berita/galeri resmi STIT Al Wafi.
+      // Dipakai ketika artikel belum memiliki gambar atau gambar utamanya gagal dimuat.
+      const HOMEBASE_NEWS_IMAGE_FALLBACKS = [
+        "https://alwafi.ac.id/news/uploads/1792036605_Darul_Wahyain_Kunjungan.jpg",
+        "https://alwafi.ac.id/news/uploads/1791864146_M_Bakri_-_IPIm.jpeg",
+        "https://alwafi.ac.id/news/uploads/1791534457_Syaikh_Bawadi.jpeg",
+        "https://alwafi.ac.id/news/uploads/1791331890_MOU_PTIQ.png",
+        "https://www.alwafi.ac.id/photos/carousel2.JPG",
+        "https://www.alwafi.ac.id/img/png/gallery/stit-data0%3Dfgd-02.webp",
+        "https://www.alwafi.ac.id/photos/carousel3.jpg",
+      ];
+
+      function resolveHomebaseArticleImage(article, index) {
+        if (article?.image) return article.image;
+        const title = String(article?.title || "").toLowerCase();
+        if (/musyrif/.test(title))
+          return HOMEBASE_NEWS_IMAGE_FALLBACKS[2];
+        if (/tajwid|pembelajaran|guru baru|penelitian tindakan/.test(title))
+          return HOMEBASE_NEWS_IMAGE_FALLBACKS[4];
+        if (/spmi|audit|mutu|fgd|visitasi|monev/.test(title))
+          return HOMEBASE_NEWS_IMAGE_FALLBACKS[5];
+        if (/parenting|wali santri|santri/.test(title))
+          return HOMEBASE_NEWS_IMAGE_FALLBACKS[0];
+        if (/ormaba|mahasiswa baru/.test(title))
+          return HOMEBASE_NEWS_IMAGE_FALLBACKS[6];
+        if (/kerja sama|kolaborasi|kemitraan|kunjungan|pesantren/.test(title))
+          return HOMEBASE_NEWS_IMAGE_FALLBACKS[0];
+        return HOMEBASE_NEWS_IMAGE_FALLBACKS[index % HOMEBASE_NEWS_IMAGE_FALLBACKS.length];
+      }
+
+      function repairHomebaseArticleImage(img, index) {
+        if (!img) return;
+        const tried = Number(img.dataset.fallbackAttempt || 0);
+        for (let offset = 0; offset < HOMEBASE_NEWS_IMAGE_FALLBACKS.length; offset++) {
+          const candidateIndex = (index + tried + offset) % HOMEBASE_NEWS_IMAGE_FALLBACKS.length;
+          const candidate = HOMEBASE_NEWS_IMAGE_FALLBACKS[candidateIndex];
+          if (candidate && candidate !== img.getAttribute("src")) {
+            img.dataset.fallbackAttempt = String(tried + offset + 1);
+            img.src = candidate;
+            return;
+          }
+        }
+        img.classList.add("hidden");
+        const fallbackCard = img.nextElementSibling;
+        if (fallbackCard) fallbackCard.classList.remove("hidden");
+      }
+
+      function renderHomebasePage() {
+        const content = document.getElementById("homebaseContent");
+        if (!content) return;
+        const panelClass = "rounded-3xl border border-white/80 bg-white/70 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur-xl sm:p-7";
+        if (homebaseTab === "home") {
+          const url = "https://alwafi.ac.id/";
+          const title = "Home — Website Resmi Al Wafi";
+          content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-center justify-between gap-3"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Website Resmi</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Home Al Wafi</h2><p class="mt-1 text-xs text-slate-500">Beranda resmi Al Wafi dalam Homebase STIT.</p></div><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:opacity-90">Buka Website ↗</a></div><div class="homebase-embed-shell mt-5"><iframe class="homebase-embed-frame" src="${url}" title="${title}" loading="eager" allow="clipboard-read; clipboard-write; fullscreen; geolocation" referrerpolicy="strict-origin-when-cross-origin"></iframe><div class="homebase-embed-note"><span>Konten dimuat langsung dari website resmi Al Wafi.</span><a href="${url}" target="_blank" rel="noopener noreferrer" class="font-extrabold text-blue-700 hover:text-amber-700 hover:underline">Buka di tab baru ↗</a></div></div></section>`;
+        } else if (homebaseTab === "schedule") {
+          const prodi = HOMEBASE_PRODI.find((item) => item.key === homebaseProdi) || HOMEBASE_PRODI[0];
+          const rows = HOMEBASE_SCHEDULE_DATA[homebaseProdi]?.[homebaseSemester] || [];
+          const manageButton = canManageHomebase() ? `<button type="button" onclick="openHomebaseManager('schedule')" class="inline-flex items-center gap-2 rounded-xl bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Kelola</button>` : "";
+          const statusBadge = HOMEBASE_CUSTOM_FLAGS.schedule ? `<span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">Data Tersimpan</span>` : "";
+          content.innerHTML = `
+            <section class="${panelClass}">
+              <div class="flex flex-wrap items-start justify-between gap-4"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Program Studi ${prodi.short}</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Jadwal Kuliah</h2><p class="mt-1 text-xs text-slate-500">Pilih program studi dan semester untuk melihat jadwal perkuliahan.</p></div><div class="flex flex-wrap items-center gap-2">${manageButton}${statusBadge}</div></div>
+              <div class="mt-5 flex flex-wrap items-end gap-3"><label class="min-w-[260px] flex-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Program Studi<select onchange="setHomebaseProdi(this.value)" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-xs font-bold text-slate-700 shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100">${HOMEBASE_PRODI.map((item) => `<option value="${item.key}" ${item.key === homebaseProdi ? "selected" : ""}>${item.label}</option>`).join("")}</select></label><div class="flex flex-wrap gap-2" role="tablist" aria-label="Semester ${prodi.short}">${[1,2,3,4].map((semester) => `<button type="button" role="tab" aria-selected="${homebaseSemester === semester}" onclick="setHomebaseSemester(${semester})" class="rounded-full px-5 py-2.5 text-xs font-extrabold transition ${homebaseSemester === semester ? "bg-grad-navy text-white shadow-md" : "border border-slate-200 bg-white/70 text-slate-600 hover:border-amber-300 hover:text-navy"}">Semester ${semester}</button>`).join("")}</div></div>
+              ${rows.length ? `<div class="mt-5 overflow-x-auto rounded-2xl border border-slate-200/80"><table class="w-full min-w-[720px] border-collapse text-left text-xs"><thead><tr class="bg-slate-100/80 text-navy"><th class="p-3 font-extrabold">Hari</th><th class="p-3 font-extrabold">Waktu</th><th class="p-3 font-extrabold">Mata Kuliah</th><th class="p-3 font-extrabold">Dosen</th><th class="p-3 font-extrabold">Ruang</th></tr></thead><tbody class="divide-y divide-slate-200/70">${rows.map((row) => `<tr class="bg-white/50 transition hover:bg-amber-50/50"><td class="p-3 font-bold text-slate-700">${escapePrintHtml(row[0] || "-")}</td><td class="p-3 whitespace-nowrap text-slate-600">${escapePrintHtml(row[1] || "-")} WIB</td><td class="p-3 font-extrabold text-navy">${escapePrintHtml(row[2] || "-")}</td><td class="p-3 text-slate-600">${escapePrintHtml(row[3] || "-")}</td><td class="p-3 text-slate-600">${escapePrintHtml(row[4] || "-")}</td></tr>`).join("")}</tbody></table></div>` : `<div class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-5 py-10 text-center"><div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-700"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 9h18M8 13h8m-8 4h5"/></svg></div><h3 class="mt-3 text-sm font-black text-navy">Jadwal belum tersedia</h3><p class="mt-1 text-xs text-slate-500">Belum ada jadwal untuk ${prodi.label}, Semester ${homebaseSemester}.</p>${canManageHomebase() ? `<button type="button" onclick="openHomebaseManager('schedule')" class="mt-4 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-extrabold text-navy shadow-sm hover:bg-amber-300">Tambah Jadwal</button>` : ""}</div>`}
+            </section>`;
+        } else if (homebaseTab === "calendar") {
+          const manageButton = canManageHomebase() ? `<button type="button" onclick="openHomebaseManager('calendar')" class="inline-flex items-center gap-2 rounded-xl bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Kelola</button>` : "";
+          const statusBadge = HOMEBASE_CUSTOM_FLAGS.calendar ? `<span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">Data Tersimpan</span>` : "";
+          content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-start justify-between gap-4"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Tahun Akademik 2026/2027</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Kalender Akademik</h2><p class="mt-1 text-xs text-slate-500">Agenda kegiatan akademik dan jadwal penting institusi.</p></div><div class="flex flex-wrap items-center gap-2">${manageButton}${statusBadge}</div></div>${HOMEBASE_CALENDAR_DATA.length ? `<div class="mt-5 space-y-3">${HOMEBASE_CALENDAR_DATA.map((item) => `<article class="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/65 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md sm:flex-row sm:items-center"><div class="min-w-[180px] rounded-xl bg-grad-navy px-4 py-2.5 text-center text-xs font-extrabold text-white">${escapePrintHtml(item[0] || "Tanggal belum diatur")}</div><div class="flex items-center gap-3"><span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span><div class="text-sm font-bold text-slate-700">${escapePrintHtml(item[1] || "Agenda akademik")}</div></div></article>`).join("")}</div>` : `<div class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-5 py-10 text-center"><h3 class="text-sm font-black text-navy">Belum ada agenda akademik</h3><p class="mt-1 text-xs text-slate-500">Agenda dapat ditambahkan melalui menu Kelola.</p></div>`}</section>`;
+        } else if (homebaseTab === "news") {
+          content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-center justify-between gap-4"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Kabar Kampus</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Portal Berita STIT Al Wafi</h2><p class="mt-1 text-xs text-slate-500">Artikel terbaru dari situs resmi STIT Al Wafi Bogor.</p></div><a href="https://alwafi.ac.id/news/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:opacity-90">Buka Portal Berita <span aria-hidden="true">↗</span></a></div>
+            <div class="mt-5 rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-50 to-amber-50/50 px-5 py-4 sm:px-7"><div class="grid gap-3 sm:grid-cols-[1fr_1fr] sm:items-end"><div><div class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-700">Kabar Kampus</div><h3 class="mt-1 font-serif text-2xl font-bold text-navy">Artikel Terbaru</h3></div><p class="max-w-md text-xs leading-relaxed text-slate-600">Ikuti perkembangan terbaru seputar kegiatan akademik, mahasiswa, dan prestasi civitas akademika.</p></div></div>
+            <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">${HOMEBASE_NEWS_ARTICLES_UNIQUE.map((article, index) => `<a href="${article.url}" target="_blank" rel="noopener noreferrer" aria-label="Baca artikel: ${escapePrintHtml(article.title)}" class="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:border-amber-200 hover:shadow-[0_18px_38px_rgba(15,23,42,0.12)]"><div class="relative h-48 overflow-hidden bg-slate-100"><img src="${escapePrintHtml(resolveHomebaseArticleImage(article, index))}" alt="${escapePrintHtml(article.title)}" loading="lazy" decoding="async" class="h-full w-full object-cover transition duration-500 group-hover:scale-105" onerror="repairHomebaseArticleImage(this, ${index})"/><div class="hidden absolute inset-0 grid place-items-center bg-gradient-to-br from-[#0a192f] via-[#17376b] to-[#c79d3a]"><div class="px-6 text-center text-white"><div class="text-[10px] font-black uppercase tracking-[0.24em] text-amber-200">STIT News</div><div class="mt-2 font-serif text-lg font-bold line-clamp-3">${escapePrintHtml(article.title)}</div><div class="mt-2 text-[10px] font-semibold text-white/80">STIT Al Wafi Bogor</div></div></div><span class="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-wide text-amber-900 shadow-sm">${article.category}</span></div><div class="flex flex-1 flex-col p-4"><div class="flex items-center gap-2 text-[10px] font-medium text-slate-500"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>${article.date}</div><h4 class="mt-3 line-clamp-2 font-serif text-base font-bold leading-snug text-slate-900 transition group-hover:text-blue-800">${escapePrintHtml(article.title)}</h4><p class="mt-2 line-clamp-3 text-xs leading-relaxed text-slate-500">${escapePrintHtml(article.excerpt)}</p><div class="mt-auto flex items-center justify-between border-t border-slate-100 pt-3 mt-4"><span class="flex items-center gap-2 text-[11px] font-medium text-slate-600"><span class="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-[9px] font-black text-amber-800">Y</span>${article.author}</span><span class="text-lg text-[#b58a2a] transition group-hover:translate-x-1">→</span></div></div></a>`).join("")}</div>
+            <div class="mt-5 text-center text-[11px] text-slate-500">Menampilkan ${HOMEBASE_NEWS_ARTICLES_UNIQUE.length} artikel unik dari portal berita resmi.</div></section>`;
+        } else if (homebaseTab === "journal" || homebaseTab === "pmb") {
+          const isJournal = homebaseTab === "journal";
+          const title = isJournal ? "Journal of Educational Management & Islamic Studies" : "Penerimaan Mahasiswa Baru STIT Al Wafi Bogor";
+          const subtitle = isJournal
+            ? "Portal publikasi ilmiah J-EMaS STIT Al Wafi Bogor."
+            : "Portal pendaftaran calon mahasiswa baru STIT Al Wafi Bogor.";
+          const url = isJournal ? "https://jurnal.alwafi.ac.id/index.php/stit" : "https://siakad.alwafi.ac.id/register";
+          content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-center justify-between gap-3"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">${isJournal ? "Publikasi Ilmiah" : "Layanan Pendaftaran"}</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">${title}</h2><p class="mt-1 text-xs text-slate-500">${subtitle}</p></div><span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-extrabold text-emerald-800">Terhubung ke portal resmi</span></div><div class="homebase-embed-shell mt-5"><iframe class="homebase-embed-frame" src="${url}" title="${title}" loading="eager" allow="clipboard-read; clipboard-write; fullscreen; geolocation" referrerpolicy="strict-origin-when-cross-origin"></iframe><div class="homebase-embed-note"><span>Konten dimuat langsung dari portal resmi STIT Al Wafi.</span><a href="${url}" target="_blank" rel="noopener noreferrer" class="font-extrabold text-blue-700 hover:text-amber-700 hover:underline">Buka di tab baru ↗</a></div></div></section>`;
+        }
+        document.querySelectorAll("[data-homebase-tab]").forEach((button) => {
+          const active = button.dataset.homebaseTab === homebaseTab;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        requestAnimationFrame(moveHomebaseNavIndicator);
+      }
+
+      function openHomebaseManager(type) {
+        if (!canManageHomebase()) {
+          showToast("Anda tidak memiliki akses untuk mengelola data akademik.", "error");
+          return;
+        }
+        if (!["schedule", "calendar"].includes(type)) return;
+        homebaseManageType = type;
+        homebaseManageRows = type === "schedule"
+          ? JSON.parse(JSON.stringify(HOMEBASE_SCHEDULE_DATA[homebaseProdi]?.[homebaseSemester] || []))
+          : JSON.parse(JSON.stringify(HOMEBASE_CALENDAR_DATA || []));
+        if (!document.getElementById("homebaseManageOverlay")) {
+          const overlay = document.createElement("div");
+          overlay.id = "homebaseManageOverlay";
+          overlay.className = "fixed inset-0 z-[130] hidden items-center justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-6";
+          overlay.innerHTML = `<div class="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/60 bg-slate-50 shadow-2xl"><div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-7"><div><div class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">Pengelolaan Akademik</div><h3 id="homebaseManageTitle" class="mt-1 text-lg font-black text-navy">Kelola Data</h3><p id="homebaseManageSubtitle" class="mt-1 text-xs text-slate-500"></p></div><button type="button" onclick="closeHomebaseManager()" class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-100 hover:text-rose-700" aria-label="Tutup">✕</button></div><div class="min-h-0 flex-1 overflow-auto p-4 sm:p-6"><div class="mb-4 flex flex-wrap items-center justify-between gap-3"><p id="homebaseManageHint" class="text-xs text-slate-500">Klik Tambah Baris untuk menambah data.</p><button type="button" onclick="addHomebaseManagerRow()" class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-extrabold text-amber-900 transition hover:bg-amber-100">＋ Tambah Baris</button></div><div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white"><table class="w-full min-w-[850px] border-collapse text-left text-xs"><thead id="homebaseManageHead" class="bg-slate-100 text-navy"></thead><tbody id="homebaseManageRows" class="divide-y divide-slate-100"></tbody></table></div></div><div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:px-7"><button type="button" onclick="closeHomebaseManager()" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button><button type="button" onclick="saveHomebaseManager()" class="rounded-xl bg-grad-navy px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:opacity-90">Simpan Perubahan</button></div></div>`;
+          overlay.addEventListener("click", (event) => { if (event.target === overlay) closeHomebaseManager(); });
+          document.body.appendChild(overlay);
+        }
+        renderHomebaseManagerRows();
+        const overlay = document.getElementById("homebaseManageOverlay");
+        overlay.classList.remove("hidden");
+        overlay.classList.add("flex");
+      }
+
+      function renderHomebaseManagerRows() {
+        const schedule = homebaseManageType === "schedule";
+        const columns = schedule ? ["Hari", "Waktu", "Mata Kuliah", "Dosen", "Ruang"] : ["Tanggal", "Agenda Akademik"];
+        document.getElementById("homebaseManageTitle").textContent = schedule ? "Kelola Jadwal Kuliah" : "Kelola Kalender Akademik";
+        document.getElementById("homebaseManageSubtitle").textContent = schedule
+          ? `${HOMEBASE_PRODI.find((item) => item.key === homebaseProdi)?.label || homebaseProdi} · Semester ${homebaseSemester}`
+          : "Tahun Akademik 2026/2027";
+        document.getElementById("homebaseManageHint").textContent = schedule
+          ? "Isi hari, jam, mata kuliah, dosen, dan ruang kuliah. Baris kosong akan diabaikan."
+          : "Isi rentang tanggal dan nama agenda akademik. Baris kosong akan diabaikan.";
+        document.getElementById("homebaseManageHead").innerHTML = `<tr>${columns.map((column) => `<th class="px-3 py-3 font-extrabold">${column}</th>`).join("")}<th class="w-16 px-3 py-3 text-center font-extrabold">Aksi</th></tr>`;
+        document.getElementById("homebaseManageRows").innerHTML = homebaseManageRows.map((row, index) => `<tr class="homebase-edit-row">${columns.map((column, col) => `<td class="p-2"><input type="text" data-homebase-col="${col}" value="${escapePrintHtml(row[col] || "")}" placeholder="${column}" class="w-full min-w-[125px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" /></td>`).join("")}<td class="p-2 text-center"><button type="button" onclick="removeHomebaseManagerRow(${index})" title="Hapus baris" class="grid h-8 w-8 place-items-center rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">✕</button></td></tr>`).join("") || `<tr><td colspan="${columns.length + 1}" class="px-4 py-10 text-center text-xs text-slate-400">Belum ada data. Gunakan tombol Tambah Baris.</td></tr>`;
+      }
+
+      function collectHomebaseManagerRows() {
+        return [...document.querySelectorAll("#homebaseManageRows tr.homebase-edit-row")].map((row) =>
+          [...row.querySelectorAll("input[data-homebase-col]")].map((input) => input.value.trim()),
+        );
+      }
+
+      function addHomebaseManagerRow() {
+        homebaseManageRows = collectHomebaseManagerRows();
+        homebaseManageRows.push(homebaseManageType === "schedule" ? ["", "", "", "", ""] : ["", ""]);
+        renderHomebaseManagerRows();
+      }
+
+      function removeHomebaseManagerRow(index) {
+        homebaseManageRows = collectHomebaseManagerRows();
+        homebaseManageRows.splice(index, 1);
+        renderHomebaseManagerRows();
+      }
+
+      function saveHomebaseManager() {
+        if (!canManageHomebase()) {
+          showToast("Akses pengelolaan akademik tidak tersedia.", "error");
+          closeHomebaseManager();
+          return;
+        }
+        const rows = collectHomebaseManagerRows().filter((row) => row.some((value) => value));
+        if (homebaseManageType === "schedule") {
+          HOMEBASE_SCHEDULE_DATA[homebaseProdi][homebaseSemester] = rows;
+          HOMEBASE_CUSTOM_FLAGS.schedule = true;
+          if (!homebaseSaveLocal("stitHomebaseSchedulesV1", HOMEBASE_SCHEDULE_DATA)) return;
+        } else {
+          HOMEBASE_CALENDAR_DATA = rows;
+          HOMEBASE_CUSTOM_FLAGS.calendar = true;
+          if (!homebaseSaveLocal("stitHomebaseCalendarV1", HOMEBASE_CALENDAR_DATA)) return;
+        }
+        homebaseSaveLocal("stitHomebaseCustomFlagsV1", HOMEBASE_CUSTOM_FLAGS);
+        closeHomebaseManager();
+        renderHomebasePage();
+        if (isFirebaseActive && db) {
+          syncToCloud();
+          showToast("Perubahan tersimpan. Sinkronisasi mengikuti koneksi Firebase aplikasi.", "success");
+        } else {
+          showToast("Data akademik tersimpan pada browser ini.", "success");
+        }
+      }
+
+      function closeHomebaseManager() {
+        const overlay = document.getElementById("homebaseManageOverlay");
+        if (!overlay) return;
+        overlay.classList.add("hidden");
+        overlay.classList.remove("flex");
+      }
+
       const FINANCE_ROUTE_META = {
         overview: {
           path: "/financial-dashboard/overview",
@@ -11146,7 +12380,7 @@
         requests: {
           path: "/financial-dashboard/requests",
           title: "Pengajuan Dana",
-          subtitle: "Monitoring data pengajuan yang tersedia pada sumber SEO",
+          subtitle: "Daftar pengajuan dana dari Google Sheets · Data PP",
         },
         reports: {
           path: "/financial-dashboard/reports",
@@ -12115,6 +13349,206 @@
         return `<div class="finance-page-head"><div><h2>Pengaturan Dashboard</h2><p>Preferensi tampilan dan informasi sumber data. Pengaturan transaksi tidak tersedia di modul monitoring ini.</p></div></div><div class="grid md:grid-cols-2 gap-3"><section class="finance-card finance-panel"><h3 class="finance-section-title mb-3">Preferensi Tampilan</h3><div class="flex items-center justify-between py-3 border-b border-slate-100"><div><strong class="text-xs">Tema dashboard</strong><div class="text-[10px] text-slate-500">Terang atau gelap</div></div><div class="flex gap-2"><button class="finance-filter" onclick="setFinanceTheme('light')">Terang</button><button class="finance-filter" onclick="setFinanceTheme('dark')">Gelap</button></div></div><div class="flex items-center justify-between py-3"><div><strong class="text-xs">Sidebar</strong><div class="text-[10px] text-slate-500">Bisa diciutkan untuk ruang konten lebih lebar</div></div><button class="finance-filter" onclick="toggleFinanceSidebar()">Ubah lebar</button></div></section><section class="finance-card finance-panel"><h3 class="finance-section-title mb-3">Informasi Sistem</h3><dl class="text-xs space-y-3"><div><dt class="text-slate-500">Nama sistem</dt><dd class="font-bold mt-1">STIT Finance — Financial Monitoring</dd></div><div><dt class="text-slate-500">Sumber data</dt><dd class="font-bold mt-1">SEO Workspace · eventsData</dd></div><div><dt class="text-slate-500">Mode</dt><dd class="font-bold mt-1">Monitoring & pelaporan (read-only)</dd></div><div><dt class="text-slate-500">Akses</dt><dd class="font-bold mt-1">Super Admin dan SC</dd></div><div><dt class="text-slate-500">Jumlah kegiatan tersedia</dt><dd class="font-bold mt-1">${(eventsData || []).length} kegiatan</dd></div></dl></section></div><div class="finance-card finance-panel mt-3"><strong class="text-xs">Catatan data</strong><p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Dashboard ini tidak menambah, mengubah, atau menghapus transaksi. Data pemasukan, pengeluaran, anggaran, dan dokumen ditarik dari data yang telah tersedia di SEO. Data pengajuan dana belum ditampilkan apabila belum memiliki struktur data terintegrasi.</p></div>`;
       }
 
+      // Google Apps Script Web App connected to Google Sheets tab "Data PP".
+      // Dashboard display is read-only; all CRUD remains in Form Finance.
+      const FINANCE_PP_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby1oqTHXqXFr8qoYtnAgU6rwF5jVLWvY8Xfj7mIR-yJNQtnqwQPMZLzlR13j1IUrMU/exec";
+      const FINANCE_PP_POLL_MS = 15000;
+      const FINANCE_PP_FALLBACK_HEADERS = ["No", "PP Media", "Nomor PP", "Nama Pembuat", "Divisi", "Tanggal PP", "Tanggal Pemenuhan", "Tujuan", "Uraian I (Tujuan)", "Uraian II (Objek)", "Uraian III (Keterangan)", "Kepada", "Sebagai", "A/N Bendahara", "B/A", "No. Rekening", "Nominal", "Lampiran", "Tanggal Entry", "Status", "Tanggal TF", "UMI", "Bulan/Tahun TF", "Keterangan"];
+      let financePPHeaders = [...FINANCE_PP_FALLBACK_HEADERS];
+      let financePPRows = [];
+      let financePPLastSync = null;
+      let financePPError = "";
+      let financePPIsLoading = false;
+      let financePPPollingTimer = null;
+      let financePPRefreshPromise = null;
+
+      function financePPNormalizeKey(value) {
+        return String(value ?? "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "");
+      }
+      function financePPLooksLikeHeader(row) {
+        if (!Array.isArray(row)) return false;
+        const joined = row.map(financePPNormalizeKey).join("|");
+        return joined.includes("nomorpp") || joined.includes("namapembuat") || joined.includes("tanggalpp");
+      }
+      function financePPParsePayload(payload) {
+        if (typeof payload === "string") {
+          const clean = payload.replace(/^\uFEFF/, "").trim();
+          if (!clean || clean.startsWith("<")) throw new Error("Web App tidak mengembalikan JSON. Pastikan doGet() Apps Script mengirim data tab Data PP dalam format JSON.");
+          // Accept a JSONP-style response too, in case the Apps Script is configured that way.
+          const jsonp = clean.match(/^[A-Za-z_$][\w.$]*\s*\(([\s\S]*)\)\s*;?$/);
+          try { payload = JSON.parse(jsonp ? jsonp[1] : clean); } catch (e) { throw new Error("Respons Apps Script bukan JSON yang valid. Pastikan doGet() menggunakan JSON.stringify() atau format JSONP standar."); }
+        }
+        if (payload && typeof payload === "object" && payload.success === false) throw new Error(payload.message || payload.error || "Apps Script melaporkan kegagalan membaca Data PP.");
+        let headers = Array.isArray(payload?.headers) ? payload.headers.map(v => String(v ?? "")) : null;
+        let source = payload;
+        if (payload && !Array.isArray(payload)) {
+          source = payload.data ?? payload.rows ?? payload.values ?? payload.records ?? payload.items ?? payload.result ?? payload;
+          if (source && !Array.isArray(source)) {
+            headers = headers || (Array.isArray(source.headers) ? source.headers.map(v => String(v ?? "")) : null);
+            source = source.data ?? source.rows ?? source.values ?? source.records ?? source.items ?? [];
+          }
+        }
+        if (!Array.isArray(source)) throw new Error("Format respons tidak dikenali. Dukungan format: array objek, array baris, atau {headers, rows}.");
+        if (!source.length) return { headers: headers || [...FINANCE_PP_FALLBACK_HEADERS], rows: [] };
+        if (Array.isArray(source[0])) {
+          const matrix = source.slice();
+          if (!headers && financePPLooksLikeHeader(matrix[0])) headers = matrix.shift().map(v => String(v ?? ""));
+          headers = headers || FINANCE_PP_FALLBACK_HEADERS.slice(0, Math.max(matrix[0]?.length || 0, FINANCE_PP_FALLBACK_HEADERS.length));
+          return { headers, rows: matrix.map(row => Array.isArray(row) ? row : []) };
+        }
+        if (source[0] && typeof source[0] === "object") {
+          headers = headers || Object.keys(source[0]);
+          return { headers, rows: source.map(obj => headers.map(h => {
+            if (Object.prototype.hasOwnProperty.call(obj, h)) return obj[h];
+            const key = financePPNormalizeKey(h);
+            const found = Object.keys(obj).find(k => financePPNormalizeKey(k) === key);
+            return found ? obj[found] : "";
+          })) };
+        }
+        throw new Error("Data PP terbaca, tetapi barisnya bukan objek atau array.");
+      }
+      function financePPCellText(value) {
+        if (value === null || value === undefined) return "";
+        if (typeof value === "object") return String(value.text ?? value.value ?? value.url ?? JSON.stringify(value));
+        return String(value);
+      }
+      function financePPFindColumn(headers, fragments) {
+        return headers.findIndex(h => fragments.some(f => financePPNormalizeKey(h).includes(financePPNormalizeKey(f))));
+      }
+      function financePPParseAmount(value) {
+        if (typeof value === "number") return value;
+        const raw = String(value ?? "").replace(/[^0-9,.-]/g, "").trim();
+        if (!raw) return 0;
+        let normalized = raw;
+        if (raw.includes(",") && raw.includes(".")) normalized = raw.replace(/\./g, "").replace(",", ".");
+        else if (raw.includes(",")) normalized = raw.replace(/,/g, "");
+        else if ((raw.match(/\./g) || []).length > 1) normalized = raw.replace(/\./g, "");
+        const amount = Number(normalized);
+        return Number.isFinite(amount) ? amount : 0;
+      }
+      function financePPStatusClass(value) {
+        const status = String(value || "").toLowerCase();
+        if (status.includes("not paid") || status.includes("unpaid") || status.includes("belum bayar") || status.includes("belum dibayar")) return "is-progress";
+        if (status.includes("paid") || status.includes("lunas") || status.includes("selesai") || status.includes("terbayar")) return "is-paid";
+        if (status.includes("process") || status.includes("proses") || status.includes("verifikasi") || status.includes("pending")) return "is-progress";
+        return "";
+      }
+      function financePPDateForFilter(value) {
+        const raw = String(value ?? "").trim();
+        if (!raw) return "";
+        const direct = new Date(raw);
+        if (!Number.isNaN(direct.getTime())) return direct.toISOString().slice(0, 10);
+        const months = { januari:0, jan:0, februari:1, feb:1, maret:2, mar:2, april:3, apr:3, mei:4, juni:5, jun:5, juli:6, jul:6, agustus:7, agu:7, agt:7, september:8, sep:8, oktober:9, okt:9, november:10, nov:10, desember:11, des:11 };
+        const match = raw.toLowerCase().match(/(\d{1,2})\s+([a-z]+)\s+(\d{2,4})/);
+        if (!match || months[match[2]] === undefined) return "";
+        let year = Number(match[3]); if (year < 100) year += 2000;
+        return new Date(year, months[match[2]], Number(match[1])).toISOString().slice(0, 10);
+      }
+      function financePPRowMatchesPeriod(row) {
+        if (financePeriod === "all") return true;
+        const idx = financePPFindColumn(financePPHeaders, ["Tanggal PP", "Tanggal TF", "Tanggal Entry"]);
+        if (idx < 0) return true;
+        const dateValue = financePPDateForFilter(row[idx]);
+        if (!dateValue) return true;
+        const date = new Date(dateValue + "T00:00:00");
+        const now = new Date();
+        if (financePeriod === "year") return date.getFullYear() === now.getFullYear();
+        return Math.abs(now.getTime() - date.getTime()) / 86400000 <= Number(financePeriod);
+      }
+      function financePPRowMatchesSearch(row) {
+        return !financeSearchText || row.some(value => financePPCellText(value).toLowerCase().includes(financeSearchText));
+      }
+      function financePPRenderStatus(message = "") {
+        const el = document.getElementById("financePPConnectionStatus");
+        if (!el) return;
+        if (financePPError) el.innerHTML = `<span class="text-rose-600">● Gagal memperbarui: ${financeEscape(financePPError)}</span>`;
+        else if (financePPLastSync) el.textContent = `● Terhubung · diperbarui ${financePPLastSync.toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit", second:"2-digit" })}`;
+        else el.textContent = message || (financePPIsLoading ? "Mengambil data Data PP…" : "Menunggu sinkronisasi pertama…");
+      }
+      function financePPRenderTable() {
+        const host = document.getElementById("financePPTableHost");
+        if (!host) return;
+        const rows = financePPRows.filter(financePPRowMatchesSearch).filter(financePPRowMatchesPeriod);
+        const nominalIndex = financePPFindColumn(financePPHeaders, ["Nominal"]);
+        const statusIndex = financePPFindColumn(financePPHeaders, ["Status"]);
+        const amount = rows.reduce((sum, row) => sum + financePPParseAmount(nominalIndex >= 0 ? row[nominalIndex] : 0), 0);
+        const unpaid = rows.filter(row => statusIndex >= 0 && !financePPStatusClass(row[statusIndex]).includes("is-paid")).length;
+        const paid = rows.length - unpaid;
+        const header = financePPHeaders.map(h => `<th>${financeEscape(h || "Kolom")}</th>`).join("");
+        const body = rows.map(row => `<tr>${financePPHeaders.map((h, i) => {
+          const value = financePPCellText(row[i]);
+          const norm = financePPNormalizeKey(h);
+          if (norm.includes("status")) return `<td><span class="finance-pp-status ${financePPStatusClass(value)}">${financeEscape(value || "—")}</span></td>`;
+          if (/^https?:\/\//i.test(value) && (norm.includes("lampiran") || norm.includes("link") || norm.includes("url") || norm.includes("bukti"))) return `<td><a class="finance-link" href="${financeSafeHref(value)}" target="_blank" rel="noopener noreferrer">Buka ↗</a></td>`;
+          return `<td>${financeEscape(value || "—")}</td>`;
+        }).join("")}</tr>`).join("");
+        host.innerHTML = `<div class="grid grid-cols-2 xl:grid-cols-4 gap-2.5 mb-3"><div class="finance-pp-mini"><span>Jumlah Pengajuan</span><strong>${rows.length.toLocaleString("id-ID")}</strong></div><div class="finance-pp-mini"><span>Total Nominal</span><strong>${financeRp(amount)}</strong></div><div class="finance-pp-mini"><span>Belum / Tidak Dibayar</span><strong>${unpaid.toLocaleString("id-ID")}</strong></div><div class="finance-pp-mini"><span>Sudah Dibayar</span><strong>${paid.toLocaleString("id-ID")}</strong></div></div><div class="finance-pp-scroll"><table class="finance-pp-table"><thead><tr>${header}</tr></thead><tbody>${body || `<tr><td colspan="${Math.max(financePPHeaders.length,1)}" class="text-center py-10 text-slate-400">${financePPRows.length ? "Tidak ada data yang sesuai pencarian/periode." : "Belum ada baris Data PP yang dikirim oleh Apps Script."}</td></tr>`}</tbody></table></div><div class="finance-pp-source-note mt-2">Menampilkan ${rows.length.toLocaleString("id-ID")} dari ${financePPRows.length.toLocaleString("id-ID")} baris Data PP · hanya-baca.</div>`;
+      }
+      function financePPFetchJsonp() {
+        return new Promise((resolve, reject) => {
+          const name = "__stitFinancePPCallback";
+          const script = document.createElement("script");
+          const separator = FINANCE_PP_WEB_APP_URL.includes("?") ? "&" : "?";
+          let settled = false;
+          const finish = (err, data) => { if (settled) return; settled = true; clearTimeout(timer); script.remove(); delete window[name]; err ? reject(err) : resolve(data); };
+          window[name] = data => finish(null, data);
+          script.onerror = () => finish(new Error("JSONP tidak didukung oleh Web App Apps Script."));
+          const timer = setTimeout(() => finish(new Error("Waktu tunggu Apps Script habis.")), 12000);
+          script.src = FINANCE_PP_WEB_APP_URL + separator + "prefix=" + encodeURIComponent(name);
+          document.head.appendChild(script);
+        });
+      }
+      async function financeLoadPPData() {
+        if (financePPRefreshPromise) return financePPRefreshPromise;
+        financePPIsLoading = true; financePPRenderStatus();
+        const button = document.getElementById("financePPRefreshBtn");
+        if (button) { button.disabled = true; button.textContent = "Memuat…"; }
+        financePPRefreshPromise = (async () => {
+          try {
+            let parsed;
+            try {
+              const response = await fetch(FINANCE_PP_WEB_APP_URL, { method:"GET", cache:"no-store", credentials:"omit", redirect:"follow" });
+              if (!response.ok) throw new Error(`HTTP ${response.status} dari Apps Script.`);
+              const payload = await response.text();
+              try { parsed = financePPParsePayload(payload); }
+              catch (parseError) {
+                try { parsed = financePPParsePayload(await financePPFetchJsonp()); }
+                catch (jsonpError) { throw parseError; }
+              }
+            } catch (fetchError) {
+              // Fallback for browsers/deployments where direct cross-origin fetch is blocked.
+              try { parsed = financePPParsePayload(await financePPFetchJsonp()); }
+              catch (jsonpError) { throw fetchError; }
+            }
+            financePPHeaders = parsed.headers.length ? parsed.headers : [...FINANCE_PP_FALLBACK_HEADERS];
+            financePPRows = parsed.rows;
+            financePPLastSync = new Date();
+            financePPError = "";
+          } catch (error) { financePPError = error?.message || "Tidak dapat membaca Data PP."; }
+          finally {
+            financePPIsLoading = false; financePPRefreshPromise = null;
+            financePPRenderStatus(); financePPRenderTable();
+            const btn = document.getElementById("financePPRefreshBtn");
+            if (btn) { btn.disabled = false; btn.innerHTML = "↻ Refresh Data"; }
+          }
+        })();
+        return financePPRefreshPromise;
+      }
+      function financeStartPPDataSync() {
+        if (!financePPLastSync && !financePPIsLoading) financeLoadPPData();
+        if (!financePPPollingTimer) financePPPollingTimer = setInterval(() => {
+          const root = document.getElementById("viewFinancialDashboard");
+          if (financeCurrentRoute === "requests" && document.visibilityState !== "hidden" && root && !root.classList.contains("hidden")) financeLoadPPData();
+        }, FINANCE_PP_POLL_MS);
+      }
+      function financeStopPPDataSync() {
+        if (financePPPollingTimer) { clearInterval(financePPPollingTimer); financePPPollingTimer = null; }
+      }
+      function financeRefreshPPData() { return financeLoadPPData(); }
+      function financeRenderPPDataContent() {
+        return `<div class="finance-page-head"><div><h2>Pengajuan Dana</h2><p>Daftar pengajuan dari Google Sheets · Sheet 1: Data PP. Data dikelola melalui Form Finance dan ditampilkan di sini secara hanya-baca.</p></div><button id="financePPRefreshBtn" class="finance-pp-refresh" type="button" onclick="financeRefreshPPData()">↻ Refresh Data</button></div><div class="finance-card finance-panel"><div class="finance-pp-toolbar"><div class="min-w-0"><div class="text-xs font-extrabold">Data PP · Google Sheets</div><div id="financePPConnectionStatus" class="text-[10px] text-slate-500 mt-1">Sumber: Google Sheets · tab Data PP</div></div><span class="finance-pill running">Sinkronisasi otomatis · 15 detik</span></div><div id="financePPTableHost"><div class="finance-pp-loading">Menghubungkan ke Google Sheets Data PP…</div></div><div class="finance-pp-source-note mt-3">Sumber data: Google Apps Script Web App · perubahan dilakukan melalui Form Finance. Tampilan ini hanya-baca.</div></div>`;
+      }
+
       function renderFinancialPage() {
         if (!canAccessFinancialDashboard()) {
           document
@@ -12172,7 +13606,7 @@
         )
           content = `<div class="finance-page-head"><div><h2>${meta.title}</h2><p>${meta.subtitle}</p></div><span class="text-[10px] text-slate-500">${financeRenderTransactionsCountLabel(financeCurrentRoute)}</span></div>${financeRenderTransactions(financeCurrentRoute)}`;
         else if (financeCurrentRoute === "requests")
-          content = `<div class="finance-page-head"><div><h2>Pengajuan Dana</h2><p>Monitoring pengajuan dana yang tersedia pada data kegiatan.</p></div></div>${financeRenderRequestsContent(financeGetAllRequests().filter((r) => financeMatchesSearch(r.eventName, r.nama, r.judul, r.keperluan, r.pengaju)))}`;
+          content = financeRenderPPDataContent();
         else if (financeCurrentRoute === "reports")
           content = financeRenderReports();
         else if (financeCurrentRoute === "documents")
@@ -12180,6 +13614,13 @@
         else if (financeCurrentRoute === "settings")
           content = financeRenderSettings();
         document.getElementById("financialContent").innerHTML = content;
+        if (financeCurrentRoute === "requests") {
+          financeStartPPDataSync();
+          financePPRenderStatus();
+          if (financePPLastSync || financePPRows.length) financePPRenderTable();
+        } else {
+          financeStopPPDataSync();
+        }
         const main = document.getElementById("financeMain");
         if (main) main.scrollTop = 0;
       }
@@ -12264,6 +13705,7 @@
             enterFinancialDashboardFromCurrentPath();
         }
         initFirebaseConnection();
+        if (!currentUser && !publicEventId) restoreRememberedLoginSession();
         openPublicRouteIfRequested();
       });
     </script>
