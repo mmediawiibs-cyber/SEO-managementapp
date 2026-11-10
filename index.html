@@ -4206,6 +4206,76 @@
         return `${code}: ${message}`;
       }
 
+      // Firestore tidak mengizinkan array menjadi elemen langsung dari array lain.
+      // Array bertingkat dikemas sementara sebagai Map dengan marker khusus,
+      // lalu dibuka kembali saat data dibaca agar bentuk data aplikasi tetap sama.
+      const FIRESTORE_NESTED_ARRAY_MARKER =
+        "__seo_stit_firestore_nested_array_v1__";
+
+      function encodeFirestoreArrays(value, isDirectArrayItem = false) {
+        if (Array.isArray(value)) {
+          const encodedItems = value.map((item) =>
+            encodeFirestoreArrays(item, true),
+          );
+          return isDirectArrayItem
+            ? { [FIRESTORE_NESTED_ARRAY_MARKER]: encodedItems }
+            : encodedItems;
+        }
+
+        if (value && typeof value === "object") {
+          const output = {};
+          Object.keys(value).forEach((key) => {
+            // Array pada properti Map sah di Firestore. Larangan hanya berlaku
+            // ketika sebuah Array menjadi elemen langsung Array lainnya.
+            output[key] = encodeFirestoreArrays(value[key], false);
+          });
+          return output;
+        }
+
+        return value;
+      }
+
+      function decodeFirestoreArrays(value) {
+        if (Array.isArray(value)) return value.map(decodeFirestoreArrays);
+        if (value && typeof value === "object") {
+          const keys = Object.keys(value);
+          if (
+            keys.length === 1 &&
+            keys[0] === FIRESTORE_NESTED_ARRAY_MARKER &&
+            Array.isArray(value[FIRESTORE_NESTED_ARRAY_MARKER])
+          ) {
+            return value[FIRESTORE_NESTED_ARRAY_MARKER].map(
+              decodeFirestoreArrays,
+            );
+          }
+          const output = {};
+          keys.forEach((key) => {
+            output[key] = decodeFirestoreArrays(value[key]);
+          });
+          return output;
+        }
+        return value;
+      }
+
+      function findNestedArrayPaths(
+        value,
+        path = "root",
+        insideArray = false,
+        found = [],
+      ) {
+        if (Array.isArray(value)) {
+          if (insideArray) found.push(path);
+          value.forEach((item, index) =>
+            findNestedArrayPaths(item, `${path}[${index}]`, true, found),
+          );
+        } else if (value && typeof value === "object") {
+          Object.keys(value).forEach((key) =>
+            findNestedArrayPaths(value[key], `${path}.${key}`, false, found),
+          );
+        }
+        return found;
+      }
+
       function removeKnownDemoEvents(list) {
         if (!Array.isArray(list)) return [];
         const demoIds = new Set(["evt_1", "evt_2"]);
@@ -4364,7 +4434,19 @@
             },
           };
           const jsonPayload = JSON.stringify(serializablePayload);
-          const payloadBytes = new TextEncoder().encode(jsonPayload).length;
+          const plainPayload = JSON.parse(jsonPayload);
+          const nestedArrayPaths = findNestedArrayPaths(plainPayload);
+          if (nestedArrayPaths.length) {
+            console.info(
+              `[Firestore] ${nestedArrayPaths.length} array bertingkat ditemukan dan dikemas aman. Contoh lokasi:`,
+              nestedArrayPaths.slice(0, 12),
+            );
+          }
+          payload = encodeFirestoreArrays(plainPayload);
+          const firestoreJsonPayload = JSON.stringify(payload);
+          const payloadBytes = new TextEncoder().encode(
+            firestoreJsonPayload,
+          ).length;
           if (payloadBytes > FIRESTORE_SAFE_DOCUMENT_BYTES) {
             const sizeError = new Error(
               `Data berukuran ${(payloadBytes / 1024).toFixed(0)} KiB. Batas aman dokumen tunggal SEO adalah ${(FIRESTORE_SAFE_DOCUMENT_BYTES / 1024).toFixed(0)} KiB. Data belum dikirim.`,
@@ -4372,7 +4454,6 @@
             sizeError.code = "document-too-large";
             throw sizeError;
           }
-          payload = JSON.parse(jsonPayload);
         } catch (prepareError) {
           setCloudSyncBadge("error", getCloudErrorMessage(prepareError));
           console.error(
@@ -4454,7 +4535,9 @@
               );
 
               if (doc.exists) {
-                const cloudData = doc.data();
+                // Kembalikan wrapper array bertingkat ke bentuk Array asli
+                // sebelum data dipakai oleh fitur-fitur aplikasi.
+                const cloudData = decodeFirestoreArrays(doc.data());
                 if (cloudData && cloudData.eventsData) {
                   const rawCloudEvents = cloudData.eventsData;
                   eventsData = removeKnownDemoEvents(rawCloudEvents);
