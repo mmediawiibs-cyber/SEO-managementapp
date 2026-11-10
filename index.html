@@ -4206,28 +4206,31 @@
         return `${code}: ${message}`;
       }
 
-      // Firestore tidak mengizinkan array menjadi elemen langsung dari array lain.
-      // Array bertingkat dikemas sementara sebagai Map dengan marker khusus,
-      // lalu dibuka kembali saat data dibaca agar bentuk data aplikasi tetap sama.
-      const FIRESTORE_NESTED_ARRAY_MARKER =
+      // Firestore menyatakan nested arrays tidak didukung. Untuk menghindari
+      // variasi validasi SDK terhadap array di dalam struktur bertingkat,
+      // seluruh Array dikemas sebagai Map bertanda sebelum dikirim. Bentuk
+      // Array asli dipulihkan setelah data dibaca sehingga fitur aplikasi
+      // tetap menerima tipe Array seperti sebelumnya.
+      const FIRESTORE_NESTED_ARRAY_MARKER = "__seo_stit_firestore_array_v2__";
+      const FIRESTORE_LEGACY_ARRAY_MARKER =
         "__seo_stit_firestore_nested_array_v1__";
 
-      function encodeFirestoreArrays(value, isDirectArrayItem = false) {
+      function encodeFirestoreArrays(value) {
         if (Array.isArray(value)) {
-          const encodedItems = value.map((item) =>
-            encodeFirestoreArrays(item, true),
-          );
-          return isDirectArrayItem
-            ? { [FIRESTORE_NESTED_ARRAY_MARKER]: encodedItems }
-            : encodedItems;
+          const output = {
+            [FIRESTORE_NESTED_ARRAY_MARKER]: "ARRAY_V2",
+            __length__: value.length,
+          };
+          value.forEach((item, index) => {
+            output[String(index)] = encodeFirestoreArrays(item);
+          });
+          return output;
         }
 
         if (value && typeof value === "object") {
           const output = {};
           Object.keys(value).forEach((key) => {
-            // Array pada properti Map sah di Firestore. Larangan hanya berlaku
-            // ketika sebuah Array menjadi elemen langsung Array lainnya.
-            output[key] = encodeFirestoreArrays(value[key], false);
+            output[key] = encodeFirestoreArrays(value[key]);
           });
           return output;
         }
@@ -4239,15 +4242,37 @@
         if (Array.isArray(value)) return value.map(decodeFirestoreArrays);
         if (value && typeof value === "object") {
           const keys = Object.keys(value);
+          // Dukungan pembacaan data dari encoder v1 yang pernah dipakai.
           if (
             keys.length === 1 &&
-            keys[0] === FIRESTORE_NESTED_ARRAY_MARKER &&
-            Array.isArray(value[FIRESTORE_NESTED_ARRAY_MARKER])
+            keys[0] === FIRESTORE_LEGACY_ARRAY_MARKER &&
+            Array.isArray(value[FIRESTORE_LEGACY_ARRAY_MARKER])
           ) {
-            return value[FIRESTORE_NESTED_ARRAY_MARKER].map(
+            return value[FIRESTORE_LEGACY_ARRAY_MARKER].map(
               decodeFirestoreArrays,
             );
           }
+
+          const markerValue = value[FIRESTORE_NESTED_ARRAY_MARKER];
+          const length = value.__length__;
+          const numericKeys = keys.filter((key) => /^\d+$/.test(key));
+          const isEncodedArray =
+            markerValue === "ARRAY_V2" &&
+            Number.isInteger(length) &&
+            length >= 0 &&
+            keys.length === numericKeys.length + 2 &&
+            numericKeys.every((key) => Number(key) < length);
+
+          if (isEncodedArray) {
+            const output = new Array(length);
+            for (let index = 0; index < length; index += 1) {
+              if (Object.prototype.hasOwnProperty.call(value, String(index))) {
+                output[index] = decodeFirestoreArrays(value[String(index)]);
+              }
+            }
+            return output;
+          }
+
           const output = {};
           keys.forEach((key) => {
             output[key] = decodeFirestoreArrays(value[key]);
@@ -4443,6 +4468,13 @@
             );
           }
           payload = encodeFirestoreArrays(plainPayload);
+          const remainingNestedArrays = findNestedArrayPaths(payload);
+          if (remainingNestedArrays.length) {
+            throw new Error(
+              "Konversi array Firestore belum tuntas: " +
+                remainingNestedArrays.slice(0, 8).join(", "),
+            );
+          }
           const firestoreJsonPayload = JSON.stringify(payload);
           const payloadBytes = new TextEncoder().encode(
             firestoreJsonPayload,
