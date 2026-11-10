@@ -4148,13 +4148,10 @@
       // ==========================================
       // 0. KONFIGURASI FIREBASE FIRESTORE CLOUD SYNC
       // ==========================================
-      // Ganti nilai di bawah ini dengan firebaseConfig asli dari Firebase Console Anda:
-      // Import the functions you need from the SDKs you need
-      import { initializeApp } from "firebase/app";
-      // TODO: Add SDKs for Firebase products that you want to use
-      // https://firebase.google.com/docs/web/setup#available-libraries
-
-      // Your web app's Firebase configuration
+      // Aplikasi ini menggunakan Firebase SDK versi COMPAT yang sudah dimuat
+      // melalui script firebase-app-compat.js dan firebase-firestore-compat.js
+      // di bagian <head>. Jangan menambahkan import modular di dalam script biasa.
+      // Konfigurasi di bawah harus sesuai dengan Web App pada Firebase Project tujuan.
       const firebaseConfig = {
         apiKey: "AIzaSyB9WOtOY9Y53cTJ94BGbD2Y8LmcWKeknGo",
         authDomain: "seo-db-eb0a0.firebaseapp.com",
@@ -4169,6 +4166,45 @@
       let db = null;
       let isFirebaseActive = false;
       let cloudStateLoaded = false;
+      let cloudListenerUnsubscribe = null;
+      let cloudWriteQueue = Promise.resolve();
+      let cloudWriteCount = 0;
+      const CLOUD_STATE_COLLECTION = "seo_app_state";
+      const CLOUD_STATE_DOCUMENT = "main_data";
+      const FIRESTORE_SAFE_DOCUMENT_BYTES = 950 * 1024;
+
+      function setCloudSyncBadge(status, detail = "") {
+        const badge = document.getElementById("cloudSyncBadge");
+        if (!badge) return;
+        const styles = {
+          connecting: "bg-amber-500/20 text-amber-200 border-amber-400/30",
+          connected: "bg-sky-500/20 text-sky-200 border-sky-400/30",
+          saving: "bg-amber-500/20 text-amber-200 border-amber-400/30",
+          synced: "bg-emerald-500/20 text-emerald-200 border-emerald-400/30",
+          local: "bg-slate-500/20 text-slate-200 border-slate-400/30",
+          error: "bg-rose-500/20 text-rose-200 border-rose-400/30",
+        };
+        const labels = {
+          connecting: "☁️ Menghubungkan...",
+          connected: "☁️ Cloud Terhubung",
+          saving: "☁️ Menyimpan...",
+          synced: "☁️ Tersimpan di Cloud",
+          local: "💾 Penyimpanan Lokal",
+          error: "☁️ Gagal Sinkronisasi",
+        };
+        badge.className =
+          "text-[10px] font-bold px-2 py-0.5 rounded-full border " +
+          (styles[status] || styles.local);
+        badge.textContent = labels[status] || labels.local;
+        badge.title = detail || labels[status] || labels.local;
+      }
+
+      function getCloudErrorMessage(error) {
+        if (!error) return "Unknown Firebase error";
+        const code = error.code ? String(error.code) : "unknown";
+        const message = error.message ? String(error.message) : String(error);
+        return `${code}: ${message}`;
+      }
 
       function removeKnownDemoEvents(list) {
         if (!Array.isArray(list)) return [];
@@ -4215,8 +4251,7 @@
       }
 
       function initFirebaseConnection() {
-        // Gunakan cache lokal sebagai data awal agar sesi yang tersimpan dapat
-        // dipulihkan segera. Snapshot Firestore tetap menjadi sumber data terbaru.
+        // Pulihkan cache lokal terlebih dahulu agar UI tetap dapat dibuka.
         try {
           const cachedEvents = localStorage.getItem("seo_stit_events_backup");
           if (cachedEvents)
@@ -4231,70 +4266,64 @@
         } catch (cacheError) {
           console.warn("Cache lokal tidak dapat dipulihkan:", cacheError);
         }
+
         try {
           if (
-            typeof firebase !== "undefined" &&
-            firebaseConfig.apiKey &&
-            !firebaseConfig.apiKey.includes("YourApiKeyHere")
+            typeof firebase === "undefined" ||
+            typeof firebase.initializeApp !== "function" ||
+            typeof firebase.firestore !== "function"
           ) {
-            if (!firebase.apps.length) {
-              firebase.initializeApp(firebaseConfig);
-            }
-            db = firebase.firestore();
-            isFirebaseActive = true;
-            const badge = document.getElementById("cloudSyncBadge");
-            if (badge) badge.textContent = "☁️ Cloud Sync Aktif";
-            listenFromCloud();
-          } else {
-            // Fallback penyimpanan lokal browser jika apiKey belum diganti
-            const savedLocal = localStorage.getItem("seo_stit_events_backup");
-            if (savedLocal) {
-              eventsData = removeKnownDemoEvents(JSON.parse(savedLocal));
+            throw new Error(
+              "Firebase SDK Compat tidak ditemukan. Periksa script Firebase di bagian head.",
+            );
+          }
+          if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+            throw new Error("firebaseConfig belum lengkap.");
+          }
+          if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+          }
+          db = firebase.firestore();
+          isFirebaseActive = false;
+          cloudStateLoaded = false;
+          setCloudSyncBadge(
+            "connecting",
+            `Menghubungkan ke Firebase project: ${firebaseConfig.projectId}`,
+          );
+          listenFromCloud();
+        } catch (err) {
+          db = null;
+          isFirebaseActive = false;
+          cloudStateLoaded = true;
+          setCloudSyncBadge("local", getCloudErrorMessage(err));
+          console.error("Inisialisasi Firebase gagal:", err);
+
+          // Tetap gunakan data lokal dan jalankan migrasi lokal bila diperlukan.
+          const localMigrated =
+            migrateLegacyAfghaniName() | migrateStudentParticipantData();
+          if (localMigrated) {
+            try {
               localStorage.setItem(
                 "seo_stit_events_backup",
                 JSON.stringify(eventsData),
               );
-              const savedUsers = localStorage.getItem(
-                "seo_stit_users_directory",
-              );
-              if (savedUsers) {
-                try {
-                  usersDirectory = JSON.parse(savedUsers);
-                } catch (userErr) {
-                  console.warn(
-                    "Master user lokal tidak dapat dibaca:",
-                    userErr,
-                  );
-                }
-              }
-              ensureUserDirectoryCoverage();
-              const localMigrated =
-                migrateLegacyAfghaniName() | migrateStudentParticipantData();
-              if (localMigrated) {
-                localStorage.setItem(
-                  "seo_stit_events_backup",
-                  JSON.stringify(eventsData),
-                );
-              }
+            } catch (storageError) {
+              console.warn("Migrasi cache lokal gagal:", storageError);
             }
           }
-        } catch (err) {
-          console.warn(
-            "Firebase belum dikonfigurasi penuh, menggunakan LocalStorage:",
-            err,
-          );
         }
       }
 
       async function syncToCloud() {
-        // Pastikan record demo lama tidak ikut tersimpan kembali.
+        // Cache lokal tetap disimpan sebagai cadangan, tetapi bukan bukti bahwa
+        // data sudah berhasil ditulis ke Firestore.
         eventsData = removeKnownDemoEvents(eventsData);
         if (
           activeEventId &&
           !eventsData.some((event) => event.id === activeEventId)
         )
           activeEventId = eventsData[0]?.id || null;
-        // Simpan cadangan ke LocalStorage juga agar selalu aman
+
         try {
           localStorage.setItem(
             "seo_stit_events_backup",
@@ -4308,158 +4337,257 @@
             "seo_stit_custom_speakers",
             JSON.stringify(customSpeakerNames || []),
           );
-        } catch (e) {}
+        } catch (storageError) {
+          console.warn("Gagal menyimpan cache lokal:", storageError);
+        }
 
-        if (!isFirebaseActive || !db) return;
+        if (!db) {
+          setCloudSyncBadge(
+            "local",
+            "Firebase belum terhubung. Perubahan hanya tersimpan di browser ini.",
+          );
+          return false;
+        }
+
+        let payload;
         try {
+          // Ambil snapshot data pada saat fungsi dipanggil agar antrean write
+          // tidak mengirim objek yang berubah ketika menunggu write sebelumnya.
+          const serializablePayload = {
+            eventsData: eventsData,
+            usersDirectory: usersDirectory,
+            customSpeakers: customSpeakerNames || [],
+            homebaseAcademic: {
+              schedules: HOMEBASE_SCHEDULE_DATA,
+              calendar: HOMEBASE_CALENDAR_DATA,
+              customFlags: HOMEBASE_CUSTOM_FLAGS,
+            },
+          };
+          const jsonPayload = JSON.stringify(serializablePayload);
+          const payloadBytes = new TextEncoder().encode(jsonPayload).length;
+          if (payloadBytes > FIRESTORE_SAFE_DOCUMENT_BYTES) {
+            const sizeError = new Error(
+              `Data berukuran ${(payloadBytes / 1024).toFixed(0)} KiB. Batas aman dokumen tunggal SEO adalah ${(FIRESTORE_SAFE_DOCUMENT_BYTES / 1024).toFixed(0)} KiB. Data belum dikirim.`,
+            );
+            sizeError.code = "document-too-large";
+            throw sizeError;
+          }
+          payload = JSON.parse(jsonPayload);
+        } catch (prepareError) {
+          setCloudSyncBadge("error", getCloudErrorMessage(prepareError));
+          console.error(
+            "Data tidak dapat disiapkan untuk Firestore:",
+            prepareError,
+          );
+          return false;
+        }
+
+        cloudWriteCount += 1;
+        setCloudSyncBadge(
+          "saving",
+          "Penulisan data ke Firestore sedang berlangsung.",
+        );
+        const writeOperation = async () => {
           await db
-            .collection("seo_app_state")
-            .doc("main_data")
+            .collection(CLOUD_STATE_COLLECTION)
+            .doc(CLOUD_STATE_DOCUMENT)
             .set({
-              eventsData: eventsData,
-              usersDirectory: usersDirectory,
-              customSpeakers: customSpeakerNames || [],
-              homebaseAcademic: {
-                schedules: HOMEBASE_SCHEDULE_DATA,
-                calendar: HOMEBASE_CALENDAR_DATA,
-                customFlags: HOMEBASE_CUSTOM_FLAGS,
-              },
+              ...payload,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
+        };
+
+        // Serialisasikan penulisan agar beberapa aksi Simpan berurutan tidak
+        // saling menimpa akibat request yang selesai tidak berurutan.
+        cloudWriteQueue = cloudWriteQueue
+          .catch(() => undefined)
+          .then(writeOperation);
+        try {
+          await cloudWriteQueue;
+          isFirebaseActive = true;
+          setCloudSyncBadge(
+            "synced",
+            `Penulisan Firestore berhasil pada ${new Date().toLocaleString("id-ID")}.`,
+          );
+          return true;
         } catch (err) {
+          setCloudSyncBadge("error", getCloudErrorMessage(err));
           console.error("Gagal menyimpan ke Firebase:", err);
+          return false;
+        } finally {
+          cloudWriteCount = Math.max(0, cloudWriteCount - 1);
+          if (cloudWriteCount > 0)
+            setCloudSyncBadge(
+              "saving",
+              "Masih ada penulisan Firestore dalam antrean.",
+            );
         }
       }
 
       function listenFromCloud() {
-        if (!isFirebaseActive || !db) return;
-        db.collection("seo_app_state")
-          .doc("main_data")
-          .onSnapshot((doc) => {
-            if (doc.exists) {
-              const cloudData = doc.data();
-              if (cloudData && cloudData.eventsData) {
-                const rawCloudEvents = cloudData.eventsData;
-                eventsData = removeKnownDemoEvents(rawCloudEvents);
-                const removedDemoEvents =
-                  eventsData.length !==
-                  (Array.isArray(rawCloudEvents) ? rawCloudEvents.length : 0);
-                if (
-                  activeEventId &&
-                  !eventsData.some((event) => event.id === activeEventId)
-                )
-                  activeEventId = eventsData[0]?.id || null;
-                const needsDirectoryBootstrap = !Array.isArray(
-                  cloudData.usersDirectory,
+        if (!db) return;
+        if (typeof cloudListenerUnsubscribe === "function") {
+          cloudListenerUnsubscribe();
+          cloudListenerUnsubscribe = null;
+        }
+
+        cloudListenerUnsubscribe = db
+          .collection(CLOUD_STATE_COLLECTION)
+          .doc(CLOUD_STATE_DOCUMENT)
+          .onSnapshot(
+            (doc) => {
+              // Snapshot cache browser belum membuktikan server Firebase dapat
+              // diakses. Tunggu snapshot server sebelum menandai cloud tersambung.
+              if (doc.metadata && doc.metadata.fromCache) {
+                setCloudSyncBadge(
+                  "connecting",
+                  "Membaca cache lokal; menunggu konfirmasi dari server Firestore.",
                 );
-                const needsHomebaseBootstrap = !cloudData.homebaseAcademic;
-                const needsSpeakerBootstrap = !Array.isArray(
-                  cloudData.customSpeakers,
-                );
-                if (Array.isArray(cloudData.usersDirectory))
-                  usersDirectory = cloudData.usersDirectory;
-                if (Array.isArray(cloudData.customSpeakers))
-                  customSpeakerNames = cloudData.customSpeakers;
-                if (cloudData.homebaseAcademic) {
-                  const academic = cloudData.homebaseAcademic;
+                return;
+              }
+
+              isFirebaseActive = true;
+              cloudStateLoaded = true;
+              setCloudSyncBadge(
+                "connected",
+                `Terhubung ke ${firebaseConfig.projectId}`,
+              );
+
+              if (doc.exists) {
+                const cloudData = doc.data();
+                if (cloudData && cloudData.eventsData) {
+                  const rawCloudEvents = cloudData.eventsData;
+                  eventsData = removeKnownDemoEvents(rawCloudEvents);
+                  const removedDemoEvents =
+                    eventsData.length !==
+                    (Array.isArray(rawCloudEvents) ? rawCloudEvents.length : 0);
                   if (
-                    academic.schedules &&
-                    typeof academic.schedules === "object"
+                    activeEventId &&
+                    !eventsData.some((event) => event.id === activeEventId)
                   )
-                    HOMEBASE_SCHEDULE_DATA = academic.schedules;
-                  HOMEBASE_PRODI.forEach((prodi) => {
-                    if (!HOMEBASE_SCHEDULE_DATA[prodi.key])
-                      HOMEBASE_SCHEDULE_DATA[prodi.key] = {
-                        1: [],
-                        2: [],
-                        3: [],
-                        4: [],
-                      };
-                    [1, 2, 3, 4].forEach((semester) => {
-                      if (
-                        !Array.isArray(
-                          HOMEBASE_SCHEDULE_DATA[prodi.key][semester],
+                    activeEventId = eventsData[0]?.id || null;
+                  const needsDirectoryBootstrap = !Array.isArray(
+                    cloudData.usersDirectory,
+                  );
+                  const needsHomebaseBootstrap = !cloudData.homebaseAcademic;
+                  const needsSpeakerBootstrap = !Array.isArray(
+                    cloudData.customSpeakers,
+                  );
+                  if (Array.isArray(cloudData.usersDirectory))
+                    usersDirectory = cloudData.usersDirectory;
+                  if (Array.isArray(cloudData.customSpeakers))
+                    customSpeakerNames = cloudData.customSpeakers;
+                  if (cloudData.homebaseAcademic) {
+                    const academic = cloudData.homebaseAcademic;
+                    if (
+                      academic.schedules &&
+                      typeof academic.schedules === "object"
+                    )
+                      HOMEBASE_SCHEDULE_DATA = academic.schedules;
+                    HOMEBASE_PRODI.forEach((prodi) => {
+                      if (!HOMEBASE_SCHEDULE_DATA[prodi.key])
+                        HOMEBASE_SCHEDULE_DATA[prodi.key] = {
+                          1: [],
+                          2: [],
+                          3: [],
+                          4: [],
+                        };
+                      [1, 2, 3, 4].forEach((semester) => {
+                        if (
+                          !Array.isArray(
+                            HOMEBASE_SCHEDULE_DATA[prodi.key][semester],
+                          )
                         )
-                      )
-                        HOMEBASE_SCHEDULE_DATA[prodi.key][semester] = [];
+                          HOMEBASE_SCHEDULE_DATA[prodi.key][semester] = [];
+                      });
                     });
-                  });
-                  if (Array.isArray(academic.calendar))
-                    HOMEBASE_CALENDAR_DATA = academic.calendar;
-                  if (
-                    academic.customFlags &&
-                    typeof academic.customFlags === "object"
-                  )
-                    HOMEBASE_CUSTOM_FLAGS = academic.customFlags;
-                  try {
-                    localStorage.setItem(
-                      "stitHomebaseSchedulesV1",
-                      JSON.stringify(HOMEBASE_SCHEDULE_DATA),
-                    );
-                    localStorage.setItem(
-                      "stitHomebaseCalendarV1",
-                      JSON.stringify(HOMEBASE_CALENDAR_DATA),
-                    );
-                    localStorage.setItem(
-                      "stitHomebaseCustomFlagsV1",
-                      JSON.stringify(HOMEBASE_CUSTOM_FLAGS),
-                    );
-                  } catch (storageError) {
-                    console.warn(
-                      "Cache Homebase tidak dapat diperbarui:",
-                      storageError,
-                    );
+                    if (Array.isArray(academic.calendar))
+                      HOMEBASE_CALENDAR_DATA = academic.calendar;
+                    if (
+                      academic.customFlags &&
+                      typeof academic.customFlags === "object"
+                    )
+                      HOMEBASE_CUSTOM_FLAGS = academic.customFlags;
+                    try {
+                      localStorage.setItem(
+                        "stitHomebaseSchedulesV1",
+                        JSON.stringify(HOMEBASE_SCHEDULE_DATA),
+                      );
+                      localStorage.setItem(
+                        "stitHomebaseCalendarV1",
+                        JSON.stringify(HOMEBASE_CALENDAR_DATA),
+                      );
+                      localStorage.setItem(
+                        "stitHomebaseCustomFlagsV1",
+                        JSON.stringify(HOMEBASE_CUSTOM_FLAGS),
+                      );
+                    } catch (storageError) {
+                      console.warn(
+                        "Cache Homebase tidak dapat diperbarui:",
+                        storageError,
+                      );
+                    }
+                    if (
+                      !document
+                        .getElementById("viewHomebaseSTIT")
+                        ?.classList.contains("hidden")
+                    )
+                      renderHomebasePage();
                   }
+                  ensureUserDirectoryCoverage();
+                  if (!currentUser) initLoginDropdown();
+                  const cloudMigrated =
+                    migrateLegacyAfghaniName() |
+                    migrateStudentParticipantData();
                   if (
-                    !document
-                      .getElementById("viewHomebaseSTIT")
-                      ?.classList.contains("hidden")
+                    cloudMigrated ||
+                    needsDirectoryBootstrap ||
+                    needsHomebaseBootstrap ||
+                    needsSpeakerBootstrap ||
+                    removedDemoEvents
                   )
-                    renderHomebasePage();
+                    syncToCloud();
+                  if (!currentUser && !publicEventId)
+                    restoreRememberedLoginSession();
+                  if (currentUser) {
+                    const updatedRole = evaluateUserRoleForActiveEvent(
+                      currentUser.name,
+                    );
+                    currentUser.role = updatedRole.role;
+                    currentUser.roleLabel = updatedRole.roleLabel;
+                    currentUser.coordDivisionId = updatedRole.coordDivisionId;
+                    if (!isUserActive(currentUser.name)) {
+                      handleLogout();
+                      showToast(
+                        "Akun Anda telah dinonaktifkan oleh Super Admin.",
+                        "error",
+                      );
+                    } else {
+                      renderAll();
+                    }
+                  }
+                  initLoginDropdown();
+                  openPublicRouteIfRequested();
                 }
-                ensureUserDirectoryCoverage();
-                if (!currentUser) initLoginDropdown();
-                const cloudMigrated =
-                  migrateLegacyAfghaniName() | migrateStudentParticipantData();
-                if (
-                  cloudMigrated ||
-                  needsDirectoryBootstrap ||
-                  needsHomebaseBootstrap ||
-                  needsSpeakerBootstrap ||
-                  removedDemoEvents
-                )
-                  syncToCloud();
-                cloudStateLoaded = true;
+              } else {
+                // Dokumen belum ada: buat dokumen awal hanya setelah server
+                // mengonfirmasi bahwa dokumen memang belum tersedia.
+                syncToCloud();
                 if (!currentUser && !publicEventId)
                   restoreRememberedLoginSession();
-                if (currentUser) {
-                  const updatedRole = evaluateUserRoleForActiveEvent(
-                    currentUser.name,
-                  );
-                  currentUser.role = updatedRole.role;
-                  currentUser.roleLabel = updatedRole.roleLabel;
-                  currentUser.coordDivisionId = updatedRole.coordDivisionId;
-                  if (!isUserActive(currentUser.name)) {
-                    handleLogout();
-                    showToast(
-                      "Akun Anda telah dinonaktifkan oleh Super Admin.",
-                      "error",
-                    );
-                  } else {
-                    renderAll();
-                  }
-                }
-                initLoginDropdown();
                 openPublicRouteIfRequested();
               }
-            } else {
+            },
+            (err) => {
               cloudStateLoaded = true;
-              syncToCloud();
+              isFirebaseActive = false;
+              setCloudSyncBadge("error", getCloudErrorMessage(err));
+              console.error("Gagal membaca perubahan dari Firestore:", err);
               if (!currentUser && !publicEventId)
                 restoreRememberedLoginSession();
               openPublicRouteIfRequested();
-            }
-          });
+            },
+          );
       }
 
       // ==========================================
