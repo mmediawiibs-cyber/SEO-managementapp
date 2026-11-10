@@ -2840,8 +2840,8 @@
             <p
               class="mt-2 max-w-2xl text-xs leading-relaxed text-slate-200 sm:text-sm"
             >
-              Akses jadwal kuliah, kalender akademik, berita kampus, jurnal, dan
-              penerimaan mahasiswa baru dari satu tempat.
+              Akses beranda, berita kampus, jurnal, dan penerimaan mahasiswa
+              baru dari satu tempat.
             </p>
           </div>
           <div class="mt-4 flex flex-wrap items-center gap-3">
@@ -2857,32 +2857,10 @@
                 aria-hidden="true"
               ></span>
               <button
-                id="homebaseNavCalendar"
-                type="button"
-                role="tab"
-                aria-selected="false"
-                data-homebase-tab="calendar"
-                onclick="setHomebaseTab('calendar')"
-                class="homebase-nav-btn relative z-10"
-              >
-                Kalender Akademik
-              </button>
-              <button
-                id="homebaseNavSchedule"
-                type="button"
-                role="tab"
-                aria-selected="true"
-                data-homebase-tab="schedule"
-                onclick="setHomebaseTab('schedule')"
-                class="homebase-nav-btn relative z-10"
-              >
-                Jadwal Kuliah
-              </button>
-              <button
                 id="homebaseNavHome"
                 type="button"
                 role="tab"
-                aria-selected="false"
+                aria-selected="true"
                 data-homebase-tab="home"
                 onclick="setHomebaseTab('home')"
                 class="homebase-nav-btn relative z-10"
@@ -4206,81 +4184,9 @@
         return `${code}: ${message}`;
       }
 
-      // Firestore menyatakan nested arrays tidak didukung. Untuk menghindari
-      // variasi validasi SDK terhadap array di dalam struktur bertingkat,
-      // seluruh Array dikemas sebagai Map bertanda sebelum dikirim. Bentuk
-      // Array asli dipulihkan setelah data dibaca sehingga fitur aplikasi
-      // tetap menerima tipe Array seperti sebelumnya.
-      const FIRESTORE_NESTED_ARRAY_MARKER = "__seo_stit_firestore_array_v2__";
-      const FIRESTORE_LEGACY_ARRAY_MARKER =
-        "__seo_stit_firestore_nested_array_v1__";
-
-      function encodeFirestoreArrays(value) {
-        if (Array.isArray(value)) {
-          const output = {
-            [FIRESTORE_NESTED_ARRAY_MARKER]: "ARRAY_V2",
-            __length__: value.length,
-          };
-          value.forEach((item, index) => {
-            output[String(index)] = encodeFirestoreArrays(item);
-          });
-          return output;
-        }
-
-        if (value && typeof value === "object") {
-          const output = {};
-          Object.keys(value).forEach((key) => {
-            output[key] = encodeFirestoreArrays(value[key]);
-          });
-          return output;
-        }
-
-        return value;
-      }
-
-      function decodeFirestoreArrays(value) {
-        if (Array.isArray(value)) return value.map(decodeFirestoreArrays);
-        if (value && typeof value === "object") {
-          const keys = Object.keys(value);
-          // Dukungan pembacaan data dari encoder v1 yang pernah dipakai.
-          if (
-            keys.length === 1 &&
-            keys[0] === FIRESTORE_LEGACY_ARRAY_MARKER &&
-            Array.isArray(value[FIRESTORE_LEGACY_ARRAY_MARKER])
-          ) {
-            return value[FIRESTORE_LEGACY_ARRAY_MARKER].map(
-              decodeFirestoreArrays,
-            );
-          }
-
-          const markerValue = value[FIRESTORE_NESTED_ARRAY_MARKER];
-          const length = value.__length__;
-          const numericKeys = keys.filter((key) => /^\d+$/.test(key));
-          const isEncodedArray =
-            markerValue === "ARRAY_V2" &&
-            Number.isInteger(length) &&
-            length >= 0 &&
-            keys.length === numericKeys.length + 2 &&
-            numericKeys.every((key) => Number(key) < length);
-
-          if (isEncodedArray) {
-            const output = new Array(length);
-            for (let index = 0; index < length; index += 1) {
-              if (Object.prototype.hasOwnProperty.call(value, String(index))) {
-                output[index] = decodeFirestoreArrays(value[String(index)]);
-              }
-            }
-            return output;
-          }
-
-          const output = {};
-          keys.forEach((key) => {
-            output[key] = decodeFirestoreArrays(value[key]);
-          });
-          return output;
-        }
-        return value;
-      }
+      // Firestore menerima array sederhana, tetapi tidak menerima array langsung
+      // di dalam array. Fitur Homebase yang menghasilkan nested arrays dinonaktifkan.
+      // Scanner berikut menjadi pengaman agar struktur bermasalah tidak dikirim.
 
       function findNestedArrayPaths(
         value,
@@ -4452,29 +4358,21 @@
             eventsData: eventsData,
             usersDirectory: usersDirectory,
             customSpeakers: customSpeakerNames || [],
-            homebaseAcademic: {
-              schedules: HOMEBASE_SCHEDULE_DATA,
-              calendar: HOMEBASE_CALENDAR_DATA,
-              customFlags: HOMEBASE_CUSTOM_FLAGS,
-            },
           };
           const jsonPayload = JSON.stringify(serializablePayload);
           const plainPayload = JSON.parse(jsonPayload);
           const nestedArrayPaths = findNestedArrayPaths(plainPayload);
           if (nestedArrayPaths.length) {
-            console.info(
-              `[Firestore] ${nestedArrayPaths.length} array bertingkat ditemukan dan dikemas aman. Contoh lokasi:`,
-              nestedArrayPaths.slice(0, 12),
+            const nestedError = new Error(
+              "Ditemukan nested arrays yang tidak didukung Firestore: " +
+                nestedArrayPaths.slice(0, 12).join(", ") +
+                ". Data tidak dikirim agar tidak merusak data.",
             );
+            nestedError.code = "nested-arrays-detected";
+            throw nestedError;
           }
-          payload = encodeFirestoreArrays(plainPayload);
-          const remainingNestedArrays = findNestedArrayPaths(payload);
-          if (remainingNestedArrays.length) {
-            throw new Error(
-              "Konversi array Firestore belum tuntas: " +
-                remainingNestedArrays.slice(0, 8).join(", "),
-            );
-          }
+          // Tidak ada wrapper/marker buatan. Array biasa tetap disimpan sebagai Array.
+          payload = plainPayload;
           const firestoreJsonPayload = JSON.stringify(payload);
           const payloadBytes = new TextEncoder().encode(
             firestoreJsonPayload,
@@ -4567,9 +4465,7 @@
               );
 
               if (doc.exists) {
-                // Kembalikan wrapper array bertingkat ke bentuk Array asli
-                // sebelum data dipakai oleh fitur-fitur aplikasi.
-                const cloudData = decodeFirestoreArrays(doc.data());
+                const cloudData = doc.data();
                 if (cloudData && cloudData.eventsData) {
                   const rawCloudEvents = cloudData.eventsData;
                   eventsData = removeKnownDemoEvents(rawCloudEvents);
@@ -4584,7 +4480,6 @@
                   const needsDirectoryBootstrap = !Array.isArray(
                     cloudData.usersDirectory,
                   );
-                  const needsHomebaseBootstrap = !cloudData.homebaseAcademic;
                   const needsSpeakerBootstrap = !Array.isArray(
                     cloudData.customSpeakers,
                   );
@@ -4592,63 +4487,7 @@
                     usersDirectory = cloudData.usersDirectory;
                   if (Array.isArray(cloudData.customSpeakers))
                     customSpeakerNames = cloudData.customSpeakers;
-                  if (cloudData.homebaseAcademic) {
-                    const academic = cloudData.homebaseAcademic;
-                    if (
-                      academic.schedules &&
-                      typeof academic.schedules === "object"
-                    )
-                      HOMEBASE_SCHEDULE_DATA = academic.schedules;
-                    HOMEBASE_PRODI.forEach((prodi) => {
-                      if (!HOMEBASE_SCHEDULE_DATA[prodi.key])
-                        HOMEBASE_SCHEDULE_DATA[prodi.key] = {
-                          1: [],
-                          2: [],
-                          3: [],
-                          4: [],
-                        };
-                      [1, 2, 3, 4].forEach((semester) => {
-                        if (
-                          !Array.isArray(
-                            HOMEBASE_SCHEDULE_DATA[prodi.key][semester],
-                          )
-                        )
-                          HOMEBASE_SCHEDULE_DATA[prodi.key][semester] = [];
-                      });
-                    });
-                    if (Array.isArray(academic.calendar))
-                      HOMEBASE_CALENDAR_DATA = academic.calendar;
-                    if (
-                      academic.customFlags &&
-                      typeof academic.customFlags === "object"
-                    )
-                      HOMEBASE_CUSTOM_FLAGS = academic.customFlags;
-                    try {
-                      localStorage.setItem(
-                        "stitHomebaseSchedulesV1",
-                        JSON.stringify(HOMEBASE_SCHEDULE_DATA),
-                      );
-                      localStorage.setItem(
-                        "stitHomebaseCalendarV1",
-                        JSON.stringify(HOMEBASE_CALENDAR_DATA),
-                      );
-                      localStorage.setItem(
-                        "stitHomebaseCustomFlagsV1",
-                        JSON.stringify(HOMEBASE_CUSTOM_FLAGS),
-                      );
-                    } catch (storageError) {
-                      console.warn(
-                        "Cache Homebase tidak dapat diperbarui:",
-                        storageError,
-                      );
-                    }
-                    if (
-                      !document
-                        .getElementById("viewHomebaseSTIT")
-                        ?.classList.contains("hidden")
-                    )
-                      renderHomebasePage();
-                  }
+                  // Jadwal Kuliah dan Kalender Akademik tidak lagi disinkronkan ke Firestore.
                   ensureUserDirectoryCoverage();
                   if (!currentUser) initLoginDropdown();
                   const cloudMigrated =
@@ -4657,7 +4496,6 @@
                   if (
                     cloudMigrated ||
                     needsDirectoryBootstrap ||
-                    needsHomebaseBootstrap ||
                     needsSpeakerBootstrap ||
                     removedDemoEvents
                   )
@@ -12673,185 +12511,10 @@
       // READ-ONLY: reuses SEO eventsData; it does not create transactions.
       // ==========================================
       const FINANCE_BASE_PATH = "/financial-dashboard";
-      let homebaseTab = "schedule";
-      let homebaseSemester = 1;
-      let homebaseProdi = "MPI";
-      let homebaseManageType = "schedule";
-      let homebaseManageRows = [];
-
-      const HOMEBASE_PRODI = [
-        { key: "MPI", label: "Manajemen Pendidikan Islam", short: "MPI" },
-        { key: "ES", label: "Ekonomi Syariah", short: "Ekonomi Syariah" },
-        { key: "PBA", label: "Pendidikan Bahasa Arab", short: "PBA" },
-      ];
-      const HOMEBASE_SCHEDULE_DUMMY = {
-        1: [
-          [
-            "Senin",
-            "08.00–09.40",
-            "Pengantar Manajemen Pendidikan",
-            "Dr. Mhd. Saleh, M.Pd.",
-            "Ruang MPI 1",
-          ],
-          [
-            "Selasa",
-            "10.00–11.40",
-            "Dasar-Dasar Pendidikan Islam",
-            "Yusuf Abdullah, M.Pd.",
-            "Ruang MPI 1",
-          ],
-          [
-            "Rabu",
-            "08.00–09.40",
-            "Bahasa Arab I",
-            "Ust. Zikra Juninawan, M.Ed.",
-            "Ruang Bahasa",
-          ],
-          [
-            "Kamis",
-            "13.00–14.40",
-            "Pancasila dan Kewarganegaraan",
-            "Tim Pengajar",
-            "Ruang MPI 1",
-          ],
-        ],
-        2: [
-          [
-            "Senin",
-            "08.00–09.40",
-            "Psikologi Pendidikan",
-            "Dr. Mhd. Saleh, M.Pd.",
-            "Ruang MPI 2",
-          ],
-          [
-            "Selasa",
-            "10.00–11.40",
-            "Manajemen Peserta Didik",
-            "Suworo, S.Si., M.M.",
-            "Ruang MPI 2",
-          ],
-          [
-            "Rabu",
-            "08.00–09.40",
-            "Ulumul Qur’an",
-            "Tim Pengajar",
-            "Ruang MPI 2",
-          ],
-          [
-            "Jumat",
-            "08.00–09.40",
-            "Bahasa Inggris I",
-            "Tim Pengajar",
-            "Ruang Bahasa",
-          ],
-        ],
-        3: [
-          [
-            "Senin",
-            "10.00–11.40",
-            "Manajemen Kurikulum",
-            "Suworo, S.Si., M.M.",
-            "Ruang MPI 3",
-          ],
-          [
-            "Selasa",
-            "08.00–09.40",
-            "Statistik Pendidikan",
-            "Tim Pengajar",
-            "Ruang MPI 3",
-          ],
-          [
-            "Rabu",
-            "10.00–11.40",
-            "Metodologi Penelitian",
-            "Dr. Mhd. Saleh, M.Pd.",
-            "Ruang MPI 3",
-          ],
-          [
-            "Kamis",
-            "13.00–14.40",
-            "Filsafat Pendidikan Islam",
-            "Yusuf Abdullah, M.Pd.",
-            "Ruang MPI 3",
-          ],
-        ],
-        4: [
-          [
-            "Senin",
-            "08.00–09.40",
-            "Supervisi Pendidikan",
-            "Suworo, S.Si., M.M.",
-            "Ruang MPI 4",
-          ],
-          [
-            "Selasa",
-            "10.00–11.40",
-            "Evaluasi Program Pendidikan",
-            "Dr. Mhd. Saleh, M.Pd.",
-            "Ruang MPI 4",
-          ],
-          [
-            "Rabu",
-            "08.00–09.40",
-            "Teknologi Pendidikan",
-            "Tim Pengajar",
-            "Ruang MPI 4",
-          ],
-          [
-            "Kamis",
-            "10.00–11.40",
-            "Manajemen Pembiayaan Pendidikan",
-            "Yusuf Abdullah, M.Pd.",
-            "Ruang MPI 4",
-          ],
-        ],
-      };
-      const HOMEBASE_CALENDAR_DUMMY = [
-        ["9–14 Nov 2026", "Ujian Tengah Semester (UTS) — contoh"],
-        ["16–28 Nov 2026", "Perkuliahan dan konsultasi akademik — contoh"],
-        ["21 Des 2026–2 Jan 2027", "Libur akhir semester — contoh"],
-        ["4 Jan 2027", "Awal perkuliahan semester genap — contoh"],
-        ["1–6 Mar 2027", "Ujian Akhir Semester (UAS) — contoh"],
-      ];
-      const HOMEBASE_INITIAL_SCHEDULES = {
-        MPI: HOMEBASE_SCHEDULE_DUMMY,
-        ES: { 1: [], 2: [], 3: [], 4: [] },
-        PBA: { 1: [], 2: [], 3: [], 4: [] },
-      };
-
-      function loadHomebaseStoredData(key, fallback) {
-        try {
-          const raw = localStorage.getItem(key);
-          return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(fallback));
-        } catch (error) {
-          console.warn("Data Homebase tidak dapat dibaca:", error);
-          return JSON.parse(JSON.stringify(fallback));
-        }
-      }
-      let HOMEBASE_SCHEDULE_DATA = loadHomebaseStoredData(
-        "stitHomebaseSchedulesV1",
-        HOMEBASE_INITIAL_SCHEDULES,
-      );
-      let HOMEBASE_CALENDAR_DATA = loadHomebaseStoredData(
-        "stitHomebaseCalendarV1",
-        HOMEBASE_CALENDAR_DUMMY,
-      );
-      let HOMEBASE_CUSTOM_FLAGS = loadHomebaseStoredData(
-        "stitHomebaseCustomFlagsV1",
-        { schedule: false, calendar: false },
-      );
-      HOMEBASE_PRODI.forEach((prodi) => {
-        if (!HOMEBASE_SCHEDULE_DATA[prodi.key])
-          HOMEBASE_SCHEDULE_DATA[prodi.key] = { 1: [], 2: [], 3: [], 4: [] };
-        [1, 2, 3, 4].forEach((semester) => {
-          if (!Array.isArray(HOMEBASE_SCHEDULE_DATA[prodi.key][semester]))
-            HOMEBASE_SCHEDULE_DATA[prodi.key][semester] = [];
-        });
-      });
-      if (!Array.isArray(HOMEBASE_CALENDAR_DATA))
-        HOMEBASE_CALENDAR_DATA = JSON.parse(
-          JSON.stringify(HOMEBASE_CALENDAR_DUMMY),
-        );
+      // Homebase kini hanya memuat portal umum, berita, jurnal, dan PMB.
+      // Modul Jadwal Kuliah dan Kalender Akademik dinonaktifkan karena struktur
+      // data lamanya menggunakan nested arrays yang tidak didukung Firestore.
+      let homebaseTab = "home";
 
       const HOMEBASE_NEWS_ARTICLES = [
         {
@@ -13223,17 +12886,6 @@
         },
       ];
 
-      function canManageHomebase() {
-        if (!currentUser) return false;
-        const directoryUser = findDirectoryUser(currentUser.name);
-        return (
-          isSuperAdminUser() ||
-          currentUser.role === "sc" ||
-          ADMIN_ROLE_NAMES.includes(currentUser.name) ||
-          ["Admin", "SC"].includes(directoryUser?.role)
-        );
-      }
-
       function openHomebaseSTIT() {
         if (!currentUser) return;
         document.getElementById("viewApp").classList.add("hidden");
@@ -13257,7 +12909,6 @@
       function closeHomebaseSTIT() {
         document.body.classList.remove("homebase-open");
         document.getElementById("viewHomebaseSTIT").classList.add("hidden");
-        closeHomebaseManager();
         if (currentUser) {
           document.getElementById("viewApp").classList.remove("hidden");
           renderAll();
@@ -13294,12 +12945,7 @@
       }
 
       function setHomebaseTab(tab) {
-        if (
-          !["schedule", "calendar", "home", "news", "journal", "pmb"].includes(
-            tab,
-          )
-        )
-          return;
+        if (!["home", "news", "journal", "pmb"].includes(tab)) return;
         homebaseTab = tab;
         document.querySelectorAll("[data-homebase-tab]").forEach((button) => {
           const active = button.dataset.homebaseTab === tab;
@@ -13314,45 +12960,9 @@
         });
       }
 
-      function setHomebaseSemester(semester) {
-        homebaseSemester = Number(semester) || 1;
-        renderHomebasePage();
-      }
-
-      function setHomebaseProdi(prodi) {
-        if (!HOMEBASE_PRODI.some((item) => item.key === prodi)) return;
-        homebaseProdi = prodi;
-        renderHomebasePage();
-      }
       window.addEventListener("resize", () =>
         requestAnimationFrame(moveHomebaseNavIndicator),
       );
-      document.addEventListener("keydown", (event) => {
-        if (
-          event.key === "Escape" &&
-          !document
-            .getElementById("viewHomebaseSTIT")
-            ?.classList.contains("hidden")
-        ) {
-          if (
-            !document
-              .getElementById("homebaseManageOverlay")
-              ?.classList.contains("hidden")
-          )
-            closeHomebaseManager();
-        }
-      });
-
-      function homebaseSaveLocal(key, data) {
-        try {
-          localStorage.setItem(key, JSON.stringify(data));
-          return true;
-        } catch (error) {
-          console.error("Gagal menyimpan data Homebase:", error);
-          showToast("Data tidak dapat disimpan di browser ini.", "error");
-          return false;
-        }
-      }
 
       // Hapus artikel ganda sebelum dirender: URL menjadi kunci utama,
       // judul yang sama juga dianggap duplikat meskipun variasi URL berbeda.
@@ -13444,32 +13054,6 @@
           const url = "https://alwafi.ac.id/";
           const title = "Home — Website Resmi Al Wafi";
           content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-center justify-between gap-3"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Website Resmi</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Home Al Wafi</h2><p class="mt-1 text-xs text-slate-500">Beranda resmi Al Wafi dalam Homebase STIT.</p></div><a href="${url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:opacity-90">Buka Website ↗</a></div><div class="homebase-embed-shell mt-5"><iframe class="homebase-embed-frame" src="${url}" title="${title}" loading="eager" allow="clipboard-read; clipboard-write; fullscreen; geolocation" referrerpolicy="strict-origin-when-cross-origin"></iframe><div class="homebase-embed-note"><span>Konten dimuat langsung dari website resmi Al Wafi.</span><a href="${url}" target="_blank" rel="noopener noreferrer" class="font-extrabold text-blue-700 hover:text-amber-700 hover:underline">Buka di tab baru ↗</a></div></div></section>`;
-        } else if (homebaseTab === "schedule") {
-          const prodi =
-            HOMEBASE_PRODI.find((item) => item.key === homebaseProdi) ||
-            HOMEBASE_PRODI[0];
-          const rows =
-            HOMEBASE_SCHEDULE_DATA[homebaseProdi]?.[homebaseSemester] || [];
-          const manageButton = canManageHomebase()
-            ? `<button type="button" onclick="openHomebaseManager('schedule')" class="inline-flex items-center gap-2 rounded-xl bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Kelola</button>`
-            : "";
-          const statusBadge = HOMEBASE_CUSTOM_FLAGS.schedule
-            ? `<span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">Data Tersimpan</span>`
-            : "";
-          content.innerHTML = `
-            <section class="${panelClass}">
-              <div class="flex flex-wrap items-start justify-between gap-4"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Program Studi ${prodi.short}</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Jadwal Kuliah</h2><p class="mt-1 text-xs text-slate-500">Pilih program studi dan semester untuk melihat jadwal perkuliahan.</p></div><div class="flex flex-wrap items-center gap-2">${manageButton}${statusBadge}</div></div>
-              <div class="mt-5 flex flex-wrap items-end gap-3"><label class="min-w-[260px] flex-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Program Studi<select onchange="setHomebaseProdi(this.value)" class="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-xs font-bold text-slate-700 shadow-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100">${HOMEBASE_PRODI.map((item) => `<option value="${item.key}" ${item.key === homebaseProdi ? "selected" : ""}>${item.label}</option>`).join("")}</select></label><div class="flex flex-wrap gap-2" role="tablist" aria-label="Semester ${prodi.short}">${[1, 2, 3, 4].map((semester) => `<button type="button" role="tab" aria-selected="${homebaseSemester === semester}" onclick="setHomebaseSemester(${semester})" class="rounded-full px-5 py-2.5 text-xs font-extrabold transition ${homebaseSemester === semester ? "bg-grad-navy text-white shadow-md" : "border border-slate-200 bg-white/70 text-slate-600 hover:border-amber-300 hover:text-navy"}">Semester ${semester}</button>`).join("")}</div></div>
-              ${rows.length ? `<div class="mt-5 overflow-x-auto rounded-2xl border border-slate-200/80"><table class="w-full min-w-[720px] border-collapse text-left text-xs"><thead><tr class="bg-slate-100/80 text-navy"><th class="p-3 font-extrabold">Hari</th><th class="p-3 font-extrabold">Waktu</th><th class="p-3 font-extrabold">Mata Kuliah</th><th class="p-3 font-extrabold">Dosen</th><th class="p-3 font-extrabold">Ruang</th></tr></thead><tbody class="divide-y divide-slate-200/70">${rows.map((row) => `<tr class="bg-white/50 transition hover:bg-amber-50/50"><td class="p-3 font-bold text-slate-700">${escapePrintHtml(row[0] || "-")}</td><td class="p-3 whitespace-nowrap text-slate-600">${escapePrintHtml(row[1] || "-")} WIB</td><td class="p-3 font-extrabold text-navy">${escapePrintHtml(row[2] || "-")}</td><td class="p-3 text-slate-600">${escapePrintHtml(row[3] || "-")}</td><td class="p-3 text-slate-600">${escapePrintHtml(row[4] || "-")}</td></tr>`).join("")}</tbody></table></div>` : `<div class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-5 py-10 text-center"><div class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-blue-50 text-blue-700"><svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M3 9h18M8 13h8m-8 4h5"/></svg></div><h3 class="mt-3 text-sm font-black text-navy">Jadwal belum tersedia</h3><p class="mt-1 text-xs text-slate-500">Belum ada jadwal untuk ${prodi.label}, Semester ${homebaseSemester}.</p>${canManageHomebase() ? `<button type="button" onclick="openHomebaseManager('schedule')" class="mt-4 rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-extrabold text-navy shadow-sm hover:bg-amber-300">Tambah Jadwal</button>` : ""}</div>`}
-            </section>`;
-        } else if (homebaseTab === "calendar") {
-          const manageButton = canManageHomebase()
-            ? `<button type="button" onclick="openHomebaseManager('calendar')" class="inline-flex items-center gap-2 rounded-xl bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Kelola</button>`
-            : "";
-          const statusBadge = HOMEBASE_CUSTOM_FLAGS.calendar
-            ? `<span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">Data Tersimpan</span>`
-            : "";
-          content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-start justify-between gap-4"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Tahun Akademik 2026/2027</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Kalender Akademik</h2><p class="mt-1 text-xs text-slate-500">Agenda kegiatan akademik dan jadwal penting institusi.</p></div><div class="flex flex-wrap items-center gap-2">${manageButton}${statusBadge}</div></div>${HOMEBASE_CALENDAR_DATA.length ? `<div class="mt-5 space-y-3">${HOMEBASE_CALENDAR_DATA.map((item) => `<article class="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/65 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-amber-200 hover:shadow-md sm:flex-row sm:items-center"><div class="min-w-[180px] rounded-xl bg-grad-navy px-4 py-2.5 text-center text-xs font-extrabold text-white">${escapePrintHtml(item[0] || "Tanggal belum diatur")}</div><div class="flex items-center gap-3"><span class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-50 text-blue-700"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span><div class="text-sm font-bold text-slate-700">${escapePrintHtml(item[1] || "Agenda akademik")}</div></div></article>`).join("")}</div>` : `<div class="mt-5 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-5 py-10 text-center"><h3 class="text-sm font-black text-navy">Belum ada agenda akademik</h3><p class="mt-1 text-xs text-slate-500">Agenda dapat ditambahkan melalui menu Kelola.</p></div>`}</section>`;
         } else if (homebaseTab === "news") {
           content.innerHTML = `<section class="${panelClass}"><div class="flex flex-wrap items-center justify-between gap-4"><div><span class="text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">Kabar Kampus</span><h2 class="mt-1 text-xl font-black text-navy sm:text-2xl">Portal Berita STIT Al Wafi</h2><p class="mt-1 text-xs text-slate-500">Artikel terbaru dari situs resmi STIT Al Wafi Bogor.</p></div><a href="https://alwafi.ac.id/news/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 rounded-full bg-grad-navy px-4 py-2.5 text-xs font-extrabold text-white shadow-md transition hover:-translate-y-0.5 hover:opacity-90">Buka Portal Berita <span aria-hidden="true">↗</span></a></div>
             <div class="mt-5 rounded-2xl border border-slate-200/80 bg-gradient-to-r from-slate-50 to-amber-50/50 px-5 py-4 sm:px-7"><div class="grid gap-3 sm:grid-cols-[1fr_1fr] sm:items-end"><div><div class="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-700">Kabar Kampus</div><h3 class="mt-1 font-serif text-2xl font-bold text-navy">Artikel Terbaru</h3></div><p class="max-w-md text-xs leading-relaxed text-slate-600">Ikuti perkembangan terbaru seputar kegiatan akademik, mahasiswa, dan prestasi civitas akademika.</p></div></div>
@@ -13496,141 +13080,7 @@
         requestAnimationFrame(moveHomebaseNavIndicator);
       }
 
-      function openHomebaseManager(type) {
-        if (!canManageHomebase()) {
-          showToast(
-            "Anda tidak memiliki akses untuk mengelola data akademik.",
-            "error",
-          );
-          return;
-        }
-        if (!["schedule", "calendar"].includes(type)) return;
-        homebaseManageType = type;
-        homebaseManageRows =
-          type === "schedule"
-            ? JSON.parse(
-                JSON.stringify(
-                  HOMEBASE_SCHEDULE_DATA[homebaseProdi]?.[homebaseSemester] ||
-                    [],
-                ),
-              )
-            : JSON.parse(JSON.stringify(HOMEBASE_CALENDAR_DATA || []));
-        if (!document.getElementById("homebaseManageOverlay")) {
-          const overlay = document.createElement("div");
-          overlay.id = "homebaseManageOverlay";
-          overlay.className =
-            "fixed inset-0 z-[130] hidden items-center justify-center bg-slate-950/65 p-3 backdrop-blur-sm sm:p-6";
-          overlay.innerHTML = `<div class="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/60 bg-slate-50 shadow-2xl"><div class="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 sm:px-7"><div><div class="text-[10px] font-extrabold uppercase tracking-[0.18em] text-blue-600">Pengelolaan Akademik</div><h3 id="homebaseManageTitle" class="mt-1 text-lg font-black text-navy">Kelola Data</h3><p id="homebaseManageSubtitle" class="mt-1 text-xs text-slate-500"></p></div><button type="button" onclick="closeHomebaseManager()" class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-100 text-slate-600 transition hover:bg-rose-100 hover:text-rose-700" aria-label="Tutup">✕</button></div><div class="min-h-0 flex-1 overflow-auto p-4 sm:p-6"><div class="mb-4 flex flex-wrap items-center justify-between gap-3"><p id="homebaseManageHint" class="text-xs text-slate-500">Klik Tambah Baris untuk menambah data.</p><button type="button" onclick="addHomebaseManagerRow()" class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs font-extrabold text-amber-900 transition hover:bg-amber-100">＋ Tambah Baris</button></div><div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white"><table class="w-full min-w-[850px] border-collapse text-left text-xs"><thead id="homebaseManageHead" class="bg-slate-100 text-navy"></thead><tbody id="homebaseManageRows" class="divide-y divide-slate-100"></tbody></table></div></div><div class="flex flex-wrap justify-end gap-2 border-t border-slate-200 bg-white px-5 py-4 sm:px-7"><button type="button" onclick="closeHomebaseManager()" class="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50">Batal</button><button type="button" onclick="saveHomebaseManager()" class="rounded-xl bg-grad-navy px-5 py-2.5 text-xs font-extrabold text-white shadow-md hover:opacity-90">Simpan Perubahan</button></div></div>`;
-          overlay.addEventListener("click", (event) => {
-            if (event.target === overlay) closeHomebaseManager();
-          });
-          document.body.appendChild(overlay);
-        }
-        renderHomebaseManagerRows();
-        const overlay = document.getElementById("homebaseManageOverlay");
-        overlay.classList.remove("hidden");
-        overlay.classList.add("flex");
-      }
-
-      function renderHomebaseManagerRows() {
-        const schedule = homebaseManageType === "schedule";
-        const columns = schedule
-          ? ["Hari", "Waktu", "Mata Kuliah", "Dosen", "Ruang"]
-          : ["Tanggal", "Agenda Akademik"];
-        document.getElementById("homebaseManageTitle").textContent = schedule
-          ? "Kelola Jadwal Kuliah"
-          : "Kelola Kalender Akademik";
-        document.getElementById("homebaseManageSubtitle").textContent = schedule
-          ? `${HOMEBASE_PRODI.find((item) => item.key === homebaseProdi)?.label || homebaseProdi} · Semester ${homebaseSemester}`
-          : "Tahun Akademik 2026/2027";
-        document.getElementById("homebaseManageHint").textContent = schedule
-          ? "Isi hari, jam, mata kuliah, dosen, dan ruang kuliah. Baris kosong akan diabaikan."
-          : "Isi rentang tanggal dan nama agenda akademik. Baris kosong akan diabaikan.";
-        document.getElementById("homebaseManageHead").innerHTML =
-          `<tr>${columns.map((column) => `<th class="px-3 py-3 font-extrabold">${column}</th>`).join("")}<th class="w-16 px-3 py-3 text-center font-extrabold">Aksi</th></tr>`;
-        document.getElementById("homebaseManageRows").innerHTML =
-          homebaseManageRows
-            .map(
-              (row, index) =>
-                `<tr class="homebase-edit-row">${columns.map((column, col) => `<td class="p-2"><input type="text" data-homebase-col="${col}" value="${escapePrintHtml(row[col] || "")}" placeholder="${column}" class="w-full min-w-[125px] rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100" /></td>`).join("")}<td class="p-2 text-center"><button type="button" onclick="removeHomebaseManagerRow(${index})" title="Hapus baris" class="grid h-8 w-8 place-items-center rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100">✕</button></td></tr>`,
-            )
-            .join("") ||
-          `<tr><td colspan="${columns.length + 1}" class="px-4 py-10 text-center text-xs text-slate-400">Belum ada data. Gunakan tombol Tambah Baris.</td></tr>`;
-      }
-
-      function collectHomebaseManagerRows() {
-        return [
-          ...document.querySelectorAll(
-            "#homebaseManageRows tr.homebase-edit-row",
-          ),
-        ].map((row) =>
-          [...row.querySelectorAll("input[data-homebase-col]")].map((input) =>
-            input.value.trim(),
-          ),
-        );
-      }
-
-      function addHomebaseManagerRow() {
-        homebaseManageRows = collectHomebaseManagerRows();
-        homebaseManageRows.push(
-          homebaseManageType === "schedule" ? ["", "", "", "", ""] : ["", ""],
-        );
-        renderHomebaseManagerRows();
-      }
-
-      function removeHomebaseManagerRow(index) {
-        homebaseManageRows = collectHomebaseManagerRows();
-        homebaseManageRows.splice(index, 1);
-        renderHomebaseManagerRows();
-      }
-
-      function saveHomebaseManager() {
-        if (!canManageHomebase()) {
-          showToast("Akses pengelolaan akademik tidak tersedia.", "error");
-          closeHomebaseManager();
-          return;
-        }
-        const rows = collectHomebaseManagerRows().filter((row) =>
-          row.some((value) => value),
-        );
-        if (homebaseManageType === "schedule") {
-          HOMEBASE_SCHEDULE_DATA[homebaseProdi][homebaseSemester] = rows;
-          HOMEBASE_CUSTOM_FLAGS.schedule = true;
-          if (
-            !homebaseSaveLocal(
-              "stitHomebaseSchedulesV1",
-              HOMEBASE_SCHEDULE_DATA,
-            )
-          )
-            return;
-        } else {
-          HOMEBASE_CALENDAR_DATA = rows;
-          HOMEBASE_CUSTOM_FLAGS.calendar = true;
-          if (
-            !homebaseSaveLocal("stitHomebaseCalendarV1", HOMEBASE_CALENDAR_DATA)
-          )
-            return;
-        }
-        homebaseSaveLocal("stitHomebaseCustomFlagsV1", HOMEBASE_CUSTOM_FLAGS);
-        closeHomebaseManager();
-        renderHomebasePage();
-        if (isFirebaseActive && db) {
-          syncToCloud();
-          showToast(
-            "Perubahan tersimpan. Sinkronisasi mengikuti koneksi Firebase aplikasi.",
-            "success",
-          );
-        } else {
-          showToast("Data akademik tersimpan pada browser ini.", "success");
-        }
-      }
-
-      function closeHomebaseManager() {
-        const overlay = document.getElementById("homebaseManageOverlay");
-        if (!overlay) return;
-        overlay.classList.add("hidden");
-        overlay.classList.remove("flex");
-      }
+      // Pengelola Jadwal Kuliah dan Kalender Akademik telah dinonaktifkan.
 
       const FINANCE_ROUTE_META = {
         overview: {
