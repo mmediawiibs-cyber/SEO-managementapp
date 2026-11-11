@@ -7,10 +7,71 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script
-      src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"
-      type="text/javascript"
-    ></script>
+    <!--
+      QR scanner loader with CDN fallback.
+      html5-qrcode@2.3.8 publishes html5-qrcode.min.js at the package root,
+      not under /dist/. The previous /dist/ URL returned a missing script,
+      which caused "Library pemindai QR belum termuat" on mobile and desktop.
+    -->
+    <script>
+      window.__qrLibraryLoadedFrom = null;
+      window.__qrLibraryPromise = null;
+      window.ensureHtml5QrcodeLoaded = function () {
+        if (typeof window.Html5Qrcode === "function")
+          return Promise.resolve(true);
+        if (window.__qrLibraryPromise) return window.__qrLibraryPromise;
+
+        const sources = [
+          "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js",
+          "https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js",
+          "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
+        ];
+
+        window.__qrLibraryPromise = new Promise((resolve) => {
+          const tryLoad = (index) => {
+            if (index >= sources.length) {
+              window.__qrLibraryPromise = null;
+              window.__qrLibraryLoadState = "failed";
+              resolve(false);
+              return;
+            }
+
+            const script = document.createElement("script");
+            script.src = sources[index];
+            script.async = true;
+            script.onload = () => {
+              if (typeof window.Html5Qrcode === "function") {
+                window.__qrLibraryLoadedFrom = sources[index];
+                window.__qrLibraryLoadState = "ready";
+                resolve(true);
+              } else {
+                script.remove();
+                tryLoad(index + 1);
+              }
+            };
+            script.onerror = () => {
+              console.warn("[QR] Gagal memuat library dari:", sources[index]);
+              script.remove();
+              tryLoad(index + 1);
+            };
+            document.head.appendChild(script);
+          };
+
+          window.__qrLibraryLoadState = "loading";
+          tryLoad(0);
+        });
+
+        return window.__qrLibraryPromise;
+      };
+
+      // Mulai memuat library saat halaman dibuka agar siap sebelum tombol scan ditekan.
+      window.ensureHtml5QrcodeLoaded().then((loaded) => {
+        if (!loaded)
+          console.error(
+            "[QR] Semua sumber library pemindai gagal dimuat. Periksa koneksi jaringan/CDN.",
+          );
+      });
+    </script>
     <!-- SDK Firebase (Compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -1367,9 +1428,22 @@
           id="qrReaderBox"
           class="w-full rounded-2xl overflow-hidden border-2 border-dashed border-amber-400 bg-slate-900 min-h-[250px]"
         ></div>
+        <div
+          id="qrScannerStatus"
+          role="status"
+          aria-live="polite"
+          class="rounded-xl bg-slate-100 px-3 py-2 text-left text-[11px] leading-relaxed text-slate-600"
+        >Menyiapkan kamera...</div>
+        <button
+          id="qrScannerRetryBtn"
+          type="button"
+          onclick="retryRealQRScanner()"
+          class="hidden w-full rounded-xl bg-navy px-4 py-2.5 text-xs font-extrabold text-white transition hover:bg-blue-900"
+        >Coba Nyalakan Kamera Lagi</button>
         <p class="text-[11px] text-slate-500 leading-relaxed">
-          Pastikan Anda mengizinkan akses kamera (<b>Allow</b>) pada browser HP
-          Anda.
+          Akses kamera memerlukan HTTPS dan izin kamera untuk situs ini. Buka alamat aplikasi
+          langsung melalui browser (Chrome, Safari, Firefox, atau Edge), bukan pratinjau atau
+          browser internal aplikasi lain.
         </p>
         <div
           id="qrManualFallbackBox"
@@ -5636,103 +5710,270 @@
       }
 
       // ==========================================
-      // KAMERA SCANNER QR ASLI (HTML5-QRCODE)
       // ==========================================
+      // KAMERA SCANNER QR — DIRECT CAMERA START (ANDROID / iOS / iPAD)
+      // Tidak melakukan enumerasi kamera sebelum start(). Pada sebagian
+      // perangkat, enumerasi kamera dapat membuka stream sementara; start()
+      // berikutnya kemudian gagal dengan NotReadableError.
       let html5QrCodeInstance = null;
+      let qrScannerRunId = 0;
+      let qrScannerResultHandled = false;
+      let qrScannerCurrentMode = null;
+      let qrScannerCurrentMeetingId = null;
 
-      function openRealQRScanner(mode, targetMeetingId = null) {
+      function setQRScannerStatus(message, kind = "info") {
+        const status = document.getElementById("qrScannerStatus");
+        if (!status) return;
+        const styles = {
+          info: "bg-slate-100 text-slate-600",
+          success: "bg-emerald-50 text-emerald-700",
+          warning: "bg-amber-50 text-amber-800",
+          error: "bg-rose-50 text-rose-700",
+        };
+        status.className = `rounded-xl px-3 py-2 text-left text-[11px] leading-relaxed ${styles[kind] || styles.info}`;
+        status.textContent = message;
+      }
+
+      function getQRScannerErrorMessage(error) {
+        const name = String(error?.name || error?.code || "");
+        const message = String(error?.message || error || "");
+        const detail = `${name} ${message}`.toLowerCase();
+
+        if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+          return "Kamera memerlukan HTTPS. Buka aplikasi melalui alamat deployment HTTPS, bukan file lokal atau pratinjau yang tidak aman.";
+        }
+        if (/notallowederror|permission denied|permissiondismissed|denied/.test(detail)) {
+          return "Akses kamera ditolak oleh browser atau sistem. Periksa izin kamera khusus untuk alamat website SEO ini, bukan hanya izin kamera perangkat.";
+        }
+        if (/notfounderror|devicesnotfounderror|no camera|not found/.test(detail)) {
+          return "Browser tidak menemukan kamera yang dapat digunakan pada perangkat ini.";
+        }
+        if (/notreadableerror|trackstart|could not start video source|device in use/.test(detail)) {
+          return "Kamera terdeteksi tetapi sedang tidak dapat dibuka. Tutup aplikasi Kamera, WhatsApp, Zoom, atau tab browser lain yang mungkin sedang memakai kamera, lalu tekan Coba Lagi.";
+        }
+        if (/overconstrainederror|constraintnotsatisfied/.test(detail)) {
+          return "Kamera tidak menerima pengaturan kamera belakang. Aplikasi akan mencoba kamera perangkat sebagai alternatif.";
+        }
+        if (/securityerror|secure context/.test(detail)) {
+          return "Browser memblokir kamera karena halaman tidak berada pada konteks aman. Gunakan alamat HTTPS.";
+        }
+        return `Kamera gagal dimulai (${name || "UnknownError"}). ${message || "Browser tidak memberikan detail tambahan."}`;
+      }
+
+      async function disposeQRScannerInstance(instance) {
+        if (!instance) return;
+        try {
+          await instance.stop();
+        } catch (stopError) {
+          // Tidak sedang berjalan atau start sebelumnya gagal.
+        }
+        try {
+          instance.clear();
+        } catch (clearError) {
+          // Reader mungkin sudah dibersihkan.
+        }
+      }
+
+      function retryRealQRScanner() {
+        if (!qrScannerCurrentMode) return;
+        openRealQRScanner(qrScannerCurrentMode, qrScannerCurrentMeetingId);
+      }
+
+      async function openRealQRScanner(mode, targetMeetingId = null) {
         if (mode === "peserta") {
           const ev = getActiveEvent();
           if (!ev.participantCheckinOpen) {
-            showToast(
-              "Buka Check-in Peserta terlebih dahulu sebelum scan QR.",
-              "error",
-            );
+            showToast("Buka Check-in Peserta terlebih dahulu sebelum scan QR.", "error");
             return;
           }
         }
 
+        // Sesi sebelumnya dihentikan sebelum kamera baru dibuat.
+        if (html5QrCodeInstance) await stopRealQRScanner();
+
+        const runId = ++qrScannerRunId;
+        qrScannerResultHandled = false;
+        qrScannerCurrentMode = mode;
+        qrScannerCurrentMeetingId = targetMeetingId;
+
         const modal = document.getElementById("qrScannerModal");
         const titleEl = document.getElementById("qrScannerTitle");
+        const reader = document.getElementById("qrReaderBox");
         const fallbackBox = document.getElementById("qrManualFallbackBox");
         const fallbackBtn = document.getElementById("qrManualFallbackBtn");
+        const retryBtn = document.getElementById("qrScannerRetryBtn");
 
-        modal.classList.remove("hidden");
-        modal.classList.add("flex");
-
-        if (mode === "meeting") {
-          titleEl.textContent = "📷 Scan QR Kehadiran Rapat";
-          fallbackBox.classList.remove("hidden");
-          fallbackBtn.onclick = () => {
-            stopRealQRScanner();
-            checkInMeetingByUser(targetMeetingId);
-          };
-        } else {
-          titleEl.textContent = "📷 Scan QR E-Tiket Peserta";
-          fallbackBox.classList.add("hidden");
-        }
-
-        if (typeof Html5Qrcode === "undefined") {
-          showToast("Library kamera belum termuat.", "error");
+        if (!modal || !reader || !titleEl) {
+          showToast("Komponen kamera QR tidak ditemukan.", "error");
           return;
         }
 
-        html5QrCodeInstance = new Html5Qrcode("qrReaderBox");
-        const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        reader.innerHTML = "";
+        retryBtn?.classList.add("hidden");
 
-        html5QrCodeInstance
-          .start(
-            { facingMode: "environment" },
-            config,
-            (decodedText) => {
+        if (mode === "meeting") {
+          titleEl.textContent = "📷 Scan QR Kehadiran Rapat";
+          fallbackBox?.classList.remove("hidden");
+          if (fallbackBtn) {
+            fallbackBtn.onclick = () => {
               stopRealQRScanner();
-              if (mode === "meeting") {
-                checkInMeetingByUser(targetMeetingId);
-                showToast(`Berhasil Scan QR Rapat: ${decodedText}`);
-              } else if (mode === "peserta") {
-                // Ekstrak kode tiket jika formatnya "SEO-2026-881 | Nama | Paket"
-                const rawCode = decodedText.split("|")[0].trim();
-                const inp = document.getElementById("qrScanTicketInput");
-                if (inp) inp.value = rawCode;
-                scanParticipantQrTicket();
-              }
-            },
-            () => {
-              // Abaikan frame yang belum fokus membaca QR
-            },
-          )
-          .catch((err) => {
-            console.warn("Kamera tidak dapat diakses:", err);
-            showToast(
-              "Kamera tidak dapat dibuka. Gunakan tombol Konfirmasi Hadir di bawahnya atau pastikan buka via link HTTPS.",
+              checkInMeetingByUser(targetMeetingId);
+            };
+          }
+        } else {
+          titleEl.textContent = "📷 Scan QR E-Tiket Peserta";
+          fallbackBox?.classList.add("hidden");
+        }
+
+        // Pastikan library sudah tersedia; bila pemuatan awal gagal, coba ulang
+        // dengan urutan CDN fallback sebelum menyatakan scanner tidak tersedia.
+        if (typeof window.Html5Qrcode !== "function") {
+          setQRScannerStatus("Memuat library pemindai QR...", "info");
+          const libraryLoaded = await window.ensureHtml5QrcodeLoaded();
+          if (!libraryLoaded || typeof window.Html5Qrcode !== "function") {
+            setQRScannerStatus(
+              "Library pemindai QR gagal dimuat dari seluruh sumber. Periksa koneksi internet, lalu tekan Coba Lagi.",
               "error",
             );
-          });
+            retryBtn?.classList.remove("hidden");
+            return;
+          }
+        }
+
+        if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+          setQRScannerStatus(getQRScannerErrorMessage(new Error("Secure context unavailable")), "error");
+          retryBtn?.classList.remove("hidden");
+          return;
+        }
+
+        if (document.visibilityState === "hidden") {
+          setQRScannerStatus("Buka aplikasi di tab aktif, lalu mulai pemindaian kembali.", "warning");
+          retryBtn?.classList.remove("hidden");
+          return;
+        }
+
+        setQRScannerStatus("Memulai kamera perangkat secara langsung...", "info");
+
+        const config = {
+          fps: 10,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1,
+          disableFlip: false,
+        };
+
+        const onScanSuccess = (decodedText) => {
+          if (qrScannerResultHandled || runId !== qrScannerRunId) return;
+          qrScannerResultHandled = true;
+          stopRealQRScanner();
+          if (mode === "meeting") {
+            checkInMeetingByUser(targetMeetingId);
+            showToast(`Berhasil Scan QR Rapat: ${decodedText}`);
+          } else if (mode === "peserta") {
+            const rawCode = decodedText.split("|")[0].trim();
+            const inp = document.getElementById("qrScanTicketInput");
+            if (inp) inp.value = rawCode;
+            scanParticipantQrTicket();
+          }
+        };
+
+        // Jangan lakukan enumerasi kamera di sini. Fungsi tersebut dapat membuka
+        // stream kamera sementara pada beberapa perangkat; kemudian start()
+        // membuka stream kedua dan memicu NotReadableError.
+        const attempts = [
+          { label: "kamera belakang (prioritas)", source: { facingMode: { ideal: "environment" } } },
+          { label: "kamera belakang", source: { facingMode: "environment" } },
+          { label: "kamera perangkat (alternatif)", source: { facingMode: { ideal: "user" } } },
+        ];
+
+        let lastError = null;
+        for (const attempt of attempts) {
+          if (runId !== qrScannerRunId) return;
+
+          const instance = new Html5Qrcode("qrReaderBox", false);
+          html5QrCodeInstance = instance;
+          setQRScannerStatus(`Mencoba ${attempt.label}...`, "info");
+
+          try {
+            // start() dipanggil langsung setelah interaksi tombol pengguna,
+            // tanpa enumerasi kamera atau jeda requestAnimationFrame.
+            await instance.start(attempt.source, config, onScanSuccess, () => {});
+
+            if (runId !== qrScannerRunId) {
+              await disposeQRScannerInstance(instance);
+              if (html5QrCodeInstance === instance) html5QrCodeInstance = null;
+              return;
+            }
+
+            const video = reader.querySelector("video");
+            if (video) {
+              video.setAttribute("playsinline", "true");
+              video.setAttribute("webkit-playsinline", "true");
+              video.setAttribute("autoplay", "true");
+              video.muted = true;
+              video.playsInline = true;
+              video.style.width = "100%";
+              video.style.height = "auto";
+              video.style.objectFit = "cover";
+              try {
+                const playPromise = video.play();
+                if (playPromise?.catch) playPromise.catch((playError) => console.warn("Video preview belum dapat diputar otomatis:", playError));
+              } catch (playError) {
+                console.warn("Video preview belum dapat diputar otomatis:", playError);
+              }
+            }
+
+            setQRScannerStatus("Kamera aktif. Arahkan QR Code ke dalam bingkai pemindai.", "success");
+            return;
+          } catch (error) {
+            lastError = error;
+            console.warn(`Gagal memulai ${attempt.label}:`, error?.name, error?.message, error);
+            await disposeQRScannerInstance(instance);
+            if (html5QrCodeInstance === instance) html5QrCodeInstance = null;
+
+            // Izin ditolak / kamera tidak tersedia tidak akan tertolong dengan
+            // mencoba kamera lain; hentikan percobaan dan tampilkan error asli.
+            const errorName = String(error?.name || "");
+            if (["NotAllowedError", "SecurityError", "NotFoundError"].includes(errorName)) {
+              break;
+            }
+            // Untuk NotReadableError, lanjutkan satu percobaan kamera alternatif
+            // karena pada beberapa perangkat hanya salah satu kamera yang sibuk.
+          }
+        }
+
+        if (runId !== qrScannerRunId) return;
+        setQRScannerStatus(getQRScannerErrorMessage(lastError || new Error("Camera start failed")), "error");
+        document.getElementById("qrScannerRetryBtn")?.classList.remove("hidden");
+        console.error("QR scanner gagal dimulai. Detail error kamera:", {
+          name: lastError?.name,
+          message: lastError?.message,
+          constraint: lastError?.constraint,
+          secureContext: window.isSecureContext,
+          mediaDevicesAvailable: !!navigator.mediaDevices,
+          userAgent: navigator.userAgent,
+        });
+        showToast("Kamera gagal dibuka. Baca detail error pada kotak pemindai.", "error");
       }
 
-      function stopRealQRScanner() {
+      async function stopRealQRScanner() {
+        qrScannerRunId++;
+        const instance = html5QrCodeInstance;
+        html5QrCodeInstance = null;
+        await disposeQRScannerInstance(instance);
         const modal = document.getElementById("qrScannerModal");
-        if (html5QrCodeInstance) {
-          html5QrCodeInstance
-            .stop()
-            .then(() => {
-              html5QrCodeInstance.clear();
-              html5QrCodeInstance = null;
-              modal.classList.add("hidden");
-              modal.classList.remove("flex");
-            })
-            .catch(() => {
-              html5QrCodeInstance = null;
-              modal.classList.add("hidden");
-              modal.classList.remove("flex");
-            });
-        } else {
+        const reader = document.getElementById("qrReaderBox");
+        if (reader) reader.innerHTML = "";
+        document.getElementById("qrScannerRetryBtn")?.classList.add("hidden");
+        if (modal) {
           modal.classList.add("hidden");
           modal.classList.remove("flex");
         }
+        qrScannerCurrentMode = null;
+        qrScannerCurrentMeetingId = null;
       }
 
-      // ==========================================
       // MASTER USER DIRECTORY / GLOBAL STATUS
       // ==========================================
       function normalizeDirectoryName(value) {
