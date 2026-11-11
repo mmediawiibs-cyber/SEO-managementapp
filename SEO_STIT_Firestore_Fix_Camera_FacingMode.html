@@ -5881,10 +5881,15 @@
         // Jangan lakukan enumerasi kamera di sini. Fungsi tersebut dapat membuka
         // stream kamera sementara pada beberapa perangkat; kemudian start()
         // membuka stream kedua dan memicu NotReadableError.
+        // html5-qrcode v2.3.8 hanya menerima:
+        // { facingMode: "environment" | "user" } atau
+        // { facingMode: { exact: "environment" | "user" } }.
+        // Jangan gunakan { ideal: ... } karena createVideoConstraints()
+        // library akan melempar error sebelum kamera dimulai.
         const attempts = [
-          { label: "kamera belakang (prioritas)", source: { facingMode: { ideal: "environment" } } },
-          { label: "kamera belakang", source: { facingMode: "environment" } },
-          { label: "kamera perangkat (alternatif)", source: { facingMode: { ideal: "user" } } },
+          { label: "kamera belakang (prioritas)", source: { facingMode: "environment" } },
+          { label: "kamera belakang (mode exact)", source: { facingMode: { exact: "environment" } } },
+          { label: "kamera depan (alternatif)", source: { facingMode: "user" } },
         ];
 
         let lastError = null;
